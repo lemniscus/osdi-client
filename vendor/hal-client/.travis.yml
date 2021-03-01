@@ -1,0 +1,32 @@
+language: php
+
+php:
+  - 7.2
+  - 7.3
+  - 7.4
+
+matrix:
+  include:
+    - php: 7.2
+      env: GUZZLE_VERSION=^5.0
+    - php: 7.4
+      env: GUZZLE_VERSION=^5.0
+  fast_finish: true
+
+cache:
+  directories:
+    - $HOME/.composer/cache/files
+
+install:
+  - composer install --no-interaction
+  - if [ "$GUZZLE_VERSION" ]; then composer require guzzlehttp/guzzle:${GUZZLE_VERSION}; fi;
+  - composer show
+
+script:
+  - vendor/bin/phpunit -v --coverage-text --coverage-clover=./build/logs/clover.xml
+
+after_success:
+  - if [ -f ./build/logs/clover.xml ]; then wget https://github.com/php-coveralls/php-coveralls/releases/download/v2.1.0/php-coveralls.phar; fi
+  - if [ -f ./build/logs/clover.xml ]; then php ./php-coveralls.phar -v; fi
+  - if [ -f ./build/logs/clover.xml ]; then wget https://scrutinizer-ci.com/ocular.phar; fi
+  - if [ -f ./build/logs/clover.xml ]; then php ocular.phar code-coverage:upload --format=php-clover ./build/logs/clover.xml; fi

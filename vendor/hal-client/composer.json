@@ -1,0 +1,40 @@
+{
+    "name": "jsor/hal-client",
+    "description": "A lightweight client for consuming and manipulating Hypertext Application Language (HAL) resources.",
+    "keywords": ["hal", "rest", "api", "json", "http", "client"],
+    "homepage": "https://github.com/jsor/hal-client",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jan Sorgalla",
+            "email": "jsorgalla@gmail.com",
+            "homepage": "http://sorgalla.com"
+        }
+    ],
+    "require": {
+        "php": "^7.2",
+        "ext-json": "*",
+        "psr/http-message": "^1.0",
+        "guzzlehttp/psr7": "^1.0"
+    },
+    "require-dev": {
+        "guzzlehttp/guzzle": "^5.0||^6.0",
+        "phpunit/phpunit": "^8.1"
+    },
+    "suggest": {
+        "guzzlehttp/guzzle": "For using Guzzle as your HTTP client"
+    },
+    "autoload": {
+        "psr-4": {
+            "Jsor\\HalClient\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Jsor\\HalClient\\": "tests/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}

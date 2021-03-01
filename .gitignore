@@ -1,0 +1,11 @@
+# Ignore Mac-specific files
+.DS_Store
+._.DS_Store
+
+# Ignore IDE files
+.vscode
+.idea
+
+# Ignore test environment specifics
+apiToken
+tests/phpunit/CRM/OSDI/fixtures
