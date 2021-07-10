@@ -3,7 +3,6 @@
 namespace Civi\Osdi;
 
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\Generic\OsdiObject;
 
 interface RemoteObjectInterface {
 
@@ -13,6 +12,13 @@ interface RemoteObjectInterface {
 
   public function getOwnUrl(RemoteSystemInterface $system);
 
+    /**
+     * @param string|null $fieldName
+     * @return mixed
+     * @throws InvalidArgumentException
+     */
+    public function get(string $fieldName);
+
   /**
    * @param string|null $fieldName
    * @return mixed
@@ -21,10 +27,10 @@ interface RemoteObjectInterface {
   public function getOriginal(string $fieldName);
 
   /**
-   * @param string $key
+   * @param string $fieldName
    * @return mixed|null
    */
-  public function getAltered(string $key);
+  public function getAltered(string $fieldName);
 
   public function getAllAltered(): array;
 
@@ -49,5 +55,7 @@ interface RemoteObjectInterface {
   public function clearField(string $fieldName);
 
   public function getFieldsToClearBeforeWriting(): array;
+
+  public function isEdited(string $fieldName): bool;
 
 }

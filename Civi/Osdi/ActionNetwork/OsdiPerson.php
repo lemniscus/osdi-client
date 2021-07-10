@@ -11,9 +11,9 @@ class OsdiPerson extends OsdiObject {
     parent::__construct('osdi:people', $resource, $initData);
   }
 
-  public function getOriginalEmailAddress(): string
+  public function getEmailAddress(): string
   {
-      return $this->getOriginal('email_addresses')[0]['address'];
+      return $this->get('email_addresses')[0]['address'];
   }
 
   public static function isValidField(string $name): bool {

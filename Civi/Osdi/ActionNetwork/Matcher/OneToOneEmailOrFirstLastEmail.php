@@ -74,7 +74,7 @@ class OneToOneEmailOrFirstLastEmail
 
     public function findLocalMatchForRemotePerson(OsdiPerson $remotePerson)
     {
-        if (empty($email = $remotePerson->getOriginalEmailAddress()))
+        if (empty($email = $remotePerson->getEmailAddress()))
             return new MatchResult(
                 [],
                 MatchResult::NO_MATCH,
@@ -95,7 +95,7 @@ class OneToOneEmailOrFirstLastEmail
     private function findLocalMatchByEmailAndName(OsdiPerson $remotePerson)
     {
         $civiApi4Result = $this->getCiviContactsBy(
-            $remotePerson->getOriginalEmailAddress(),
+            $remotePerson->getEmailAddress(),
             $remotePerson->getOriginal('given_name'),
             $remotePerson->getOriginal('family_name')
         );
