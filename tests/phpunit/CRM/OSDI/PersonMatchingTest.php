@@ -42,7 +42,7 @@ class CRM_OSDI_PersonMatchingTest extends \PHPUnit\Framework\TestCase implements
                 \Civi\Api4\Email::create()->addValue('contact_id', '$id')->addValue('email', 'shangela@fish.net')
             )->execute()->first()['id'];
 
-        $remoteSystemId = \Civi\Api4\OsdiRemoteSystem::create()->addValue('label', 'Test')->execute()->first()['id'];
+        $remoteSystemId = \Civi\Api4\OsdiSyncProfile::create()->addValue('label', 'Test')->execute()->first()['id'];
 
         \Civi\Api4\OsdiMatch::create()->addValue('contact_id', $contactId)->addValue(
                 'remote_person_id',
@@ -65,7 +65,7 @@ class CRM_OSDI_PersonMatchingTest extends \PHPUnit\Framework\TestCase implements
         $fieldNames = \Civi\Api4\OsdiMatch::getFields()->execute()->column('name');
         $this->assertContains('contact_id', $fieldNames);
         $this->assertContains('remote_person_id', $fieldNames);
-        $this->assertContains('remote_system_id', $fieldNames);
+        $this->assertContains('sync_profile_id', $fieldNames);
         $this->assertContains('sync_origin_modified_time', $fieldNames);
         $this->assertContains('sync_target_modified_time', $fieldNames);
         $this->assertContains('sync_origin', $fieldNames);

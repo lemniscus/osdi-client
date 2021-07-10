@@ -22,11 +22,11 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
   private $client;
 
   /**
-   * @var \CRM_OSDI_BAO_RemoteSystem
+   * @var \CRM_OSDI_BAO_SyncProfile
    */
   private $systemProfile;
 
-  public function __construct(?\CRM_OSDI_BAO_RemoteSystem $systemProfile, ?HalClientInterface $client) {
+  public function __construct(?\CRM_OSDI_BAO_SyncProfile $systemProfile, ?HalClientInterface $client) {
     if ($systemProfile) $this->systemProfile = $systemProfile;
     if ($client) $this->client = $client;
   }
@@ -75,7 +75,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     $filterClauses = [];
     foreach ($criteria as $criterion) {
       if (count($criterion) !== 3) throw new InvalidArgumentException("Incorrect parameter format for findPeople");
-      list($key, $operator, $value) = $criterion;
+      [$key, $operator, $value] = $criterion;
       if (in_array($operator, ['eq', 'lt', 'gt'])) {
         $filterClauses[] = "$key $operator '" . addslashes($value) . "'";
       } else {

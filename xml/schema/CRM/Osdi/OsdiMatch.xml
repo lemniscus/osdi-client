@@ -41,20 +41,20 @@
   </foreignKey>
 
   <field>
-    <name>remote_system_id</name>
-    <title>Remote OSDI System ID</title>
+    <name>sync_profile_id</name>
+    <title>OSDI Sync Profile ID</title>
     <type>int unsigned</type>
-    <comment>FK to OSDI Remote System</comment>
+    <comment>FK to OSDI Sync Profile</comment>
     <import>true</import>
     <export>true</export>
   </field>
   <index>
-    <name>index_remote_system_id</name>
-    <fieldName>remote_system_id</fieldName>
+    <name>index_sync_profile_id</name>
+    <fieldName>sync_profile_id</fieldName>
   </index>
   <foreignKey>
-    <name>remote_system_id</name>
-    <table>civicrm_osdi_remote_system</table>
+    <name>sync_profile_id</name>
+    <table>civicrm_osdi_sync_profile</table>
     <key>id</key>
     <onDelete>CASCADE</onDelete>
   </foreignKey>

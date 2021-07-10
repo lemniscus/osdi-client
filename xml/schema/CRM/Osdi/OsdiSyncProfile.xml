@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+
+<table>
+  <base>CRM/OSDI</base>
+  <class>SyncProfile</class>
+  <name>civicrm_osdi_sync_profile</name>
+  <comment>OSDI Sync configurations</comment>
+  <log>true</log>
+
+  <field>
+    <name>id</name>
+    <type>int unsigned</type>
+    <required>true</required>
+    <comment>Unique OsdiSyncProfile ID</comment>
+    <html>
+      <type>Number</type>
+    </html>
+  </field>
+  <primaryKey>
+    <name>id</name>
+    <autoincrement>true</autoincrement>
+  </primaryKey>
+
+  <field>
+    <name>label</name>
+    <title>Label</title>
+    <type>varchar</type>
+    <length>128</length>
+    <html>
+      <type>Text</type>
+      <size>128</size>
+    </html>
+    <comment>User-friendly label for the sync configuration</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+
+  <field>
+    <name>entry_point</name>
+    <title>API Entry Point URL</title>
+    <type>varchar</type>
+    <length>1023</length>
+    <html>
+      <type>Text</type>
+      <size>64</size>
+    </html>
+    <comment>API entry point (AEP) URL</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+
+  <field>
+    <name>api_token</name>
+    <title>API Token</title>
+    <type>varchar</type>
+    <length>1023</length>
+    <html>
+      <type>Text</type>
+      <size>64</size>
+    </html>
+    <comment>API token</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+
+  <field>
+    <name>remote_system</name>
+    <title>Remote System</title>
+    <type>varchar</type>
+    <length>127</length>
+    <html>
+      <type>Select</type>
+      <title>Remote System</title>
+    </html>
+    <pseudoconstant>
+      <callback>CRM_OAuth_BAO_OsdiSyncProfile::getRemoteSystems</callback>
+    </pseudoconstant>
+    <comment>class name of Remote System</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+
+  <field>
+    <name>matcher</name>
+    <title>Matcher</title>
+    <type>varchar</type>
+    <length>127</length>
+    <html>
+      <type>Select</type>
+      <title>Matcher</title>
+    </html>
+    <pseudoconstant>
+      <callback>CRM_OAuth_BAO_OsdiSyncProfile::getMatchers</callback>
+    </pseudoconstant>
+    <comment>class name of Matcher</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+
+  <field>
+    <name>mapper</name>
+    <title>Mapper</title>
+    <type>varchar</type>
+    <length>127</length>
+    <html>
+      <type>Select</type>
+      <title>Mapper</title>
+    </html>
+    <pseudoconstant>
+      <callback>CRM_OAuth_BAO_OsdiSyncProfile::getMappers</callback>
+    </pseudoconstant>
+    <comment>class name of Mapper</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+</table>

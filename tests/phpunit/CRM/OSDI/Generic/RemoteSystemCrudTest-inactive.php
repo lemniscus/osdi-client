@@ -38,25 +38,25 @@ class CRM_OSDI_Generic_RemoteSystemCrudTest extends \PHPUnit\Framework\TestCase 
   }
 
   public function initializeRemoteSystem() {
-    //$this->remoteSystem = new CRM_OSDI_BAO_RemoteSystem_Mock();
-/*    $apiCreateSystemResult = \Civi\Api4\OsdiRemoteSystem::create()
+    //$this->remoteSystem = new CRM_OSDI_BAO_SyncProfile_Mock();
+/*    $apiCreateSystemResult = \Civi\Api4\OsdiSyncProfile::create()
         ->addValue('label', 'Action Network Test')
         ->addValue('entry_point', 'https://actionnetwork.org/api/v2/')
         ->addValue('api_token', '')
     ->execute();*/
-/*    $apiCreateSystemResult = \Civi\Api4\OsdiRemoteSystem::create()
+/*    $apiCreateSystemResult = \Civi\Api4\OsdiSyncProfile::create()
         ->addValue('label', 'Open Supporter Test')
         ->addValue('entry_point', 'http://api.opensupporter.org/api/v1')
         ->addValue('api_token', '')
         ->execute();
-    $apiCreateSystemResult = \Civi\Api4\OsdiRemoteSystem::create()
+    $apiCreateSystemResult = \Civi\Api4\OsdiSyncProfile::create()
         ->addValue('label', 'Open Supporter Test')
         ->addValue('entry_point', 'http://lemniscus.demo.osdi.io/api/v1')
         ->addValue('api_token', '')
         ->execute();*/
     /*$remoteSystemId = $apiCreateSystemResult->column('id')[0];
     print "Remote System id: $remoteSystemId\n";
-    $this->remoteSystem = CRM_OSDI_BAO_RemoteSystem::findById($remoteSystemId);*/
+    $this->remoteSystem = CRM_OSDI_BAO_SyncProfile::findById($remoteSystemId);*/
     $this->remoteSystem = $this->createRemoteSystem();
   }
 

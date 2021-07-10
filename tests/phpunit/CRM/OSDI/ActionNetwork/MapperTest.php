@@ -44,7 +44,7 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
 
     public function createRemoteSystem(): \Civi\Osdi\ActionNetwork\RemoteSystem
     {
-        $systemProfile = new CRM_OSDI_BAO_RemoteSystem();
+        $systemProfile = new CRM_OSDI_BAO_SyncProfile();
         $systemProfile->entry_point = 'https://actionnetwork.org/api/v2/';
         $systemProfile->api_token = file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'apiToken');
         $client = new Jsor\HalClient\HalClient(

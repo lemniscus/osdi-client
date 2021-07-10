@@ -15,7 +15,7 @@ use Jsor\HalClient\HalResource;
 class CRM_OSDI_ActionNetwork_OsdiPersonTest extends CRM_OSDI_Generic_OsdiPersonTest implements HeadlessInterface, HookInterface, TransactionalInterface {
 
   public function makeSystem() {
-    return new Civi\Osdi\ActionNetwork\RemoteSystem(new CRM_OSDI_BAO_RemoteSystem(), new HalClient(''));
+    return new Civi\Osdi\ActionNetwork\RemoteSystem(new CRM_OSDI_BAO_SyncProfile(), new HalClient(''));
   }
 
   public function makeBlankOsdiPerson() {
