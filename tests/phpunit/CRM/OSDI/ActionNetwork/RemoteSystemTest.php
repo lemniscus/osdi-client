@@ -20,12 +20,12 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
       ->apply();
   }
 
-  public function setUp() {
+  public function setUp(): void {
     CRM_OSDI_FixtureHttpClient::resetHistory();
     parent::setUp();
   }
 
-  public function tearDown() {
+  public function tearDown(): void {
     parent::tearDown();
   }
 

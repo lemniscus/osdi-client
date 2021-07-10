@@ -21,13 +21,13 @@ class CRM_OSDI_PersonMatchingTest extends \PHPUnit\Framework\TestCase implements
         return \Civi\Test::headless()->installMe(__DIR__)->apply();
     }
 
-    public function setUp()
+    public function setUp(): void
     {
         $this->setUpExistingMatch();
         parent::setUp();
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         parent::tearDown();
     }
