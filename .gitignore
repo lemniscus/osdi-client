@@ -8,4 +8,6 @@
 
 # Ignore test environment specifics
 apiToken
-tests/phpunit/CRM/OSDI/fixtures
+/tests/phpunit/CRM/OSDI/fixtures
+/.phpunit.result.cache
+/notes.txt
