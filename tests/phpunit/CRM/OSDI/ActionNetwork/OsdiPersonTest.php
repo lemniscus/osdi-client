@@ -51,8 +51,6 @@ class CRM_OSDI_ActionNetwork_OsdiPersonTest extends CRM_OSDI_Generic_OsdiPersonT
     $expected = [
         'existingPersonUrl' => 'https://actionnetwork.org/api/v2/people/d91b4b2e-ae0e-4cd3-9ed7-d0ec501b0bc3',
         'existingPersonId' => 'd91b4b2e-ae0e-4cd3-9ed7-d0ec501b0bc3',
-        'existingPersonIdException' => 'Cannot change the id of the Civi\Osdi\ActionNetwork\OsdiPerson '
-            . 'whose id is already set to "d91b4b2e-ae0e-4cd3-9ed7-d0ec501b0bc3".'
     ];
     return $expected[$key];
   }
@@ -68,9 +66,12 @@ class CRM_OSDI_ActionNetwork_OsdiPersonTest extends CRM_OSDI_Generic_OsdiPersonT
   public function testClearWrongFieldThrowsException() {
     $person = $this->makeExistingOsdiPerson();
     foreach (['identifiers', 'email_addresses', 'phone_numbers', 'postal_addresses', 'languages_spoken'] as $fieldName){
-      $this->expectException(\Civi\Osdi\Exception\InvalidArgumentException::class);
-      $this->expectExceptionMessage(sprintf('Cannot clear field "%s"', $fieldName));
-      $person->clearField($fieldName);
+        try {
+            $person->clearField($fieldName);
+            $this->fail('Exception should be thrown here');
+        } catch (\Civi\Osdi\Exception\InvalidArgumentException $e) {
+            $this->assertEquals(sprintf('Cannot clear field "%s"', $fieldName), $e->getMessage());
+        }
     }
   }
 
