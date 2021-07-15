@@ -22,6 +22,17 @@
   </primaryKey>
 
   <field>
+    <name>is_default</name>
+    <title>Is Default SyncProfile</title>
+    <type>boolean</type>
+    <default>0</default>
+    <comment>Is this default OSDI SyncProfile?</comment>
+    <html>
+      <type>CheckBox</type>
+    </html>
+  </field>
+
+  <field>
     <name>label</name>
     <title>Label</title>
     <type>varchar</type>
@@ -73,7 +84,7 @@
       <title>Remote System</title>
     </html>
     <pseudoconstant>
-      <callback>CRM_OAuth_BAO_OsdiSyncProfile::getRemoteSystems</callback>
+      <callback>CRM_OAuth_BAO_SyncProfile::getRemoteSystems</callback>
     </pseudoconstant>
     <comment>class name of Remote System</comment>
     <import>true</import>

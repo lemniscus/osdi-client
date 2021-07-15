@@ -29,28 +29,29 @@ SET FOREIGN_KEY_CHECKS=1;
 
 -- /*******************************************************
 -- *
--- * civicrm_osdi_match
+-- * civicrm_osdi_sync_profile
 -- *
--- * Linkages between CiviCRM contacts and their counterparts on remote OSDI systems
+-- * OSDI Sync configurations
 -- *
 -- *******************************************************/
 CREATE TABLE `civicrm_osdi_sync_profile` (
-    `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiSyncProfile ID',
-    `label` varchar(128) COMMENT 'User-friendly label for the sync configuration',
-    `entry_point` varchar(1023) COMMENT 'API entry point (AEP) URL',
-    `api_token` varchar(1023) COMMENT 'API token',
-    `remote_system` varchar(127) COMMENT 'class name of Remote System',
-    `matcher` varchar(127) COMMENT 'class name of Matcher',
-    `mapper` varchar(127) COMMENT 'class name of Mapper',
-    PRIMARY KEY (`id`)
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiSyncProfile ID',
+  `is_default` tinyint DEFAULT 0 COMMENT 'Is this default OSDI SyncProfile?',
+  `label` varchar(128) COMMENT 'User-friendly label for the sync configuration',
+  `entry_point` varchar(1023) COMMENT 'API entry point (AEP) URL',
+  `api_token` varchar(1023) COMMENT 'API token',
+  `remote_system` varchar(127) COMMENT 'class name of Remote System',
+  `matcher` varchar(127) COMMENT 'class name of Matcher',
+  `mapper` varchar(127) COMMENT 'class name of Mapper',
+  PRIMARY KEY (`id`)
 )
 ENGINE=InnoDB;
 
 -- /*******************************************************
 -- *
--- * civicrm_osdi_sync_profile
+-- * civicrm_osdi_match
 -- *
--- * OSDI Sync configurations
+-- * Linkages between CiviCRM contacts and their counterparts on remote OSDI systems
 -- *
 -- *******************************************************/
 CREATE TABLE `civicrm_osdi_match` (

@@ -33,6 +33,7 @@ class CRM_OSDI_SyncProfileTest extends \PHPUnit\Framework\TestCase implements He
     {
       $fields = \Civi\Api4\OsdiSyncProfile::getFields(FALSE)->execute()->column('name');
       self::assertContains('id', $fields);
+      self::assertContains('is_default', $fields);
       self::assertContains('label', $fields);
       self::assertContains('remote_system', $fields);
       self::assertContains('entry_point', $fields);
