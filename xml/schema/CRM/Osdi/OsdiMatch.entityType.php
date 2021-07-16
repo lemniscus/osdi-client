@@ -4,7 +4,7 @@
 return [
   [
     'name' => 'OsdiMatch',
-    'class' => 'CRM_Osdi_DAO_OsdiMatch',
+    'class' => 'CRM_OSDI_DAO_OSDIMatch',
     'table' => 'civicrm_osdi_match',
   ],
 ];

@@ -2,7 +2,7 @@
 
 require_once 'osdi.civix.php';
 // phpcs:disable
-use CRM_Osdi_ExtensionUtil as E;
+use CRM_OSDI_ExtensionUtil as E;
 // phpcs:enable
 
 require_once __DIR__ . DIRECTORY_SEPARATOR

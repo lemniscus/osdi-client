@@ -1,6 +1,6 @@
 <?php /** @noinspection PhpFullyQualifiedNameUsageInspection */
 
-use CRM_Osdi_ExtensionUtil as E;
+use CRM_OSDI_ExtensionUtil as E;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;

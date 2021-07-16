@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="iso-8859-1" ?>
 
 <table>
-  <base>CRM/Osdi</base>
-  <class>OsdiMatch</class>
+  <base>CRM/OSDI</base>
+  <class>OSDIMatch</class>
   <name>civicrm_osdi_match</name>
   <comment>Linkages between CiviCRM contacts and their counterparts on remote OSDI systems</comment>
   <log>true</log>
@@ -108,7 +108,7 @@
     <type>boolean</type>
     <default>NULL</default>
     <pseudoconstant>
-      <callback>CRM_OSDI_LinkageTracker::syncOriginPseudoConstant</callback>
+      <callback>CRM_OSDI_BAO_OSDIMatch::syncOriginPseudoConstant</callback>
     </pseudoconstant>
     <comment>0 if local CiviCRM was the origin of the last sync, 1 if remote system was the origin</comment>
   </field>

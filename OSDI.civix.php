@@ -450,9 +450,9 @@ function _osdi_civix_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
  */
 function _osdi_civix_civicrm_entityTypes(&$entityTypes) {
   $entityTypes = array_merge($entityTypes, [
-    'CRM_Osdi_DAO_OsdiMatch' => [
+    'CRM_OSDI_DAO_OSDIMatch' => [
       'name' => 'OsdiMatch',
-      'class' => 'CRM_Osdi_DAO_OsdiMatch',
+      'class' => 'CRM_OSDI_DAO_OSDIMatch',
       'table' => 'civicrm_osdi_match',
     ],
     'CRM_OSDI_DAO_SyncProfile' => [
