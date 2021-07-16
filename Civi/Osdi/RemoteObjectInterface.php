@@ -12,6 +12,8 @@ interface RemoteObjectInterface {
 
   public function getOwnUrl(RemoteSystemInterface $system);
 
+  public function getId(): ?string;
+
     /**
      * @param string|null $fieldName
      * @return mixed
