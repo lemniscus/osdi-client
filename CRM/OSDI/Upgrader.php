@@ -1,5 +1,4 @@
 <?php
-use CRM_OSDI_ExtensionUtil as E;
 
 /**
  * Collection of upgrade steps.

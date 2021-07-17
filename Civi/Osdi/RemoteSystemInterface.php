@@ -4,14 +4,14 @@ namespace Civi\Osdi;
 
 interface RemoteSystemInterface {
 
-  public function constructUrlFor(string $objectType, ?string $id = null);
+  public function constructUrlFor(string $objectType, ?string $id = NULL);
 
   public function getPeopleUrl();
 
   public function makeOsdiObject(
-      string $type,
-      ?\Jsor\HalClient\HalResource $resource,
-      ?array $initData = null): RemoteObjectInterface;
+    string $type,
+    ?\Jsor\HalClient\HalResource $resource,
+    ?array $initData = NULL): RemoteObjectInterface;
 
   public function fetchPersonById(string $id);
 

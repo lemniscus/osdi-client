@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Civi\Osdi;
-
 
 class Syncer {
 

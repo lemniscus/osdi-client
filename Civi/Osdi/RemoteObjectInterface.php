@@ -2,8 +2,6 @@
 
 namespace Civi\Osdi;
 
-use Civi\Osdi\Exception\InvalidArgumentException;
-
 interface RemoteObjectInterface {
 
   public function getNamespace(): string;
@@ -14,22 +12,25 @@ interface RemoteObjectInterface {
 
   public function getId(): ?string;
 
-    /**
-     * @param string|null $fieldName
-     * @return mixed
-     * @throws InvalidArgumentException
-     */
-    public function get(string $fieldName);
+  /**
+   * @param string|null $fieldName
+   *
+   * @return mixed
+   * @throws \Civi\Osdi\Exception\InvalidArgumentException
+   */
+  public function get(string $fieldName);
 
   /**
    * @param string|null $fieldName
+   *
    * @return mixed
-   * @throws InvalidArgumentException
+   * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
   public function getOriginal(string $fieldName);
 
   /**
    * @param string $fieldName
+   *
    * @return mixed|null
    */
   public function getAltered(string $fieldName);
@@ -39,20 +40,23 @@ interface RemoteObjectInterface {
   /**
    * @param string $fieldName
    * @param mixed $val
-   * @throws InvalidArgumentException
+   *
+   * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
   public function set(string $fieldName, $val);
 
   /**
    * @param string $fieldName
    * @param mixed $val
-   * @throws InvalidArgumentException
+   *
+   * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
   public function appendTo(string $fieldName, $val);
 
   /**
    * @param string $fieldName
-   * @throws InvalidArgumentException
+   *
+   * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
   public function clearField(string $fieldName);
 

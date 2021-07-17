@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpFullyQualifiedNameUsageInspection */
+<?php
 
 use CRM_OSDI_ExtensionUtil as E;
 use Civi\Test\HeadlessInterface;
@@ -10,7 +10,10 @@ use Civi\Test\TransactionalInterface;
  *
  * @group headless
  */
-class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCase implements HeadlessInterface, HookInterface, TransactionalInterface {
+class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCase implements
+    HeadlessInterface,
+    HookInterface,
+    TransactionalInterface {
 
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
@@ -34,8 +37,8 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $systemProfile->entry_point = 'https://actionnetwork.org/api/v2/';
     $systemProfile->api_token = file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'apiToken');
     $client = new Jsor\HalClient\HalClient(
-        'https://actionnetwork.org/api/v2/',
-        new CRM_OSDI_FixtureHttpClient());
+      'https://actionnetwork.org/api/v2/',
+      new CRM_OSDI_FixtureHttpClient());
     //$client = new Jsor\HalClient\HalClient('https://actionnetwork.org/api/v2/');
     return new Civi\Osdi\ActionNetwork\RemoteSystem($systemProfile, $client);
   }
@@ -58,7 +61,9 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
 
   public function expected($key): string {
     $expected = [];
-    if (array_key_exists($key, $expected)) return $expected[$key];
+    if (array_key_exists($key, $expected)) {
+      return $expected[$key];
+    }
     $remotePersonTest = new CRM_OSDI_ActionNetwork_OsdiPersonTest();
     return $remotePersonTest->expected($key);
   }
@@ -90,7 +95,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $savedPerson->set('family_name', 'Testerson');
     $reSavedOsdiPerson = $system->savePerson($savedPerson);
     $this->assertEquals(
-        'Testerson', $reSavedOsdiPerson->getOriginal('family_name'));
+      'Testerson', $reSavedOsdiPerson->getOriginal('family_name'));
 
     // clean up
     $system->savePerson($unsavedNewPerson);
@@ -107,8 +112,8 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $savedPerson->appendTo('identifiers', 'donuts:yumyumyum');
     $reSavedOsdiPerson = $system->savePerson($savedPerson);
     $this->assertContains(
-        'donuts:yumyumyum',
-        $reSavedOsdiPerson->getOriginal('identifiers'));
+      'donuts:yumyumyum',
+      $reSavedOsdiPerson->getOriginal('identifiers'));
 
     // TRY TO APPEND TO A NON-APPENDABLE FIELD
     $this->expectException(\Civi\Osdi\Exception\InvalidArgumentException::class);
@@ -126,10 +131,18 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $savedPersonId = $savedPerson->getId();
 
     // FIND
-    $searchResults = $system->find('osdi:people', [['email', 'eq', 'testy@test.net']]);
+    $searchResults = $system->find('osdi:people', [
+      [
+        'email',
+        'eq',
+        'testy@test.net',
+      ],
+    ]);
     $resultIds = array_map(
-        function (\Civi\Osdi\ActionNetwork\OsdiPerson $foundPerson) { return $foundPerson->getId(); },
-        $searchResults->toArray());
+      function (\Civi\Osdi\ActionNetwork\OsdiPerson $foundPerson) {
+        return $foundPerson->getId();
+      },
+      $searchResults->toArray());
     $this->assertContains($savedPersonId, $resultIds);
   }
 
@@ -144,13 +157,25 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $this->assertNotEquals($abbreviatedFamilyName, $familyName);
 
     // FIND
-    $searchResults = $system->find('osdi:people', [['family_name', 'eq', $familyName]]);
+    $searchResults = $system->find('osdi:people', [
+      [
+        'family_name',
+        'eq',
+        $familyName,
+      ],
+    ]);
     /** @var \Civi\Osdi\ActionNetwork\OsdiPerson $foundPerson */
     foreach ($searchResults->toArray() as $foundPerson) {
       $this->assertEquals($familyName, $foundPerson->getOriginal('family_name'));
     }
 
-    $searchResults = $system->find('osdi:people', [['family_name', 'eq', $abbreviatedFamilyName]]);
+    $searchResults = $system->find('osdi:people', [
+      [
+        'family_name',
+        'eq',
+        $abbreviatedFamilyName,
+      ],
+    ]);
     foreach ($searchResults->toArray() as $foundPerson) {
       $this->assertEquals($abbreviatedFamilyName, $foundPerson->getOriginal('family_name'));
     }
@@ -168,13 +193,15 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
 
     // FIND
     $searchResults = $system->find('osdi:people',
-        [
-            ['given_name', 'eq', $givenName],
-            ['family_name', 'eq', $familyName]
-        ]);
+      [
+        ['given_name', 'eq', $givenName],
+        ['family_name', 'eq', $familyName],
+      ]);
     $resultIds = array_map(
-        function (\Civi\Osdi\ActionNetwork\OsdiPerson $foundPerson) { return $foundPerson->getId(); },
-        $searchResults->toArray());
+      function (\Civi\Osdi\ActionNetwork\OsdiPerson $foundPerson) {
+        return $foundPerson->getId();
+      },
+      $searchResults->toArray());
     $this->assertContains($savedPersonId, $resultIds);
   }
 
@@ -191,38 +218,54 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
 
     $savedPerson1 = $system->savePerson($unsavedNewPerson1);
     $savedPerson1ModTime = $savedPerson1->getOriginal('modified_date');
-    if (time() - strtotime($savedPerson1ModTime) < 2) sleep(1);
+    if (time() - strtotime($savedPerson1ModTime) < 2) {
+      sleep(1);
+    }
 
     $savedPerson2 = $system->savePerson($unsavedNewPerson2);
     $savedPerson2ModTime = $savedPerson2->getOriginal('modified_date');
-    if (time() - strtotime($savedPerson2ModTime < 2)) sleep(1);
+    if (time() - strtotime($savedPerson2ModTime < 2)) {
+      sleep(1);
+    }
 
     $savedPerson3 = $system->savePerson($unsavedNewPerson3);
     $savedPerson3ModTime = $savedPerson3->getOriginal('modified_date');
 
     // FIND
-    $searchResults = $system->find('osdi:people', [['modified_date', 'lt', $savedPerson2ModTime]]);
+    $searchResults = $system->find('osdi:people', [
+      [
+        'modified_date',
+        'lt',
+        $savedPerson2ModTime,
+      ],
+    ]);
     /** @var \Civi\Osdi\ActionNetwork\OsdiPerson $foundPerson */
     foreach ($searchResults->toArray() as $foundPerson) {
       $this->assertLessThan(
-          strtotime($savedPerson2ModTime), 
-          strtotime($foundPerson->getOriginal('modified_date')));
+        strtotime($savedPerson2ModTime),
+        strtotime($foundPerson->getOriginal('modified_date')));
       $resultIds[] = $foundPerson->getId();
     }
     $this->assertContains($savedPerson1->getId(), $resultIds);
 
-    $searchResults = $system->find('osdi:people', [['modified_date', 'gt', $savedPerson2ModTime]]);
+    $searchResults = $system->find('osdi:people', [
+      [
+        'modified_date',
+        'gt',
+        $savedPerson2ModTime,
+      ],
+    ]);
     foreach ($searchResults->toArray() as $foundPerson) {
       $this->assertGreaterThan(
-          strtotime($savedPerson2ModTime),
-          strtotime($foundPerson->getOriginal('modified_date')));
+        strtotime($savedPerson2ModTime),
+        strtotime($foundPerson->getOriginal('modified_date')));
       $resultIds[] = $foundPerson->getId();
     }
     $this->assertContains($savedPerson3->getId(), $resultIds);
 
     $searchResults = $system->find('osdi:people', [
-        ['modified_date', 'gt', $savedPerson1ModTime],
-        ['modified_date', 'lt', $savedPerson3ModTime],
+      ['modified_date', 'gt', $savedPerson1ModTime],
+      ['modified_date', 'lt', $savedPerson3ModTime],
     ]);
     foreach ($searchResults->toArray() as $foundPerson) {
       $resultIds[] = $foundPerson->getId();
@@ -274,7 +317,8 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     // FETCH COMPONENTS
 
     $this->assertEquals($savedTag->getId(), $savedTagging->getTag()->getId());
-    $this->assertEquals($savedPerson->getId(), $savedTagging->getPerson()->getId());
+    $this->assertEquals($savedPerson->getId(), $savedTagging->getPerson()
+      ->getId());
   }
 
   public function testTaggingCreate_Delete() {

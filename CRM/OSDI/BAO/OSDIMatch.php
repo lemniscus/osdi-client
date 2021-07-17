@@ -1,5 +1,4 @@
 <?php
-use CRM_OSDI_ExtensionUtil as E;
 
 class CRM_OSDI_BAO_OSDIMatch extends CRM_OSDI_DAO_OSDIMatch {
 
@@ -9,7 +8,7 @@ class CRM_OSDI_BAO_OSDIMatch extends CRM_OSDI_DAO_OSDIMatch {
   public static function syncOriginPseudoConstant(): array {
     return [
       self::ORIGIN_LOCAL => 'local',
-      self::ORIGIN_REMOTE => 'remote'
+      self::ORIGIN_REMOTE => 'remote',
     ];
   }
 

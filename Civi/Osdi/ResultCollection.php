@@ -1,12 +1,12 @@
 <?php
 
-
 namespace Civi\Osdi;
+
 use Civi\Osdi\Exception\EmptyResultException;
 use Jsor\HalClient\HalResource;
 
-
 class ResultCollection {
+
   /**
    * @var string
    */
@@ -34,7 +34,7 @@ class ResultCollection {
   }
 
   /**
-   * @return HalResource[]
+   * @return \Jsor\HalClient\HalResource[]
    */
   public function toArray(): array {
     foreach ($this->pages as $page) {
@@ -50,11 +50,15 @@ class ResultCollection {
   }
 
   public function first(): RemoteObjectInterface {
-    if (empty($this->pages)) throw new EmptyResultException();
+    if (empty($this->pages)) {
+      throw new EmptyResultException();
+    }
     ksort($this->pages, SORT_NUMERIC);
     $firstPage = reset($this->pages);
     $firstResource = $firstPage->getFirstResource($this->type);
-    if ($firstResource === NULL) throw new EmptyResultException();
+    if ($firstResource === NULL) {
+      throw new EmptyResultException();
+    }
     return $this->system->makeOsdiObject($this->type, $firstResource);
   }
 
@@ -67,11 +71,15 @@ class ResultCollection {
   }
 
   private function addPage(HalResource $pageResource) {
-    if (!is_numeric($pageNum = $pageResource->getProperty('page'))) return;
+    if (!is_numeric($pageNum = $pageResource->getProperty('page'))) {
+      return;
+    }
     $this->pages[$pageNum] = $pageResource;
     try {
       $this->resultCount += count($pageResource->getResource($this->type));
-    } catch (\Throwable $e) {}
+    }
+    catch (\Throwable $e) {
+    }
   }
 
 }

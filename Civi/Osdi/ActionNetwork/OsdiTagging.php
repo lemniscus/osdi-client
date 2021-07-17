@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Civi\Osdi\ActionNetwork;
 
 use Civi\Osdi\Exception\InvalidArgumentException;
@@ -22,7 +21,8 @@ class OsdiTagging extends OsdiObject {
 
   /**
    * OsdiTagging constructor.
-   * @param HalResource|null $resource
+   *
+   * @param \Jsor\HalClient\HalResource|null $resource
    * @param array|null $initData
    */
   public function __construct(?HalResource $resource, ?array $initData) {
@@ -30,21 +30,30 @@ class OsdiTagging extends OsdiObject {
   }
 
   public function setPerson(OsdiPerson $person, RemoteSystem $system) {
-    if (!($url = $person->getOwnUrl($system))) throw new InvalidArgumentException("We need to know the person's URL");
-    if ($this->id) throw new InvalidOperationException('Modifying an existing tagging is not allowed');
+    if (!($url = $person->getOwnUrl($system))) {
+      throw new InvalidArgumentException("We need to know the person's URL");
+    }
+    if ($this->id) {
+      throw new InvalidOperationException('Modifying an existing tagging is not allowed');
+    }
     $this->set('_links', ['osdi:person' => ['href' => $url]]);
     $this->person = $person;
   }
 
   /**
-   * @param RemoteObjectInterface $tag
+   * @param \Civi\Osdi\RemoteObjectInterface $tag
    * @param RemoteSystem $system
+   *
    * @throws InvalidArgumentException
    * @throws InvalidOperationException
    */
   public function setTag(RemoteObjectInterface $tag, RemoteSystem $system) {
-    if (!($url = $tag->getOwnUrl($system))) throw new InvalidArgumentException("We need to know the tag's URL");
-    if ($this->id) throw new InvalidOperationException('Modifying an existing tagging is not allowed');
+    if (!($url = $tag->getOwnUrl($system))) {
+      throw new InvalidArgumentException("We need to know the tag's URL");
+    }
+    if ($this->id) {
+      throw new InvalidOperationException('Modifying an existing tagging is not allowed');
+    }
     $this->tag = $tag;
   }
 
@@ -66,8 +75,8 @@ class OsdiTagging extends OsdiObject {
 
   public static function isValidField(string $name): bool {
     $validFields = [
-        'identifiers',
-        '_links',
+      'identifiers',
+      '_links',
     ];
     return in_array($name, $validFields);
   }

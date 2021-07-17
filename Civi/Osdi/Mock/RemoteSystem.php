@@ -1,8 +1,6 @@
 <?php
 
-
 namespace Civi\Osdi\Mock;
-
 
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Generic\OsdiPerson;
@@ -16,17 +14,20 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
   private $database = [];
 
   public function fetchPersonById(string $id) {
-    if (!array_key_exists($id, $this->database['osdi:people'])) throw new EmptyResultException('Could not find remote person with id "%s"', $id);
+    if (!array_key_exists($id, $this->database['osdi:people'])) {
+      throw new EmptyResultException('Could not find remote person with id "%s"', $id);
+    }
     return $this->database['osdi:people'][$id];
   }
 
-  public function makeOsdiPerson(?HalResource $resource, ?array $initData = null) {
+  public function makeOsdiPerson(?HalResource $resource, ?array $initData = NULL) {
     // TODO: Implement makeRemotePerson() method.
   }
 
   /**
    * @param string $objectType
    * @param array $criteria
+   *
    * @return array
    * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
@@ -34,9 +35,13 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     if ('osdi:people' === $objectType) {
       if ([['email', '=', 'testy@test.net']] === $criteria) {
         $osdiPersonArr = array_filter($this->database['osdi:people'], function ($person) use ($criteria) {
-          /** @var RemoteObjectInterface $person */
+          /** @var \Civi\Osdi\RemoteObjectInterface $person */
           $theirEmails = $person->getOriginal('email_addresses');
-          foreach ((array)$theirEmails as $emailArr) if ($emailArr['address'] === $criteria[0][2]) return TRUE;
+          foreach ((array) $theirEmails as $emailArr) {
+            if ($emailArr['address'] === $criteria[0][2]) {
+              return TRUE;
+            }
+          }
           return FALSE;
         });
         $pageResource = new HalResource(new HalClient(''), [], [], $osdiPersonArr);
@@ -46,7 +51,9 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
   }
 
   public function save(\Civi\Osdi\RemoteObjectInterface $osdiObject): OsdiPerson {
-    if ('osdi:people' === $osdiObject->getType()) return $this->savePerson($osdiObject);
+    if ('osdi:people' === $osdiObject->getType()) {
+      return $this->savePerson($osdiObject);
+    }
   }
 
   public function getPeopleUrl(): string {
@@ -54,19 +61,28 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
   }
 
   public function savePerson(OsdiPerson $remotePerson): OsdiPerson {
-    try { $remotePerson->setId($newId = microtime()); } catch (\Exception $e) {}
+    try {
+      $remotePerson->setId($newId = microtime());
+    }
+    catch (\Exception $e) {
+    }
     $client = new HalClient('');
     $mergedProperties = $remotePerson->getAllOriginal();
     foreach ($remotePerson->getAllAltered() as $fieldName => $alteredValue) {
       if ($remotePerson->isMultipleValueField($fieldName)) {
         $mergedProperties[$fieldName] = array_merge($mergedProperties[$fieldName] ?? [], $alteredValue);
-      } else {
+      }
+      else {
         $mergedProperties[$fieldName] = $alteredValue;
       }
     }
     $personResource = new HalResource($client, $mergedProperties);
     $newRemotePerson = new OsdiPerson($personResource);
-    try { $newRemotePerson->setId($newId); } catch (\Exception $e) {}
+    try {
+      $newRemotePerson->setId($newId);
+    }
+    catch (\Exception $e) {
+    }
     $this->database['osdi:people'][$newId] = $newRemotePerson;
     return $newRemotePerson;
   }
@@ -75,11 +91,12 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     unset($this->database['osdi:people'][$object->getId()]);
   }
 
-  public function constructUrlFor(string $objectType, ?string $id = null) {
+  public function constructUrlFor(string $objectType, ?string $id = NULL) {
     // TODO: Implement getUrlFor() method.
   }
 
-  public function makeOsdiObject(string $type, ?HalResource $resource, ?array $initData = null): RemoteObjectInterface {
+  public function makeOsdiObject(string $type, ?HalResource $resource, ?array $initData = NULL): RemoteObjectInterface {
     // TODO: Implement makeOsdiObject() method.
   }
+
 }

@@ -8,7 +8,7 @@ use CRM_OSDI_ExtensionUtil as E;
 require_once __DIR__ . DIRECTORY_SEPARATOR
     . 'vendor' . DIRECTORY_SEPARATOR
     . 'hal-client' . DIRECTORY_SEPARATOR
-    . 'vendor'  . DIRECTORY_SEPARATOR
+    . 'vendor' . DIRECTORY_SEPARATOR
     . 'autoload.php';
 
 /**

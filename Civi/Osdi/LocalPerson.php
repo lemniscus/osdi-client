@@ -1,4 +1,5 @@
 <?php
+
 namespace Civi\Osdi;
 
 class LocalPerson {
@@ -11,10 +12,10 @@ class LocalPerson {
 
   public function getFields() {
     return [
-        'email' => '',
-        'first_name' => '',
-        'last_name' => '',
-        'local_id' => ''
+      'email' => '',
+      'first_name' => '',
+      'last_name' => '',
+      'local_id' => '',
     ];
   }
 

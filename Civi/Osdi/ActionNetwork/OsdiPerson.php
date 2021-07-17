@@ -1,33 +1,31 @@
 <?php
 
-
 namespace Civi\Osdi\ActionNetwork;
 
 use Jsor\HalClient\HalResource;
 
 class OsdiPerson extends OsdiObject {
 
-  public function __construct(?HalResource $resource = null, ?array $initData = null) {
+  public function __construct(?HalResource $resource = NULL, ?array $initData = NULL) {
     parent::__construct('osdi:people', $resource, $initData);
   }
 
-  public function getEmailAddress(): string
-  {
-      return $this->get('email_addresses')[0]['address'];
+  public function getEmailAddress(): string {
+    return $this->get('email_addresses')[0]['address'];
   }
 
   public static function isValidField(string $name): bool {
     $validFields = [
-        'identifiers',
-        'created_date',
-        'modified_date',
-        'family_name',
-        'given_name',
-        'languages_spoken',
-        'postal_addresses',
-        'email_addresses',
-        'phone_numbers',
-        'custom_fields',
+      'identifiers',
+      'created_date',
+      'modified_date',
+      'family_name',
+      'given_name',
+      'languages_spoken',
+      'postal_addresses',
+      'email_addresses',
+      'phone_numbers',
+      'custom_fields',
     ];
     return in_array($name, $validFields);
   }
