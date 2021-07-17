@@ -15,7 +15,7 @@ class CRM_OSDI_FixtureHttpClient implements HttpClientInterface
 
     public static function resetHistory()
     {
-        $fixtureDir = __DIR__ . '/fixtures/';
+        $fixtureDir = __DIR__ . '/Fixture/httpResponses/';
         $historyFile = $fixtureDir . 'history';
         if (file_exists($historyFile)) {
             unlink($historyFile);
@@ -24,7 +24,7 @@ class CRM_OSDI_FixtureHttpClient implements HttpClientInterface
 
     public function send(RequestInterface $request)
     {
-        $fixtureDir = __DIR__ . '/fixtures/';
+        $fixtureDir = __DIR__ . '/Fixture/httpResponses/';
         $historyFile = $fixtureDir . 'history';
         $headers = $this->getRelevantHeaders($request);
         $request = $this->withPersistableBody($request);
