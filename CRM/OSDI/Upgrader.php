@@ -11,11 +11,11 @@ class CRM_Osdi_Upgrader extends CRM_Osdi_Upgrader_Base {
   /**
    * Example: Run an external SQL script when the module is installed.
    *
-  public function install() {
-    $this->executeSqlFile('sql/myinstall.sql');
-  }
-
-  /**
+   * public function install() {
+   * $this->executeSqlFile('sql/myinstall.sql');
+   * }
+   *
+   * /**
    * Example: Work with entities usually not available during the install step.
    *
    * This method can be used for any post-install tasks. For example, if a step

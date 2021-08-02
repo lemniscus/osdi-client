@@ -12,6 +12,8 @@ interface RemoteObjectInterface {
 
   public function getId(): ?string;
 
+  public function setId(string $id);
+
   /**
    * @param string|null $fieldName
    *
@@ -22,7 +24,6 @@ interface RemoteObjectInterface {
 
   /**
    * @param string|null $fieldName
-   *
    * @return mixed
    * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
@@ -30,7 +31,6 @@ interface RemoteObjectInterface {
 
   /**
    * @param string $fieldName
-   *
    * @return mixed|null
    */
   public function getAltered(string $fieldName);
@@ -40,7 +40,6 @@ interface RemoteObjectInterface {
   /**
    * @param string $fieldName
    * @param mixed $val
-   *
    * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
   public function set(string $fieldName, $val);
@@ -48,14 +47,12 @@ interface RemoteObjectInterface {
   /**
    * @param string $fieldName
    * @param mixed $val
-   *
    * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
   public function appendTo(string $fieldName, $val);
 
   /**
    * @param string $fieldName
-   *
    * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
   public function clearField(string $fieldName);

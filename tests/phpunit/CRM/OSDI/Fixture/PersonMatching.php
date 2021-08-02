@@ -95,7 +95,7 @@ class CRM_OSDI_Fixture_PersonMatching {
 
   public static function setUpLocalAndRemotePeople_SameName_DifferentEmail($system) {
     $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
-    $savedRemotePerson = $system->savePerson($unsavedRemotePerson);
+    $savedRemotePerson = $system->save($unsavedRemotePerson);
     $emailAddress = $savedRemotePerson->getEmailAddress();
 
     $differentEmailAddress = "fuzzityfizz.$emailAddress";
@@ -107,7 +107,6 @@ class CRM_OSDI_Fixture_PersonMatching {
     return [$contactId, $savedRemotePerson];
   }
 
-
   public static function makeNewOsdiPersonWithFirstLastEmail(): \Civi\Osdi\RemoteObjectInterface {
     $unsavedNewPerson = self::makeBlankOsdiPerson();
     $unsavedNewPerson->set('given_name', 'Testy');
@@ -116,30 +115,50 @@ class CRM_OSDI_Fixture_PersonMatching {
     return $unsavedNewPerson;
   }
 
-  public static function setUpRemotePerson_TwoLocalContactsMatchingByEmail_OneAlsoMatchingByName($system): array {
+  public static function setUpExactlyOneMatchByEmailAndName(\Civi\Osdi\RemoteSystemInterface $system): array {
     $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
-    $savedRemotePerson = $system->savePerson($unsavedRemotePerson);
+    $savedRemotePerson = $system->save($unsavedRemotePerson);
 
     $emailAddress = $savedRemotePerson->getEmailAddress();
-    TestCase::assertNotEmpty($emailAddress);
-
     $firstName = $savedRemotePerson->get('given_name');
     $lastName = $savedRemotePerson->get('family_name');
-    TestCase::assertNotEquals($firstName, 'foo');
+
+    TestCase::assertNotEmpty($emailAddress);
+    TestCase::assertNotEmpty($firstName);
+    TestCase::assertNotEmpty($lastName);
 
     $idOfMatchingContact = self::civiApi4CreateContact(
       $firstName,
       $lastName,
       $emailAddress
     )->first()['id'];
+
+    $localContactsWithTheEmailAndName = \Civi\Api4\Contact::get()
+      ->addJoin('Email AS email', 'LEFT')
+      ->addWhere('first_name', '=', $firstName)
+      ->addWhere('last_name', '=', $lastName)
+      ->addWhere('email.email', '=', $emailAddress)
+      ->execute();
+
+    TestCase::assertEquals(1, $localContactsWithTheEmailAndName->count());
+
+    return [$savedRemotePerson, $idOfMatchingContact];
+  }
+
+  public static function setUpRemotePerson_TwoLocalContactsMatchingByEmail_OneAlsoMatchingByName($system): array {
+    [$savedRemotePerson, $idOfMatchingContact] = self::setUpExactlyOneMatchByEmailAndName($system);
+
+    $emailAddress = $savedRemotePerson->getEmailAddress();
+
     $idOf_Non_MatchingContact = self::civiApi4CreateContact(
-      'foo',
+      "{$savedRemotePerson->get('given_name')} with some extra",
       'foo',
       $emailAddress
     )->first()['id'];
 
     $civiContactsWithSameEmail = self::civiApi4GetContactByEmail($emailAddress);
     TestCase::assertGreaterThan(1, $civiContactsWithSameEmail->count());
+
     return [
       $savedRemotePerson,
       $idOfMatchingContact,
@@ -152,7 +171,7 @@ class CRM_OSDI_Fixture_PersonMatching {
    */
   public static function setUpExactlyOneMatchByEmail_DifferentNames($system): array {
     $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
-    $savedRemotePerson = $system->savePerson($unsavedRemotePerson);
+    $savedRemotePerson = $system->save($unsavedRemotePerson);
     $emailAddress = $savedRemotePerson->getEmailAddress();
     TestCase::assertNotEmpty($emailAddress);
     $contactId = self::civiApi4CreateContact('Fizz', 'Bang', $emailAddress)
@@ -164,7 +183,7 @@ class CRM_OSDI_Fixture_PersonMatching {
 
   public static function setUpRemotePerson_TwoLocalContactsMatchingByEmail_NeitherMatchingByName($system): array {
     $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
-    $savedRemotePerson = $system->savePerson($unsavedRemotePerson);
+    $savedRemotePerson = $system->save($unsavedRemotePerson);
 
     $emailAddress = $savedRemotePerson->getEmailAddress();
     TestCase::assertNotEmpty($emailAddress);

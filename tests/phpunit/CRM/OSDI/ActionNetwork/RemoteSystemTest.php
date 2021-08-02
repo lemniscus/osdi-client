@@ -1,6 +1,5 @@
 <?php
 
-use CRM_OSDI_ExtensionUtil as E;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
@@ -51,11 +50,12 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
    * @return \Civi\Osdi\ActionNetwork\OsdiPerson
    * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
-  private function makeNewOsdiPersonWithFirstLastEmail(): \Civi\Osdi\ActionNetwork\OsdiPerson {
+  private function makeNewOsdiPersonWithFirstLastEmailPhone(): \Civi\Osdi\ActionNetwork\OsdiPerson {
     $unsavedNewPerson = $this->makeBlankOsdiPerson();
     $unsavedNewPerson->set('given_name', 'Testy');
     $unsavedNewPerson->set('family_name', 'McTest');
     $unsavedNewPerson->set('email_addresses', [['address' => 'testy@test.net']]);
+    $unsavedNewPerson->set('phone_numbers', [['number' => '12025551212']]);
     return $unsavedNewPerson;
   }
 
@@ -72,7 +72,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $system = $this->createRemoteSystem();
 
     // CREATE
-    $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmail();
+    $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
     $this->assertNull($unsavedNewPerson->getId());
     $savedPerson = $system->save($unsavedNewPerson);
     $savedPersonId = $savedPerson->getId();
@@ -80,7 +80,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
 
     // READ
     $fetchedOsdiPerson = $system->fetchPersonById($savedPersonId);
-    $fetchedEmailAddresses = $fetchedOsdiPerson->getOriginal('email_addresses');
+    $fetchedEmailAddresses = $fetchedOsdiPerson->get('email_addresses');
     $this->assertEquals('testy@test.net', $fetchedEmailAddresses[0]['address']);
   }
 
@@ -88,37 +88,80 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $system = $this->createRemoteSystem();
 
     // CREATE
-    $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmail();
-    $savedPerson = $system->savePerson($unsavedNewPerson);
+    $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
+    $savedPerson = $system->save($unsavedNewPerson);
 
     // UPDATE (SET)
     $savedPerson->set('family_name', 'Testerson');
-    $reSavedOsdiPerson = $system->savePerson($savedPerson);
+    $reSavedOsdiPerson = $system->save($savedPerson);
     $this->assertEquals(
-      'Testerson', $reSavedOsdiPerson->getOriginal('family_name'));
+      'Testerson', $reSavedOsdiPerson->get('family_name'));
 
     // clean up
-    $system->savePerson($unsavedNewPerson);
+    $system->save($unsavedNewPerson);
   }
 
   public function testPersonCreate_Append() {
+    self::markTestSkipped('In Action Network, the only multivalue field is also '
+    . 'subject to uniqueness constraints, so is difficult to test using mocks.');
+
     $system = $this->createRemoteSystem();
 
     // CREATE
-    $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmail();
-    $savedPerson = $system->savePerson($unsavedNewPerson);
+    $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
+    $savedPerson = $system->save($unsavedNewPerson);
 
     // UPDATE (APPEND)
     $savedPerson->appendTo('identifiers', 'donuts:yumyumyum');
-    $reSavedOsdiPerson = $system->savePerson($savedPerson);
+    $reSavedOsdiPerson = $system->save($savedPerson);
     $this->assertContains(
       'donuts:yumyumyum',
-      $reSavedOsdiPerson->getOriginal('identifiers'));
+      $reSavedOsdiPerson->get('identifiers'));
 
     // TRY TO APPEND TO A NON-APPENDABLE FIELD
     $this->expectException(\Civi\Osdi\Exception\InvalidArgumentException::class);
     $this->expectExceptionMessage('Cannot append value to single-value field: "email_addresses"');
     $savedPerson->appendTo('email_addresses', [['address' => 'second@te.st']]);
+  }
+
+  public function testPersonCreate_PseudoDelete() {
+    $system = $this->createRemoteSystem();
+
+    // CREATE
+    $unsavedPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
+    /** @var \Civi\Osdi\ActionNetwork\OsdiPerson $savedPerson */
+    $savedPerson = $system->save($unsavedPerson);
+    $savedPersonUrl = $savedPerson->getOwnUrl($system);
+    $savedPersonEmail = $savedPerson->getEmailAddress();
+
+    // DELETE
+    $system->delete($savedPerson);
+    $fetchedPerson = $system->fetchObjectByUrl('osdi:people', $savedPersonUrl);
+    $fieldDefaults = [
+      ['given_name', NULL],
+      ['family_name', NULL],
+      ['languages_spoken', ['en']],
+      ['postal_addresses', 0, 'address_lines', 0, NULL],
+      ['email_addresses', 0, 'status', 'unsubscribed'],
+      ['email_addresses', 0, 'address', $savedPersonEmail],
+      ['phone_numbers', 0, 'status', 'unsubscribed'],
+      ['phone_numbers', 0, 'number', $savedPerson->get('phone_numbers')[0]['number']],
+    ];
+    foreach ($fieldDefaults as $x) {
+      $fieldName = array_shift($x);
+      $defaultValue = array_pop($x);
+      self::assertEquals(
+        $defaultValue,
+        \CRM_Utils_Array::pathGet($fetchedPerson->get($fieldName), $x),
+        "$fieldName: " . var_export($fetchedPerson->get($fieldName), TRUE)
+      );
+    }
+
+    $remotePeopleWithTheEmail = $system->find(
+      'osdi:people',
+      [['email', 'eq', $savedPersonEmail]]);
+
+    self::assertEquals(0, $remotePeopleWithTheEmail->currentCount());
   }
 
   public function testPersonCreate_FindByEmail() {
@@ -127,7 +170,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     // CREATE
     $unsavedNewPerson = $this->makeBlankOsdiPerson();
     $unsavedNewPerson->set('email_addresses', [['address' => 'testy@test.net']]);
-    $savedPerson = $system->savePerson($unsavedNewPerson);
+    $savedPerson = $system->save($unsavedNewPerson);
     $savedPersonId = $savedPerson->getId();
 
     // FIND
@@ -150,9 +193,9 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $system = $this->createRemoteSystem();
 
     // CREATE
-    $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmail();
-    $savedPerson = $system->savePerson($unsavedNewPerson);
-    $familyName = $savedPerson->getOriginal('family_name');
+    $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
+    $savedPerson = $system->save($unsavedNewPerson);
+    $familyName = $savedPerson->get('family_name');
     $abbreviatedFamilyName = substr($familyName, 0, 4);
     $this->assertNotEquals($abbreviatedFamilyName, $familyName);
 
@@ -166,7 +209,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     ]);
     /** @var \Civi\Osdi\ActionNetwork\OsdiPerson $foundPerson */
     foreach ($searchResults->toArray() as $foundPerson) {
-      $this->assertEquals($familyName, $foundPerson->getOriginal('family_name'));
+      $this->assertEquals($familyName, $foundPerson->get('family_name'));
     }
 
     $searchResults = $system->find('osdi:people', [
@@ -177,7 +220,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
       ],
     ]);
     foreach ($searchResults->toArray() as $foundPerson) {
-      $this->assertEquals($abbreviatedFamilyName, $foundPerson->getOriginal('family_name'));
+      $this->assertEquals($abbreviatedFamilyName, $foundPerson->get('family_name'));
     }
   }
 
@@ -185,11 +228,11 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $system = $this->createRemoteSystem();
 
     // CREATE
-    $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmail();
-    $savedPerson = $system->savePerson($unsavedNewPerson);
+    $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
+    $savedPerson = $system->save($unsavedNewPerson);
     $savedPersonId = $savedPerson->getId();
-    $givenName = $savedPerson->getOriginal('given_name');
-    $familyName = $savedPerson->getOriginal('family_name');
+    $givenName = $savedPerson->get('given_name');
+    $familyName = $savedPerson->get('family_name');
 
     // FIND
     $searchResults = $system->find('osdi:people',
@@ -216,20 +259,20 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $unsavedNewPerson3 = $this->makeBlankOsdiPerson();
     $unsavedNewPerson3->set('email_addresses', [['address' => 'third@test.net']]);
 
-    $savedPerson1 = $system->savePerson($unsavedNewPerson1);
-    $savedPerson1ModTime = $savedPerson1->getOriginal('modified_date');
+    $savedPerson1 = $system->save($unsavedNewPerson1);
+    $savedPerson1ModTime = $savedPerson1->get('modified_date');
     if (time() - strtotime($savedPerson1ModTime) < 2) {
       sleep(1);
     }
 
-    $savedPerson2 = $system->savePerson($unsavedNewPerson2);
-    $savedPerson2ModTime = $savedPerson2->getOriginal('modified_date');
+    $savedPerson2 = $system->save($unsavedNewPerson2);
+    $savedPerson2ModTime = $savedPerson2->get('modified_date');
     if (time() - strtotime($savedPerson2ModTime < 2)) {
       sleep(1);
     }
 
-    $savedPerson3 = $system->savePerson($unsavedNewPerson3);
-    $savedPerson3ModTime = $savedPerson3->getOriginal('modified_date');
+    $savedPerson3 = $system->save($unsavedNewPerson3);
+    $savedPerson3ModTime = $savedPerson3->get('modified_date');
 
     // FIND
     $searchResults = $system->find('osdi:people', [
@@ -243,7 +286,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     foreach ($searchResults->toArray() as $foundPerson) {
       $this->assertLessThan(
         strtotime($savedPerson2ModTime),
-        strtotime($foundPerson->getOriginal('modified_date')));
+        strtotime($foundPerson->get('modified_date')));
       $resultIds[] = $foundPerson->getId();
     }
     $this->assertContains($savedPerson1->getId(), $resultIds);
@@ -258,7 +301,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     foreach ($searchResults->toArray() as $foundPerson) {
       $this->assertGreaterThan(
         strtotime($savedPerson2ModTime),
-        strtotime($foundPerson->getOriginal('modified_date')));
+        strtotime($foundPerson->get('modified_date')));
       $resultIds[] = $foundPerson->getId();
     }
     $this->assertContains($savedPerson3->getId(), $resultIds);
@@ -293,7 +336,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
 
     // READ
     $fetchedOsdiTag = $system->fetchById('osdi:tags', $savedTagId);
-    $this->assertEquals('Tagalina', $fetchedOsdiTag->getOriginal('name'));
+    $this->assertEquals('Tagalina', $fetchedOsdiTag->get('name'));
   }
 
   public function testTaggingCreate_FetchComponents() {
@@ -304,7 +347,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $unsavedTag->set('name', 'Tagalina');
     $savedTag = $system->save($unsavedTag);
 
-    $unsavedPerson = $this->makeNewOsdiPersonWithFirstLastEmail();
+    $unsavedPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
     /** @var \Civi\Osdi\ActionNetwork\OsdiPerson $savedPerson */
     $savedPerson = $system->save($unsavedPerson);
 
@@ -329,7 +372,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $unsavedTag->set('name', 'Tagalina');
     $savedTag = $system->save($unsavedTag);
 
-    $unsavedPerson = $this->makeNewOsdiPersonWithFirstLastEmail();
+    $unsavedPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
     /** @var \Civi\Osdi\ActionNetwork\OsdiPerson $savedPerson */
     $savedPerson = $system->save($unsavedPerson);
 

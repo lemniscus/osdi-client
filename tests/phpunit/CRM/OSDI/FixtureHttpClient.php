@@ -41,16 +41,16 @@ class CRM_OSDI_FixtureHttpClient implements HttpClientInterface {
     if (file_exists($cacheFile)) {
       $rawRecord = file($cacheFile, FILE_IGNORE_NEW_LINES);
       $responseArr = json_decode(array_pop($rawRecord), TRUE);
-      file_put_contents($historyFile, join("\n", $history));
+      file_put_contents($historyFile, implode("\n", $history));
       return $this->thawResponse($responseArr);
     }
 
     $rawResponse = $this->homunculus->send($request);
-    file_put_contents($historyFile, join("\n", $history));
+    file_put_contents($historyFile, implode("\n", $history));
     $persistableResponse = $this->freezeResponse($rawResponse);
     $recordToWrite = $history;
     array_push($recordToWrite, json_encode($persistableResponse));
-    file_put_contents($cacheFile, join($recordToWrite, "\n"));
+    file_put_contents($cacheFile, implode($recordToWrite, "\n"));
 
     return $this->thawResponse($persistableResponse);
   }

@@ -99,4 +99,8 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     // TODO: Implement makeOsdiObject() method.
   }
 
+  public function getEntryPoint(): string {
+    // TODO: Implement getEntryPoint() method.
+  }
+
 }

@@ -22,13 +22,13 @@ class Example {
   }
 
   public function mapContactOntoRemotePerson(int $id, OsdiPerson $remotePerson = NULL): OsdiPerson {
-    $c = $this->civiApi4GetSingleContactById($id);
+    $c = $this->getSingleCiviContactById($id);
     if (is_null($remotePerson)) {
       $remotePerson = new OsdiPerson();
     }
     $remotePerson->set('given_name', $c['first_name']);
     $remotePerson->set('family_name', $c['last_name']);
-    if (isset($c['address.state_province_id:abbreviation'])) {
+    if (isset($c['address.postal_code'])) {
       $remotePerson->set('postal_addresses', [
         [
           'address_lines' => [$c['address.street_address']],
@@ -101,7 +101,7 @@ class Example {
     return $apiAction;
   }
 
-  private function civiApi4GetSingleContactById($id): array {
+  private function getSingleCiviContactById($id): array {
     $result = Contact::get(FALSE)
       ->addJoin('Email AS email', FALSE, NULL, ['email.is_primary', '=', 1])
       ->addJoin('Phone AS phone', FALSE, NULL, [
@@ -134,6 +134,7 @@ class Example {
       ])
       ->execute();
     $result = $result->single();
+    $result['address.state_province_id:abbreviation'] = NULL;
     if (isset($result['address.state_province_id'])) {
       $abbreviation = $this->getAbbreviatedState($result);
       $result['address.state_province_id:abbreviation'] = $abbreviation;

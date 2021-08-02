@@ -6,26 +6,25 @@ use Civi\Osdi\Exception\EmptyResultException;
 use Jsor\HalClient\HalResource;
 
 class ResultCollection {
-
   /**
    * @var string
    */
-  private $type;
+  protected $type;
 
   /**
-   * @var array
+   * @var \Jsor\HalClient\HalResource[]
    */
-  private $pages = [];
+  protected $pages = [];
 
   /**
    * @var int
    */
-  private $resultCount;
+  protected $resultCount;
 
   /**
    * @var RemoteSystemInterface
    */
-  private $system;
+  protected $system;
 
   public function __construct(RemoteSystemInterface $system, string $type, HalResource $resource) {
     $this->system = $system;
@@ -34,7 +33,7 @@ class ResultCollection {
   }
 
   /**
-   * @return \Jsor\HalClient\HalResource[]
+   * @return \Civi\Osdi\RemoteObjectInterface[]
    */
   public function toArray(): array {
     foreach ($this->pages as $page) {
@@ -70,16 +69,20 @@ class ResultCollection {
     return $result;
   }
 
-  private function addPage(HalResource $pageResource) {
+  protected function addPage(HalResource $pageResource) {
     if (!is_numeric($pageNum = $pageResource->getProperty('page'))) {
       return;
     }
     $this->pages[$pageNum] = $pageResource;
     try {
-      $this->resultCount += count($pageResource->getResource($this->type));
+      $this->resultCount += $this->filteredCount($pageResource->getResource($this->type));
     }
     catch (\Throwable $e) {
     }
+  }
+
+  protected function filteredCount(array $resources): int {
+    return count($resources);
   }
 
 }
