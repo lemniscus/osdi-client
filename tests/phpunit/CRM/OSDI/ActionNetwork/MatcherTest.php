@@ -99,7 +99,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
 
   public function testRemoteMatch_NoEmail() {
     $unsavedRemotePerson = F::makeNewOsdiPersonWithFirstLastEmail();
-    $this->system->savePerson($unsavedRemotePerson);
+    $this->system->save($unsavedRemotePerson);
     $contactArr = F::civiApi4CreateContact('Testy', 'McTest')->first();
     $contactId = $contactArr['id'];
 

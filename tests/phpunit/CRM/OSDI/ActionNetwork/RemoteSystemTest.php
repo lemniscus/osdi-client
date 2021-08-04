@@ -14,6 +14,11 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     HookInterface,
     TransactionalInterface {
 
+  /**
+   * @var \Civi\Osdi\ActionNetwork\OsdiPerson[]
+   */
+  private $createdPeople = [];
+
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
     // See: https://docs.civicrm.org/dev/en/latest/testing/phpunit/#civitest
@@ -28,6 +33,11 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function tearDown(): void {
+    $system = $this->createRemoteSystem();
+    while ($person = array_pop($this->createdPeople)) {
+      $system->delete($person);
+    }
+
     parent::tearDown();
   }
 
@@ -74,7 +84,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     // CREATE
     $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
     $this->assertNull($unsavedNewPerson->getId());
-    $savedPerson = $system->save($unsavedNewPerson);
+    $this->createdPeople[] = $savedPerson = $system->save($unsavedNewPerson);
     $savedPersonId = $savedPerson->getId();
     $this->assertNotNull($savedPersonId);
 
@@ -89,7 +99,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
 
     // CREATE
     $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
-    $savedPerson = $system->save($unsavedNewPerson);
+    $this->createdPeople[] = $savedPerson = $system->save($unsavedNewPerson);
 
     // UPDATE (SET)
     $savedPerson->set('family_name', 'Testerson');
@@ -109,7 +119,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
 
     // CREATE
     $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
-    $savedPerson = $system->save($unsavedNewPerson);
+    $this->createdPeople[] = $savedPerson = $system->save($unsavedNewPerson);
 
     // UPDATE (APPEND)
     $savedPerson->appendTo('identifiers', 'donuts:yumyumyum');
@@ -170,7 +180,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     // CREATE
     $unsavedNewPerson = $this->makeBlankOsdiPerson();
     $unsavedNewPerson->set('email_addresses', [['address' => 'testy@test.net']]);
-    $savedPerson = $system->save($unsavedNewPerson);
+    $this->createdPeople[] = $savedPerson = $system->save($unsavedNewPerson);
     $savedPersonId = $savedPerson->getId();
 
     // FIND
@@ -194,10 +204,16 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
 
     // CREATE
     $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
-    $savedPerson = $system->save($unsavedNewPerson);
-    $familyName = $savedPerson->get('family_name');
+    $this->createdPeople[] = $savedPerson1 = $system->save($unsavedNewPerson);
+
+    $otherEmail = 'different' . $savedPerson1->getEmailAddress();
+    $familyName = $savedPerson1->get('family_name');
     $abbreviatedFamilyName = substr($familyName, 0, 4);
     $this->assertNotEquals($abbreviatedFamilyName, $familyName);
+
+    $unsavedNewPerson->set('family_name', $abbreviatedFamilyName);
+    $unsavedNewPerson->set('email_addresses', [['address' => $otherEmail]]);
+    $this->createdPeople[] = $savedPerson2 = $system->save($unsavedNewPerson);
 
     // FIND
     $searchResults = $system->find('osdi:people', [
@@ -207,7 +223,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
         $familyName,
       ],
     ]);
-    /** @var \Civi\Osdi\ActionNetwork\OsdiPerson $foundPerson */
+    self::assertGreaterThan(0, $searchResults->currentCount());
     foreach ($searchResults->toArray() as $foundPerson) {
       $this->assertEquals($familyName, $foundPerson->get('family_name'));
     }
@@ -219,6 +235,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
         $abbreviatedFamilyName,
       ],
     ]);
+    self::assertGreaterThan(0, $searchResults->currentCount());
     foreach ($searchResults->toArray() as $foundPerson) {
       $this->assertEquals($abbreviatedFamilyName, $foundPerson->get('family_name'));
     }
@@ -229,7 +246,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
 
     // CREATE
     $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
-    $savedPerson = $system->save($unsavedNewPerson);
+    $this->createdPeople[] = $savedPerson = $system->save($unsavedNewPerson);
     $savedPersonId = $savedPerson->getId();
     $givenName = $savedPerson->get('given_name');
     $familyName = $savedPerson->get('family_name');
@@ -245,7 +262,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
         return $foundPerson->getId();
       },
       $searchResults->toArray());
-    $this->assertContains($savedPersonId, $resultIds);
+    $this->assertContains($savedPersonId, $resultIds, print_r($resultIds, TRUE));
   }
 
   public function testPersonCreate_FindByDateModified() {
