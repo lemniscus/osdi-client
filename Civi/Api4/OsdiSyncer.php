@@ -4,8 +4,15 @@ namespace Civi\Api4;
 
 class OsdiSyncer extends Generic\AbstractEntity {
 
-  public static function getFields() {
-    // TODO: Implement getFields() method.
+  public static function getFields($checkPermissions = TRUE) {
+    $action = new Generic\BasicGetFieldsAction(
+      'OAuthProvider',
+      __FUNCTION__,
+      function () {
+        return [];
+      }
+    );
+    return $action->setCheckPermissions($checkPermissions);
   }
 
   public static function permissions() {

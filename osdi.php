@@ -12,6 +12,18 @@ require_once __DIR__ . DIRECTORY_SEPARATOR
     . 'autoload.php';
 
 /**
+ * Implements hook_civicrm_searchKitTasks().
+ */
+function osdi_civicrm_searchKitTasks(array &$tasks, bool $checkPermissions, ?int $userId) {
+  $tasks['Contact']['osdi-sync'] = [
+    'module' => 'osdiSearchTasks',
+    'title' => E::ts('Upload to Action Network'),
+    'icon' => 'fa-cloud-upload',
+    'uiDialog' => ['templateUrl' => '~/osdiSearchTasks/osdiSearchTaskSync.html'],
+  ];
+}
+
+/**
  * Implements hook_civicrm_config().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_config/

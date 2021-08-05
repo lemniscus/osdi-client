@@ -1,0 +1,21 @@
+<div id="bootstrap-theme">
+  <form ng-controller="osdiSearchTaskSync as $ctrl">
+    <p><strong>{{:: ts('Upload %1 contacts?', {1: model.ids.length}) }}</strong></p>
+    <hr />
+    <div ng-if="$ctrl.run" class="crm-search-task-progress">
+      <h5>{{:: ts('Uploading %1 contacts…', {1: model.ids.length}) }}</h5>
+      <crm-search-batch-runner entity="model.entity" action="Get" params="$ctrl.run" ids="model.ids" success="$ctrl.onSuccess()" error="$ctrl.onError()" ></crm-search-batch-runner>
+    </div>
+    <hr />
+    <div class="buttons text-right">
+      <button type="button" ng-click="$ctrl.cancel()" class="btn btn-danger" ng-hide="$ctrl.run">
+        <i class="crm-i fa-times"></i>
+        {{:: ts('Cancel') }}
+      </button>
+      <button ng-click="$ctrl.sync()" class="btn btn-primary" ng-disabled="$ctrl.run">
+        <i class="crm-i fa-{{ $ctrl.run ? 'spin fa-spinner' : 'cloud-upload' }}"></i>
+        {{:: ts('Upload') }}
+      </button>
+    </div>
+  </form>
+</div>
