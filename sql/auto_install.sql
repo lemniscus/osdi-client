@@ -41,12 +41,14 @@ CREATE TABLE `civicrm_osdi_match` (
   `sync_origin_modified_time` datetime DEFAULT NULL COMMENT 'Modification date and time of the origin record as of the last sync, in UTC',
   `sync_target_modified_time` datetime DEFAULT NULL COMMENT 'Modification date and time of the target record as of the last sync, in UTC',
   `sync_origin` tinyint DEFAULT NULL COMMENT '0 if local CiviCRM was the origin of the last sync, 1 if remote system was the origin',
+  `sync_status` varchar(255) DEFAULT NULL COMMENT 'Status of the last sync',
   PRIMARY KEY (`id`),
   INDEX `index_contact_id`(contact_id),
   INDEX `index_sync_profile_id`(sync_profile_id),
   INDEX `index_remote_person_id`(remote_person_id),
   INDEX `index_sync_origin_modified_time`(sync_origin_modified_time),
   INDEX `index_sync_target_modified_time`(sync_target_modified_time),
+  INDEX `index_sync_status`(sync_status),
   CONSTRAINT FK_civicrm_osdi_match_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE CASCADE,
   CONSTRAINT FK_civicrm_osdi_match_sync_profile_id FOREIGN KEY (`sync_profile_id`) REFERENCES `civicrm_osdi_sync_profile`(`id`) ON DELETE CASCADE
 )

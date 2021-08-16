@@ -184,6 +184,10 @@ class OsdiObject implements RemoteObjectInterface {
     $this->editedFields[$fieldName] = TRUE;
   }
 
+  public static function getValidFields(): array {
+    return [];
+  }
+
   public static function isValidField(string $name): bool {
     return TRUE;
   }
@@ -216,6 +220,46 @@ class OsdiObject implements RemoteObjectInterface {
 
   public function isEdited(string $fieldName): bool {
     return $this->editedFields[$fieldName] ?? FALSE;
+  }
+
+  public function isSupersetOf(RemoteObjectInterface $otherObject): bool {
+    $recursiveCompare = function($smallSet, $bigSet) use (&$recursiveCompare) {
+      if (!is_array($smallSet) && !is_array($bigSet)) {
+        return $smallSet === $bigSet;
+      }
+      if (!is_array($smallSet) || !is_array($bigSet)) {
+        return FALSE;
+      }
+      foreach ($smallSet as $key => $value) {
+        if (!$recursiveCompare($smallSet[$key], $bigSet[$key] ?? NULL)) {
+          return FALSE;
+        }
+      }
+      return TRUE;
+    };
+
+    return $recursiveCompare($otherObject->toArray(), $this->toArray());
+  }
+
+  public function toArray(): array {
+    $merge = function (array &$array1, array &$array2) use (&$merge) {
+      $merged = $array1;
+
+      foreach ($array2 as $key => &$value) {
+        if (is_array($value) && isset($merged[$key]) && is_array($merged[$key])) {
+          $merged[$key] = $merge($merged[$key], $value);
+        }
+        else {
+          $merged[$key] = $value;
+        }
+      }
+
+      return $merged;
+    };
+
+    $originalData = $this->resource ? $this->resource->getProperties() : [];
+    $alteredData = $this->alteredData ?? [];
+    return $merge($originalData, $alteredData);
   }
 
 }

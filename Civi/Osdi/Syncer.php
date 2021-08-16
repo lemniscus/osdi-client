@@ -2,6 +2,7 @@
 
 namespace Civi\Osdi;
 
+use CRM_Osdi_ExtensionUtil as E;
 use Civi\Api4\Email;
 use Civi\Api4\OsdiMatch;
 use Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail;
@@ -82,17 +83,33 @@ class Syncer {
   }
 
   public function getSavedMatchForLocalContact(int $contactId): array {
-    return OsdiMatch::get(FALSE)
+    $osdiMatchGet = OsdiMatch::get(FALSE)
       ->addWhere('contact_id', '=', $contactId)
       ->addWhere('sync_profile_id', '=', $this->syncProfile['id'])
-      ->execute()->first() ?? [];
+      ->execute();
+    if ($osdiMatchGet->count() > 1) {
+      throw new \CRM_Core_Exception(E::ts(
+        'There should only be one OsdiMatch per contact_id and '
+        . 'sync_profile_id, %1 found',
+        [1 => $osdiMatchGet->count()]
+      ));
+    }
+    return $osdiMatchGet->first() ?? [];
   }
 
   public function getSavedMatchForRemotePerson(RemoteObjectInterface $remotePerson): array {
-    return OsdiMatch::get(FALSE)
+    $osdiMatchGet = OsdiMatch::get(FALSE)
       ->addWhere('remote_person_id', '=', $remotePerson->getId())
       ->addWhere('sync_profile_id', '=', $this->syncProfile['id'])
-      ->execute()->first() ?? [];
+      ->execute();
+    if ($osdiMatchGet->count() > 1) {
+      throw new \CRM_Core_Exception(E::ts(
+        'There should only be one OsdiMatch per remote_person_id and '
+        . 'sync_profile_id, %1 found',
+        [1 => $osdiMatchGet->count()]
+      ));
+    }
+    return $osdiMatchGet->first() ?? [];
   }
 
   public function findRemoteMatchForLocalContact(int $contactId): MatchResult {
@@ -104,15 +121,36 @@ class Syncer {
   }
 
   public function syncContact($id) {
-    $matchingRemotePeople = $this->findRemoteMatchForLocalContact($id);
-    if (0 === $matchingRemotePeople->count()) {
-      $person = $this->getRemoteSystem()->makeOsdiObject('osdi:people');
+    $savedMatch = $this->getSavedMatchForLocalContact($id);
+    if (empty($savedMatch)) {
+      $matchingRemotePeople = $this->findRemoteMatchForLocalContact($id);
+      if (0 === $matchingRemotePeople->count()) {
+        $person = $this->getRemoteSystem()->makeOsdiObject('osdi:people');
+      }
+      elseif (1 === $matchingRemotePeople->count()) {
+        $person = $matchingRemotePeople->first();
+      }
     }
-    elseif (1 === $matchingRemotePeople->count()) {
-      $person = $matchingRemotePeople->first();
+    else {
+      $person = $this->getRemoteSystem()->makeOsdiObject('osdi:people');
+      $person->setId($savedMatch['remote_person_id']);
     }
     $changedPerson = $this->getMapper()->mapContactOntoRemotePerson($id, $person);
-    $this->getRemoteSystem()->save($changedPerson);
+    $saveResult = $this->getRemoteSystem()->trySave($changedPerson);
+    $remotePerson = $saveResult->object();
+    OsdiMatch::save(FALSE)
+      ->setRecords([
+        [
+          'id' => $savedMatch['id'] ?? NULL,
+          'contact_id' => $id,
+          'remote_person_id' => $remotePerson ? $remotePerson->getId() : NULL,
+          'sync_profile_id' => $this->syncProfile['id'],
+          'sync_status' => $saveResult->status(),
+        ],
+      ])->execute();
+    if ($saveResult->isError()) {
+      return FALSE;
+    }
   }
 
   public function syncRemotePerson(RemoteObjectInterface $person) {

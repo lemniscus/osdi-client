@@ -4,6 +4,8 @@ namespace Civi\Osdi;
 
 interface RemoteObjectInterface {
 
+  public static function getValidFields(): array;
+
   public function getNamespace(): string;
 
   public function getType(): string;
@@ -60,5 +62,7 @@ interface RemoteObjectInterface {
   public function getFieldsToClearBeforeWriting(): array;
 
   public function isEdited(string $fieldName): bool;
+
+  public function isSupersetOf(RemoteObjectInterface $otherObject): bool;
 
 }

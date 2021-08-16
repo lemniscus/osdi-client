@@ -23,4 +23,6 @@ interface RemoteSystemInterface {
 
   public function delete(\Civi\Osdi\RemoteObjectInterface $osdiObject);
 
+  public function trySave(RemoteObjectInterface $objectToSave): \Civi\Osdi\SaveResult;
+
 }

@@ -69,7 +69,7 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
       'osdi:people',
       [['email', 'eq', 'traveler@antique.land']]);
 
-    self::assertEquals(0, $remotePeopleWithTheEmail->currentCount());
+    self::assertEquals(0, $remotePeopleWithTheEmail->filteredCurrentCount());
 
     $savedPerson->set(
       'email_addresses',
@@ -86,7 +86,7 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
       'osdi:people',
       [['email', 'eq', 'traveler@antique.land']]);
 
-    self::assertEquals(1, $remotePeopleWithTheEmail->currentCount());
+    self::assertEquals(1, $remotePeopleWithTheEmail->filteredCurrentCount());
   }
 
   public function testFirst() {
@@ -138,7 +138,7 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
       'osdi:people',
       [['given_name', 'eq', 'Thing']]);
 
-    $first = $remotePeopleWithTheName->first();
+    $first = $remotePeopleWithTheName->filteredFirst();
 
     self::assertEquals('One', $first->get('family_name'));
 
@@ -154,7 +154,7 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
       'osdi:people',
       [['given_name', 'eq', 'Thing']]);
 
-    $first = $remotePeopleWithTheName->first();
+    $first = $remotePeopleWithTheName->filteredFirst();
 
     self::assertEquals('Two', $first->get('family_name'));
 

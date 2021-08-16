@@ -49,7 +49,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
     $client = new Jsor\HalClient\HalClient(
       'https://actionnetwork.org/api/v2/', new CRM_OSDI_FixtureHttpClient()
     );
-    //$client = new Jsor\HalClient\HalClient('https://actionnetwork.org/api/v2/');
+    $client = new Jsor\HalClient\HalClient('https://actionnetwork.org/api/v2/');
     return new Civi\Osdi\ActionNetwork\RemoteSystem($systemProfile, $client);
   }
 

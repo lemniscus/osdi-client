@@ -3,9 +3,11 @@
 
 namespace Civi\Osdi\ActionNetwork;
 
+use CRM_Osdi_ExtensionUtil as E;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\RemoteObjectInterface;
+use Civi\Osdi\SaveResult;
 use Jsor\HalClient\Exception\BadResponseException;
 use Jsor\HalClient\HalClient;
 use Jsor\HalClient\HalClientInterface;
@@ -147,6 +149,71 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
   public function getPeopleUrl() {
     return $this->constructUrlFor('osdi:people', NULL);
+  }
+
+  public function trySave(RemoteObjectInterface $objectToSave): SaveResult {
+    $savedObject = $statusCode = $statusMessage = $context = NULL;
+
+    if ('osdi:people' === $objectToSave->getType()) {
+      [$statusCode, $statusMessage, $context] =
+        $this->checkForEmailAddressConflict($objectToSave);
+    }
+
+    if ($statusCode !== SaveResult::ERROR) {
+      try {
+        $savedObject = $this->save($objectToSave);
+        $statusCode = SaveResult::SUCCESS;
+      }
+
+      catch (InvalidArgumentException $e) {
+        $statusCode = SaveResult::ERROR;
+        $statusMessage = $e->getMessage();
+        $context = [
+          'object' => $objectToSave,
+          'errorData' => $e->getErrorData(),
+        ];
+      }
+    }
+
+    if ($savedObject && !$savedObject->isSupersetOf($objectToSave)) {
+      $statusCode = SaveResult::ERROR;
+      $statusMessage = E::ts(
+        'Some or all of the %1 object could not be saved.',
+        [1 => $objectToSave->getType()],
+      );
+      $context = [
+        'sent' => $objectToSave,
+        'response' => $savedObject,
+      ];
+    }
+
+    return new SaveResult($savedObject, $statusCode, $statusMessage, $context);
+  }
+
+  protected function checkForEmailAddressConflict(OsdiPerson $objectToSave): array {
+    if ($id = $objectToSave->getId()) {
+      $newEmail = $objectToSave->getAltered('email_addresses')[0]['address'] ?? NULL;
+
+      if ($newEmail) {
+        $criteria = [['email', 'eq', $newEmail]];
+        $peopleWithTheEmail = $this->find('osdi:people', $criteria);
+
+        if ($peopleWithTheEmail->rawCurrentCount()) {
+          if ($id !== $peopleWithTheEmail->rawFirst()->getId()) {
+            $statusCode = SaveResult::ERROR;
+            $statusMessage = E::ts('The person cannot be saved because '
+              . 'there is a record on Action Network with a the same '
+              . 'email address and a different ID.');
+            $context = [
+              'object' => $objectToSave,
+              'conflictingObject' => $peopleWithTheEmail->rawFirst(),
+            ];
+          }
+        }
+      }
+    }
+
+    return [$statusCode ?? NULL, $statusMessage ?? NULL, $context ?? NULL];
   }
 
   /**

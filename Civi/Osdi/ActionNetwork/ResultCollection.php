@@ -23,7 +23,7 @@ class ResultCollection extends \Civi\Osdi\ResultCollection {
     return $n;
   }
 
-  public function first(): RemoteObjectInterface {
+  public function filteredFirst(): RemoteObjectInterface {
     if ('osdi:people' !== $this->type) {
       return parent::first();
     }

@@ -180,11 +180,11 @@ class OneToOneEmailOrFirstLastEmail {
    * @throws AmbiguousResultException
    */
   private function makeSingleOrZeroMatchResult(ResultCollection $collection): MatchResult {
-    if (($count = $collection->currentCount()) > 1) {
+    if (($count = $collection->filteredCurrentCount()) > 1) {
       throw new AmbiguousResultException('At most one match expected, %d returned', $count);
     }
     try {
-      return new MatchResult([$collection->first()]);
+      return new MatchResult([$collection->filteredFirst()]);
     }
     catch (EmptyResultException $e) {
       return new MatchResult([], MatchResult::NO_MATCH, 'No match by email, first name and last name');

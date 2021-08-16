@@ -6,46 +6,53 @@ use Jsor\HalClient\HalResource;
 
 class OsdiPerson extends OsdiObject {
 
+  protected static $fieldsWithNullWorkarounds = [
+    'given_name' => [[]],
+    'family_name' => [[]],
+    //'email_addresses' => [[0, 'address']],
+    //'phone_numbers' => [[0, 'number']],
+    // see note at \Civi\Osdi\ActionNetwork\OsdiPerson::blank
+    'postal_addresses' => [[0, 'address_lines', 0], [0, 'postal_code']],
+  ];
+
   public function __construct(?HalResource $resource = NULL, ?array $initData = NULL) {
     parent::__construct('osdi:people', $resource, $initData);
   }
 
-  public function get(string $fieldName) {
-    $val = parent::get($fieldName);
-
-    $specialFields = [
-      'given_name' => [[]],
-      'family_name' => [[]],
-      //'email_addresses' => [[0, 'address']],
-      //'phone_numbers' => [[0, 'number']],
-      // see note at \Civi\Osdi\ActionNetwork\OsdiPerson::blank
-      'postal_addresses' => [[0, 'address_lines', 0], [0, 'postal_code']],
-    ];
-
-    if (!in_array($fieldName, array_keys($specialFields))) {
-      return $val;
-    }
-
-    foreach ($specialFields[$fieldName] as $path) {
-      if ("\xE2\x90\x80" === \CRM_Utils_Array::pathGet($val, $path)) {
-        if (is_array($val)) {
-          \CRM_Utils_Array::pathSet($val, $path, NULL);
+  protected static function restoreNulls($fieldName, $value) {
+    $replacementPaths = static::$fieldsWithNullWorkarounds[$fieldName] ?? [];
+    foreach ($replacementPaths as $path) {
+      if ("\xE2\x90\x80" === \CRM_Utils_Array::pathGet($value, $path)) {
+        if (is_array($value)) {
+          \CRM_Utils_Array::pathSet($value, $path, NULL);
         }
         else {
-          $val = NULL;
+          $value = NULL;
         }
       }
     }
+    return $value;
+  }
 
-    return $val;
+  public function get(string $fieldName) {
+    $val = parent::get($fieldName);
+    return self::restoreNulls($fieldName, $val);
+  }
+
+  public function toArray(): array {
+    $arr = parent::toArray();
+    foreach ($arr as $fieldName => $value) {
+      $arr[$fieldName] = self::restoreNulls($fieldName, $value);
+    }
+    return $arr;
   }
 
   public function getEmailAddress(): ?string {
     return $this->get('email_addresses')[0]['address'];
   }
 
-  public static function isValidField(string $name): bool {
-    $validFields = [
+  public static function getValidFields(): array {
+    return [
       'identifiers',
       'created_date',
       'modified_date',
@@ -57,7 +64,10 @@ class OsdiPerson extends OsdiObject {
       'phone_numbers',
       'custom_fields',
     ];
-    return in_array($name, $validFields);
+  }
+
+  public static function isValidField(string $name): bool {
+    return in_array($name, self::getValidFields());
   }
 
   public static function isMultipleValueField(string $name): bool {

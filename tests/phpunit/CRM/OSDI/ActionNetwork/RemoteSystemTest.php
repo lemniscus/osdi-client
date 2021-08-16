@@ -45,10 +45,10 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $systemProfile = new CRM_OSDI_BAO_SyncProfile();
     $systemProfile->entry_point = 'https://actionnetwork.org/api/v2/';
     $systemProfile->api_token = file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'apiToken');
-    $client = new Jsor\HalClient\HalClient(
-      'https://actionnetwork.org/api/v2/',
-      new CRM_OSDI_FixtureHttpClient());
-    //$client = new Jsor\HalClient\HalClient('https://actionnetwork.org/api/v2/');
+//    $client = new Jsor\HalClient\HalClient(
+//      'https://actionnetwork.org/api/v2/',
+//      new CRM_OSDI_FixtureHttpClient());
+    $client = new Jsor\HalClient\HalClient('https://actionnetwork.org/api/v2/');
     return new Civi\Osdi\ActionNetwork\RemoteSystem($systemProfile, $client);
   }
 
@@ -111,6 +111,115 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $system->save($unsavedNewPerson);
   }
 
+  public function testPersonEmailCannotBeChangedIfNewOneIsAlreadyTaken() {
+    $system = $this->createRemoteSystem();
+
+    // CREATE
+    $draftPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
+    $this->createdPeople[] = $savedPerson1 = $system->save($draftPerson);
+    $email1 = $savedPerson1->getEmailAddress();
+    $name1 = $savedPerson1->get('given_name');
+    self::assertNotNull($email1);
+
+    $email2 = "different-$email1";
+    $name2 = "Different $name1";
+    $draftPerson->set('email_addresses', [['address' => $email2]]);
+    $draftPerson->set('given_name', $name2);
+    $this->createdPeople[] = $savedPerson2 = $system->save($draftPerson);
+
+    // CHANGE EMAIL
+    $savedPerson2->set('email_addresses', [['address' => $email1]]);
+    $changedPerson2 = $system->save($savedPerson2);
+    self::assertEquals($email2,
+      $changedPerson2->getEmailAddress(),
+      'Email change should not have been successful');
+    self::assertEquals($name2,
+      $changedPerson2->get('given_name'),
+      'Name should not have changed either');
+  }
+
+  public function testPersonEmailCanBeChangedIfNewOneIsNotAlreadyTaken() {
+    $system = $this->createRemoteSystem();
+
+    // CREATE
+    $draftPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
+    $this->createdPeople[] = $savedPerson = $system->save($draftPerson);
+    $email1 = $savedPerson->getEmailAddress();
+    $name1 = $savedPerson->get('given_name');
+    self::assertNotNull($email1);
+
+    $email2 = "yet-another-$email1";
+    $name2 = "Different $name1";
+
+    $searchResults = $system->find('osdi:people', [
+      [
+        'email',
+        'eq',
+        $email2,
+      ],
+    ]);
+    $this->assertEquals(0,
+      $searchResults->filteredCurrentCount(),
+      'the new email address should not already be in use');
+
+
+    // CHANGE EMAIL
+    $savedPerson->set('email_addresses', [['address' => $email2]]);
+    $savedPerson->set('given_name', $name2);
+    $this->createdPeople[] = $changedPerson = $system->save($savedPerson);
+    $changedPersonEmail = $changedPerson->getEmailAddress();
+    $changedPersonName = $changedPerson->get('given_name');
+
+    // CLEAN UP BEFORE ASSERTING
+    $changedPerson->set('email_addresses', [['address' => $email1]]);
+    $system->save($changedPerson);
+
+    self::assertEquals($email2,
+      $changedPersonEmail,
+      'Email change should work because there is no address conflict');
+
+    self::assertEquals($name2,
+      $changedPersonName,
+      'Name should have changed too');
+
+  }
+
+  public function testTrySaveSuccess() {
+    $system = $this->createRemoteSystem();
+    $draftPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
+    $result = $system->trySave($draftPerson);
+    $this->createdPeople[] = $savedPerson = $result->object();
+    self::assertEquals(\Civi\Osdi\SaveResult::SUCCESS, $result->status());
+    self::assertEquals($draftPerson->getEmailAddress(),
+      $savedPerson->getEmailAddress());
+    self::assertEquals($draftPerson->get('phone_numbers')[0]['number'],
+      $savedPerson->get('phone_numbers')[0]['number']);
+  }
+
+  public function testTrySaveUnableToChangeEmail() {
+    $system = $this->createRemoteSystem();
+
+    // CREATE
+    $draftPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
+    $this->createdPeople[] = $savedPerson1 = $system->save($draftPerson);
+    $email1 = $savedPerson1->getEmailAddress();
+    $name1 = $savedPerson1->get('given_name');
+    self::assertNotNull($email1);
+
+    $email2 = "different-$email1";
+    $name2 = "Different $name1";
+    $draftPerson->set('email_addresses', [['address' => $email2]]);
+    $draftPerson->set('given_name', $name2);
+    $this->createdPeople[] = $savedPerson2 = $system->save($draftPerson);
+    self::assertEquals($email2, $savedPerson2->getEmailAddress());
+
+    // CHANGE EMAIL
+    $savedPerson2->set('email_addresses', [['address' => $email1]]);
+    $saveResult = $system->trySave($savedPerson2);
+
+    self::assertEquals(\Civi\Osdi\SaveResult::ERROR, $saveResult->status());
+  }
+
   public function testPersonCreate_Append() {
     self::markTestSkipped('In Action Network, the only multivalue field is also '
     . 'subject to uniqueness constraints, so is difficult to test using mocks.');
@@ -171,7 +280,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
       'osdi:people',
       [['email', 'eq', $savedPersonEmail]]);
 
-    self::assertEquals(0, $remotePeopleWithTheEmail->currentCount());
+    self::assertEquals(0, $remotePeopleWithTheEmail->filteredCurrentCount());
   }
 
   public function testPersonCreate_FindByEmail() {
@@ -206,7 +315,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
     $this->createdPeople[] = $savedPerson1 = $system->save($unsavedNewPerson);
 
-    $otherEmail = 'different' . $savedPerson1->getEmailAddress();
+    $otherEmail = 'second-' . $savedPerson1->getEmailAddress();
     $familyName = $savedPerson1->get('family_name');
     $abbreviatedFamilyName = substr($familyName, 0, 4);
     $this->assertNotEquals($abbreviatedFamilyName, $familyName);
@@ -223,7 +332,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
         $familyName,
       ],
     ]);
-    self::assertGreaterThan(0, $searchResults->currentCount());
+    self::assertGreaterThan(0, $searchResults->filteredCurrentCount());
     foreach ($searchResults->toArray() as $foundPerson) {
       $this->assertEquals($familyName, $foundPerson->get('family_name'));
     }
@@ -235,7 +344,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
         $abbreviatedFamilyName,
       ],
     ]);
-    self::assertGreaterThan(0, $searchResults->currentCount());
+    self::assertGreaterThan(0, $searchResults->filteredCurrentCount());
     foreach ($searchResults->toArray() as $foundPerson) {
       $this->assertEquals($abbreviatedFamilyName, $foundPerson->get('family_name'));
     }

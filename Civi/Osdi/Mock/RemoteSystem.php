@@ -103,4 +103,8 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     // TODO: Implement getEntryPoint() method.
   }
 
+  public function trySave(RemoteObjectInterface $objectToSave): \Civi\Osdi\SaveResult {
+    // TODO: Implement trySave() method.
+  }
+
 }

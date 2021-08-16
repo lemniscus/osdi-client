@@ -111,6 +111,23 @@
       <callback>CRM_OSDI_BAO_OSDIMatch::syncOriginPseudoConstant</callback>
     </pseudoconstant>
     <comment>0 if local CiviCRM was the origin of the last sync, 1 if remote system was the origin</comment>
+    <import>true</import>
+    <export>true</export>
   </field>
+
+  <field>
+    <name>sync_status</name>
+    <title>Status of Last Sync</title>
+    <type>varchar</type>
+    <length>255</length>
+    <default>NULL</default>
+    <comment>Status of the last sync</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+  <index>
+    <name>index_sync_status</name>
+    <fieldName>sync_status</fieldName>
+  </index>
 
 </table>

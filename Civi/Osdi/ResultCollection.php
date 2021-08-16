@@ -19,7 +19,12 @@ class ResultCollection {
   /**
    * @var int
    */
-  protected $resultCount;
+  protected $resultCountRaw;
+
+  /**
+   * @var int
+   */
+  protected $resultCountFiltered;
 
   /**
    * @var RemoteSystemInterface
@@ -44,11 +49,15 @@ class ResultCollection {
     return $resultArr ?? [];
   }
 
-  public function currentCount(): int {
-    return $this->resultCount;
+  public function rawCurrentCount(): int {
+    return $this->resultCountRaw;
   }
 
-  public function first(): RemoteObjectInterface {
+  public function filteredCurrentCount(): int {
+    return $this->resultCountFiltered;
+  }
+
+  public function rawFirst(): RemoteObjectInterface {
     if (empty($this->pages)) {
       throw new EmptyResultException();
     }
@@ -59,6 +68,10 @@ class ResultCollection {
       throw new EmptyResultException();
     }
     return $this->system->makeOsdiObject($this->type, $firstResource);
+  }
+
+  public function filteredFirst() {
+    return $this->rawFirst();
   }
 
   public function column(string $key): array {
@@ -75,7 +88,8 @@ class ResultCollection {
     }
     $this->pages[$pageNum] = $pageResource;
     try {
-      $this->resultCount += $this->filteredCount($pageResource->getResource($this->type));
+      $this->resultCountRaw += count($pageResource->getResource($this->type));
+      $this->resultCountFiltered += $this->filteredCount($pageResource->getResource($this->type));
     }
     catch (\Throwable $e) {
     }

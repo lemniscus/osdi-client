@@ -40,9 +40,5 @@ class CRM_OSDI_SyncProfileTest extends \PHPUnit\Framework\TestCase implements
     self::assertContains('matcher', $fields);
     self::assertContains('mapper', $fields);
   }
-
-  public function testNextThing() {
-    self::fail();
-  }
-
+  
 }
