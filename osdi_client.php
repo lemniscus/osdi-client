@@ -1,6 +1,6 @@
 <?php
 
-require_once 'osdi.civix.php';
+require_once 'osdi_client.civix.php';
 // phpcs:disable
 use CRM_OSDI_ExtensionUtil as E;
 // phpcs:enable
@@ -14,7 +14,7 @@ require_once __DIR__ . DIRECTORY_SEPARATOR
 /**
  * Implements hook_civicrm_searchKitTasks().
  */
-function osdi_civicrm_searchKitTasks(array &$tasks, bool $checkPermissions, ?int $userId) {
+function osdi_client_civicrm_searchKitTasks(array &$tasks, bool $checkPermissions, ?int $userId) {
   $tasks['Contact']['osdi-sync'] = [
     'module' => 'osdiSearchTasks',
     'title' => E::ts('Upload to Action Network'),
@@ -28,8 +28,8 @@ function osdi_civicrm_searchKitTasks(array &$tasks, bool $checkPermissions, ?int
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_config/
  */
-function osdi_civicrm_config(&$config) {
-  _osdi_civix_civicrm_config($config);
+function osdi_client_civicrm_config(&$config) {
+  _osdi_client_civix_civicrm_config($config);
 }
 
 /**
@@ -37,8 +37,8 @@ function osdi_civicrm_config(&$config) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_xmlMenu
  */
-function osdi_civicrm_xmlMenu(&$files) {
-  _osdi_civix_civicrm_xmlMenu($files);
+function osdi_client_civicrm_xmlMenu(&$files) {
+  _osdi_client_civix_civicrm_xmlMenu($files);
 }
 
 /**
@@ -46,8 +46,8 @@ function osdi_civicrm_xmlMenu(&$files) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_install
  */
-function osdi_civicrm_install() {
-  _osdi_civix_civicrm_install();
+function osdi_client_civicrm_install() {
+  _osdi_client_civix_civicrm_install();
 }
 
 /**
@@ -55,8 +55,8 @@ function osdi_civicrm_install() {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_postInstall
  */
-function osdi_civicrm_postInstall() {
-  _osdi_civix_civicrm_postInstall();
+function osdi_client_civicrm_postInstall() {
+  _osdi_client_civix_civicrm_postInstall();
 }
 
 /**
@@ -64,8 +64,8 @@ function osdi_civicrm_postInstall() {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_uninstall
  */
-function osdi_civicrm_uninstall() {
-  _osdi_civix_civicrm_uninstall();
+function osdi_client_civicrm_uninstall() {
+  _osdi_client_civix_civicrm_uninstall();
 }
 
 /**
@@ -73,8 +73,8 @@ function osdi_civicrm_uninstall() {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_enable
  */
-function osdi_civicrm_enable() {
-  _osdi_civix_civicrm_enable();
+function osdi_client_civicrm_enable() {
+  _osdi_client_civix_civicrm_enable();
 }
 
 /**
@@ -82,8 +82,8 @@ function osdi_civicrm_enable() {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_disable
  */
-function osdi_civicrm_disable() {
-  _osdi_civix_civicrm_disable();
+function osdi_client_civicrm_disable() {
+  _osdi_client_civix_civicrm_disable();
 }
 
 /**
@@ -91,8 +91,8 @@ function osdi_civicrm_disable() {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_upgrade
  */
-function osdi_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
-  return _osdi_civix_civicrm_upgrade($op, $queue);
+function osdi_client_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
+  return _osdi_client_civix_civicrm_upgrade($op, $queue);
 }
 
 /**
@@ -103,8 +103,8 @@ function osdi_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_managed
  */
-function osdi_civicrm_managed(&$entities) {
-  _osdi_civix_civicrm_managed($entities);
+function osdi_client_civicrm_managed(&$entities) {
+  _osdi_client_civix_civicrm_managed($entities);
 }
 
 /**
@@ -116,8 +116,8 @@ function osdi_civicrm_managed(&$entities) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_caseTypes
  */
-function osdi_civicrm_caseTypes(&$caseTypes) {
-  _osdi_civix_civicrm_caseTypes($caseTypes);
+function osdi_client_civicrm_caseTypes(&$caseTypes) {
+  _osdi_client_civix_civicrm_caseTypes($caseTypes);
 }
 
 /**
@@ -130,8 +130,8 @@ function osdi_civicrm_caseTypes(&$caseTypes) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_angularModules
  */
-function osdi_civicrm_angularModules(&$angularModules) {
-  _osdi_civix_civicrm_angularModules($angularModules);
+function osdi_client_civicrm_angularModules(&$angularModules) {
+  _osdi_client_civix_civicrm_angularModules($angularModules);
 }
 
 /**
@@ -139,8 +139,8 @@ function osdi_civicrm_angularModules(&$angularModules) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_alterSettingsFolders
  */
-function osdi_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
-  _osdi_civix_civicrm_alterSettingsFolders($metaDataFolders);
+function osdi_client_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
+  _osdi_client_civix_civicrm_alterSettingsFolders($metaDataFolders);
 }
 
 /**
@@ -150,15 +150,15 @@ function osdi_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_entityTypes
  */
-function osdi_civicrm_entityTypes(&$entityTypes) {
-  _osdi_civix_civicrm_entityTypes($entityTypes);
+function osdi_client_civicrm_entityTypes(&$entityTypes) {
+  _osdi_client_civix_civicrm_entityTypes($entityTypes);
 }
 
 /**
  * Implements hook_civicrm_thems().
  */
-function osdi_civicrm_themes(&$themes) {
-  _osdi_civix_civicrm_themes($themes);
+function osdi_client_civicrm_themes(&$themes) {
+  _osdi_client_civix_civicrm_themes($themes);
 }
 
 // --- Functions below this ship commented out. Uncomment as required. ---
@@ -168,7 +168,7 @@ function osdi_civicrm_themes(&$themes) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_preProcess
  */
-//function osdi_civicrm_preProcess($formName, &$form) {
+//function osdi_client_civicrm_preProcess($formName, &$form) {
 //
 //}
 
@@ -177,8 +177,8 @@ function osdi_civicrm_themes(&$themes) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_navigationMenu
  */
-//function osdi_civicrm_navigationMenu(&$menu) {
-//  _osdi_civix_insert_navigation_menu($menu, 'Mailings', array(
+//function osdi_client_civicrm_navigationMenu(&$menu) {
+//  _osdi_client_civix_insert_navigation_menu($menu, 'Mailings', array(
 //    'label' => E::ts('New subliminal message'),
 //    'name' => 'mailing_subliminal_message',
 //    'url' => 'civicrm/mailing/subliminal',
@@ -186,5 +186,5 @@ function osdi_civicrm_themes(&$themes) {
 //    'operator' => 'OR',
 //    'separator' => 0,
 //  ));
-//  _osdi_civix_navigationMenu($menu);
+//  _osdi_client_civix_navigationMenu($menu);
 //}

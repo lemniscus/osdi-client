@@ -48,7 +48,7 @@ class CRM_Osdi_Upgrader_Base {
   public static function instance() {
     if (!self::$instance) {
       self::$instance = new CRM_Osdi_Upgrader(
-        'osdi',
+        'osdi-client',
         E::path()
       );
     }

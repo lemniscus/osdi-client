@@ -2,7 +2,7 @@
   "use strict";
 
   angular.module('osdiSearchTasks').controller('osdiSearchTaskSync', function($scope, dialogService) {
-    var ts = $scope.ts = CRM.ts('osdi'),
+    var ts = $scope.ts = CRM.ts('osdi-client'),
       model = $scope.model,
       ctrl = this;
 

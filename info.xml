@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
-<extension key="osdi" type="module">
-  <file>osdi</file>
-  <name>FIXME</name>
-  <description>FIXME</description>
+<extension key="osdi-client" type="module">
+  <file>osdi_client</file>
+  <name>OSDI Client</name>
+  <description>Sync CiviCRM records with remote OSDI services including Action Network</description>
   <license>AGPL-3.0</license>
   <maintainer>
     <author>Noah Miller, Lemniscus</author>
     <email>nm@lemnisc.us</email>
   </maintainer>
   <urls>
-    <url desc="Main Extension Page">http://FIXME</url>
+    <url desc="Main Extension Page">https://github.com/lemniscus/osdi-client</url>
     <url desc="Documentation">http://FIXME</url>
     <url desc="Support">http://FIXME</url>
     <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
@@ -25,6 +25,6 @@
     <psr4 prefix="Civi\" path="Civi"/>
   </classloader>
   <civix>
-    <namespace>CRM/Osdi</namespace>
+    <namespace>CRM/OSDI</namespace>
   </civix>
 </extension>
