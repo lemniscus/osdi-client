@@ -74,7 +74,7 @@ class Syncer {
     return $this->matcher;
   }
 
-  private function getMapper(): ActionNetwork\Mapper\Example {
+  private function getMapper() {
     if (empty($this->mapper)) {
       $mapperClass = $this->getSyncProfile()['mapper'];
       $this->mapper = new $mapperClass($this->getRemoteSystem());
