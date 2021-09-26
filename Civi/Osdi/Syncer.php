@@ -151,13 +151,19 @@ class Syncer {
             ->get('modified_date') : NULL,
         ],
       ])->execute();
+
+    $logContext = [$saveResult->message()];
+    if ($saveResult->isError()) {
+      $logContext[] = $saveResult->context();
+    }
     \Civi::log()->debug(
       "OSDI sync attempt: contact $id: {$saveResult->status()}",
-      [$saveResult->message()],
+      $logContext,
     );
     if ($saveResult->isError()) {
       return FALSE;
     }
+    return TRUE;
   }
 
   public function syncRemotePerson(RemoteObjectInterface $person) {
