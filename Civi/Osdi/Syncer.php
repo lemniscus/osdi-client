@@ -146,8 +146,15 @@ class Syncer {
           'remote_person_id' => $remotePerson ? $remotePerson->getId() : NULL,
           'sync_profile_id' => $this->syncProfile['id'],
           'sync_status' => $saveResult->status(),
+          'sync_origin_modified_time' => NULL,
+          'sync_target_modified_time' => $remotePerson ? $remotePerson
+            ->get('modified_date') : NULL,
         ],
       ])->execute();
+    \Civi::log()->debug(
+      "OSDI sync attempt: contact $id: {$saveResult->status()}",
+      [$saveResult->message()],
+    );
     if ($saveResult->isError()) {
       return FALSE;
     }

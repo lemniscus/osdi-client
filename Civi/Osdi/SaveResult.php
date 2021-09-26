@@ -56,4 +56,11 @@ class SaveResult {
     return $this->context;
   }
 
+  /**
+   * @return string
+   */
+  public function message() {
+    return $this->message;
+  }
+
 }
