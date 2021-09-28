@@ -25,7 +25,7 @@ class ResultCollection extends \Civi\Osdi\ResultCollection {
 
   public function filteredFirst(): RemoteObjectInterface {
     if ('osdi:people' !== $this->type) {
-      return parent::first();
+      return parent::filteredFirst();
     }
 
     if (empty($this->pages)) {
@@ -33,12 +33,14 @@ class ResultCollection extends \Civi\Osdi\ResultCollection {
     }
 
     ksort($this->pages, SORT_NUMERIC);
-    $firstPage = reset($this->pages);
-    $resources = $firstPage->getResource($this->type);
 
-    foreach ($resources as $resource) {
-      if ($this->isSubscribedByEmailOrPhone($resource)) {
-        return $this->system->makeOsdiObject($this->type, $resource);
+    foreach ($this->pages as $page) {
+      $resources = $page->getResource($this->type);
+
+      foreach ($resources as $resource) {
+        if ($this->isSubscribedByEmailOrPhone($resource)) {
+          return $this->system->makeOsdiObject($this->type, $resource);
+        }
       }
     }
 
