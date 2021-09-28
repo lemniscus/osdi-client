@@ -152,7 +152,10 @@ class Syncer {
         ],
       ])->execute();
 
-    $logContext = [$saveResult->message()];
+    $logContext = [];
+    if ($message = $saveResult->message()) {
+      $logContext[] = $message;
+    }
     if ($saveResult->isError()) {
       $logContext[] = $saveResult->context();
     }

@@ -182,8 +182,8 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
         [1 => $objectToSave->getType()],
       );
       $context = [
-        'sent' => $objectToSave,
-        'response' => $savedObject,
+        'sent' => $objectToSave->getAllAltered(),
+        'response' => $savedObject->getAllOriginal(),
       ];
     }
 
