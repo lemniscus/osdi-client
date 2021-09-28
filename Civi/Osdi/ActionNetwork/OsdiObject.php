@@ -44,7 +44,7 @@ class OsdiObject extends \Civi\Osdi\Generic\OsdiObject implements
     return $this->namespace;
   }
 
-  public function getOwnUrl(RemoteSystemInterface $system): string {
+  public function getOwnUrl(RemoteSystemInterface $system): ?string {
     try {
       if ($selfLink = $this->resource->getFirstLink('self')) {
         return $selfLink->getHref();
@@ -60,6 +60,7 @@ class OsdiObject extends \Civi\Osdi\Generic\OsdiObject implements
           __CLASS__, $this->getType(), $this->getId());
       }
     }
+    return NULL;
   }
 
   protected function extractIdFromResource(?HalResource $resource): ?string {
@@ -77,6 +78,7 @@ class OsdiObject extends \Civi\Osdi\Generic\OsdiObject implements
         return substr($identifier, $prefixLength);
       }
     }
+    return NULL;
   }
 
   public static function isMultipleValueField(string $name): bool {
