@@ -175,7 +175,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       }
     }
 
-    if ($savedObject && !$savedObject->isSupersetOf($objectToSave)) {
+    if ($savedObject && !$savedObject->isSupersetOf($objectToSave, TRUE)) {
       $statusCode = SaveResult::ERROR;
       $statusMessage = E::ts(
         'Some or all of the %1 object could not be saved.',

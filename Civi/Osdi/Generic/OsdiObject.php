@@ -222,9 +222,15 @@ class OsdiObject implements RemoteObjectInterface {
     return $this->editedFields[$fieldName] ?? FALSE;
   }
 
-  public function isSupersetOf(RemoteObjectInterface $otherObject): bool {
-    $recursiveCompare = function($smallSet, $bigSet) use (&$recursiveCompare) {
+  public function isSupersetOf(
+    RemoteObjectInterface $otherObject,
+    bool $emptyValuesAreOk = FALSE
+  ): bool {
+    $recursiveCompare = function($smallSet, $bigSet) use (&$recursiveCompare, $emptyValuesAreOk) {
       if (!is_array($smallSet) && !is_array($bigSet)) {
+        if ($emptyValuesAreOk && empty($smallSet)) {
+          return TRUE;
+        }
         return $smallSet === $bigSet;
       }
       if (!is_array($smallSet) || !is_array($bigSet)) {
