@@ -31,6 +31,8 @@ interface RemoteObjectInterface {
    */
   public function getOriginal(string $fieldName);
 
+  public function getAllOriginal(): array;
+
   /**
    * @param string $fieldName
    * @return mixed|null

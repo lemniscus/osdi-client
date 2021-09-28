@@ -36,13 +36,6 @@ class OsdiPerson extends OsdiObject implements RemoteObjectInterface {
     }
   }
 
-  public function getAllOriginal(): array {
-    if ($this->resource) {
-      return $this->resource->getProperties();
-    }
-    return [];
-  }
-
   public static function isValidField(string $name): bool {
     $validFields = [
       'identifiers',

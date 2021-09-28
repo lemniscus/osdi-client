@@ -262,4 +262,11 @@ class OsdiObject implements RemoteObjectInterface {
     return $merge($originalData, $alteredData);
   }
 
+  public function getAllOriginal(): array {
+    if ($this->resource) {
+      return $this->resource->getProperties();
+    }
+    return [];
+  }
+
 }
