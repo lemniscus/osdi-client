@@ -20,7 +20,7 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
   }
 
   public static function setUpBeforeClass(): void {
-    self::$system = self::createRemoteSystem();
+    self::$system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
   }
 
   public function setUp(): void {
@@ -30,17 +30,6 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
 
   public function tearDown(): void {
     parent::tearDown();
-  }
-
-  public static function createRemoteSystem(): \Civi\Osdi\ActionNetwork\RemoteSystem {
-    $systemProfile = new CRM_OSDI_BAO_SyncProfile();
-    $systemProfile->entry_point = 'https://actionnetwork.org/api/v2/';
-    $systemProfile->api_token = file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'apiToken');
-    $client = new Jsor\HalClient\HalClient(
-      'https://actionnetwork.org/api/v2/', new CRM_OSDI_FixtureHttpClient()
-    );
-    //$client = new Jsor\HalClient\HalClient('https://actionnetwork.org/api/v2/');
-    return new Civi\Osdi\ActionNetwork\RemoteSystem($systemProfile, $client);
   }
 
   public function testUnsubscribedPeopleAreNotCounted() {

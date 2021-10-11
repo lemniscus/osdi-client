@@ -32,7 +32,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
   }
 
   public function setUp(): void {
-    $this->system = self::createRemoteSystem();
+    $this->system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
     $this->matcher = $this->createMatcher($this->system);
     CRM_OSDI_FixtureHttpClient::resetHistory();
     parent::setUp();
@@ -40,17 +40,6 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
 
   public function tearDown(): void {
     parent::tearDown();
-  }
-
-  public static function createRemoteSystem(): \Civi\Osdi\ActionNetwork\RemoteSystem {
-    $systemProfile = new CRM_OSDI_BAO_SyncProfile();
-    $systemProfile->entry_point = 'https://actionnetwork.org/api/v2/';
-    $systemProfile->api_token = file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'apiToken');
-    $client = new Jsor\HalClient\HalClient(
-      'https://actionnetwork.org/api/v2/', new CRM_OSDI_FixtureHttpClient()
-    );
-    $client = new Jsor\HalClient\HalClient('https://actionnetwork.org/api/v2/');
-    return new Civi\Osdi\ActionNetwork\RemoteSystem($systemProfile, $client);
   }
 
   private function createMatcher(\Civi\Osdi\RemoteSystemInterface $system

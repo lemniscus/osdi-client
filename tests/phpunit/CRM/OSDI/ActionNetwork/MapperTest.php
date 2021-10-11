@@ -30,7 +30,7 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
   }
 
   public function setUp(): void {
-    $this->system = $this->createRemoteSystem();
+    $this->system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
     $this->mapper = $this->createMapper($this->system);
     CRM_OSDI_FixtureHttpClient::resetHistory();
     parent::setUp();
@@ -39,17 +39,6 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
   public function tearDown(): void {
     $reset = $this->getCookieCutterOsdiPerson();
     parent::tearDown();
-  }
-
-  public function createRemoteSystem(): \Civi\Osdi\ActionNetwork\RemoteSystem {
-    $systemProfile = new CRM_OSDI_BAO_SyncProfile();
-    $systemProfile->entry_point = 'https://actionnetwork.org/api/v2/';
-    $systemProfile->api_token = file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'apiToken');
-    $client = new Jsor\HalClient\HalClient(
-        'https://actionnetwork.org/api/v2/',
-         new CRM_OSDI_FixtureHttpClient()
-    );
-    return new Civi\Osdi\ActionNetwork\RemoteSystem($systemProfile, $client);
   }
 
   private function createMapper(\Civi\Osdi\ActionNetwork\RemoteSystem $system) {

@@ -33,23 +33,12 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function tearDown(): void {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
     while ($person = array_pop($this->createdPeople)) {
       $system->delete($person);
     }
 
     parent::tearDown();
-  }
-
-  public function createRemoteSystem(): \Civi\Osdi\ActionNetwork\RemoteSystem {
-    $systemProfile = new CRM_OSDI_BAO_SyncProfile();
-    $systemProfile->entry_point = 'https://actionnetwork.org/api/v2/';
-    $systemProfile->api_token = file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'apiToken');
-//    $client = new Jsor\HalClient\HalClient(
-//      'https://actionnetwork.org/api/v2/',
-//      new CRM_OSDI_FixtureHttpClient());
-    $client = new Jsor\HalClient\HalClient('https://actionnetwork.org/api/v2/');
-    return new Civi\Osdi\ActionNetwork\RemoteSystem($systemProfile, $client);
   }
 
   public function makeBlankOsdiPerson(): \Civi\Osdi\ActionNetwork\OsdiPerson {
@@ -79,7 +68,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testPersonCreate_Fetch() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
@@ -95,7 +84,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testPersonCreate_Set() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
@@ -112,7 +101,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testPersonEmailCannotBeChangedIfNewOneIsAlreadyTaken() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $draftPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
@@ -139,7 +128,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testPersonEmailCanBeChangedIfNewOneIsNotAlreadyTaken() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $draftPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
@@ -185,7 +174,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testTrySaveSuccess() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
     $draftPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
     $result = $system->trySave($draftPerson);
     $this->createdPeople[] = $savedPerson = $result->object();
@@ -197,7 +186,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testTrySaveUnableToChangeEmail() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $draftPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
@@ -224,7 +213,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     self::markTestSkipped('In Action Network, the only multivalue field is also '
     . 'subject to uniqueness constraints, so is difficult to test using mocks.');
 
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
@@ -244,7 +233,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testPersonCreate_PseudoDelete() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $unsavedPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
@@ -284,7 +273,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testPersonCreate_FindByEmail() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $unsavedNewPerson = $this->makeBlankOsdiPerson();
@@ -309,7 +298,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testPersonFindByExactStringReturnsExactMatches() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
@@ -351,7 +340,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testPersonCreate_FindByFirstAndLast() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $unsavedNewPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
@@ -375,7 +364,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testPersonCreate_FindByDateModified() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $unsavedNewPerson1 = $this->makeBlankOsdiPerson();
@@ -443,14 +432,14 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testFactoryMake_Tag() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
     $osdiTag = $system->makeOsdiObject('osdi:tags');
     $osdiTag->set('name', 'test');
     $this->assertEquals('test', $osdiTag->getAltered('name'));
   }
 
   public function testTagCreate_Fetch() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $unsavedTag = $system->makeOsdiObject('osdi:tags');
@@ -466,7 +455,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testTaggingCreate_FetchComponents() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $unsavedTag = $system->makeOsdiObject('osdi:tags');
@@ -491,7 +480,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
   }
 
   public function testTaggingCreate_Delete() {
-    $system = $this->createRemoteSystem();
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     // CREATE
     $unsavedTag = $system->makeOsdiObject('osdi:tags');

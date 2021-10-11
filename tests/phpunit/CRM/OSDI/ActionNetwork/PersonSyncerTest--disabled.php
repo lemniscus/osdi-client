@@ -54,9 +54,9 @@ class CRM_OSDI_SyncerTest extends PHPUnit\Framework\TestCase implements
         \Civi\Osdi\ActionNetwork\Mapper\Example::class)
       ->execute()->single();
 
-    self::$syncer = new \Civi\Osdi\Syncer();
+    self::$syncer = new \Civi\Osdi\ActionNetwork\Syncer\Person();
 
-    self::$remoteSystem = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    self::$remoteSystem = CRM_OSDI_ActionNetwork_MatcherTest::createRemoteSystem();
 
     self::$syncer->setRemoteSystem(self::$remoteSystem);
 
