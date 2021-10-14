@@ -8,7 +8,7 @@ use Jsor\HalClient\HalClient;
 use Jsor\HalClient\HalResource;
 
 /**
- * Unit tests for ActionNetwork OsdiPerson class
+ * Unit tests for \Civi\Osdi\ActionNetwork\Object\Person class
  *
  * @group headless
  */
@@ -19,7 +19,7 @@ class CRM_OSDI_ActionNetwork_OsdiPersonTest extends CRM_OSDI_Generic_OsdiPersonT
   }
 
   public function makeBlankOsdiPerson() {
-    return new Civi\Osdi\ActionNetwork\OsdiPerson();
+    return new \Civi\Osdi\ActionNetwork\Object\Person();
   }
 
   public function makeExistingOsdiPerson() {
@@ -44,7 +44,7 @@ class CRM_OSDI_ActionNetwork_OsdiPersonTest extends CRM_OSDI_Generic_OsdiPersonT
       ],
       'identifiers' => ['action_network:d91b4b2e-ae0e-4cd3-9ed7-d0ec501b0bc3'],
     ]);
-    return new Civi\Osdi\ActionNetwork\OsdiPerson($personResource);
+    return new \Civi\Osdi\ActionNetwork\Object\Person($personResource);
   }
 
   public function expected($key) {

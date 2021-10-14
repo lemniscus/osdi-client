@@ -7,7 +7,7 @@ use Jsor\HalClient\HalClient;
 use Jsor\HalClient\HalResource;
 
 /**
- * Unit tests for OsdiPerson class
+ * Unit tests for Civi\Osdi\Generic\OsdiPerson class
  *
  * @group headless
  */

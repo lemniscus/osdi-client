@@ -28,7 +28,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
   }
 
   public static function setUpBeforeClass(): void {
-    CRM_OSDI_Fixture_PersonMatching::$personClass = \Civi\Osdi\ActionNetwork\OsdiPerson::class;
+    CRM_OSDI_Fixture_PersonMatching::$personClass = \Civi\Osdi\ActionNetwork\Object\Person::class;
   }
 
   public function setUp(): void {

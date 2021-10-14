@@ -45,15 +45,15 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
     return new Civi\Osdi\ActionNetwork\Mapper\Example($system);
   }
 
-  public function makeBlankOsdiPerson(): \Civi\Osdi\ActionNetwork\OsdiPerson {
-    return new Civi\Osdi\ActionNetwork\OsdiPerson();
+  public function makeBlankOsdiPerson(): \Civi\Osdi\ActionNetwork\Object\Person {
+    return new \Civi\Osdi\ActionNetwork\Object\Person();
   }
 
   /**
-   * @return \Civi\Osdi\ActionNetwork\OsdiPerson
+   * @return \Civi\Osdi\ActionNetwork\Object\Person
    * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
-  private function getCookieCutterOsdiPerson(): \Civi\Osdi\ActionNetwork\OsdiPerson {
+  private function getCookieCutterOsdiPerson(): \Civi\Osdi\ActionNetwork\Object\Person {
     $unsavedNewPerson = $this->makeBlankOsdiPerson();
     $unsavedNewPerson->set('given_name', 'Cookie');
     $unsavedNewPerson->set('family_name', 'Cutter');
@@ -125,7 +125,7 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
     $stateAbbreviation = 'MO';
 
     $result = $this->mapper->mapContactOntoRemotePerson($civiContact['id']);
-    $this->assertEquals('Civi\Osdi\ActionNetwork\OsdiPerson', get_class($result));
+    $this->assertEquals('Civi\Osdi\ActionNetwork\Object\Person', get_class($result));
     $this->assertEquals($civiContact['first_name'], $result->get('given_name'));
     $this->assertEquals($civiContact['last_name'], $result->get('family_name'));
     $this->assertEquals($civiContact['address.street_address'], $result->get('postal_addresses')[0]['address_lines'][0]);
@@ -150,7 +150,7 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
         $civiContact['id'],
         $existingRemotePerson
     );
-    $this->assertEquals('Civi\Osdi\ActionNetwork\OsdiPerson', get_class($result));
+    $this->assertEquals('Civi\Osdi\ActionNetwork\Object\Person', get_class($result));
     $this->assertEquals('DifferentFirst', $result->get('given_name'));
     $this->assertEquals('DifferentLast', $result->get('family_name'));
     $this->assertEquals($civiContact['email.email'], $result->get('email_addresses')[0]['address']);
@@ -168,7 +168,7 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
         $civiContact['id'],
         $existingRemotePerson
     );
-    $this->assertEquals('Civi\Osdi\ActionNetwork\OsdiPerson', get_class($result));
+    $this->assertEquals('Civi\Osdi\ActionNetwork\Object\Person', get_class($result));
     $this->assertEquals('19098887777', $result->get('phone_numbers')[0]['number']);
     $this->assertEquals($civiContact['first_name'], $result->get('given_name'));
     $this->assertEquals($civiContact['last_name'], $result->get('family_name'));

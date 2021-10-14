@@ -2,7 +2,7 @@
 
 namespace Civi\Osdi\ActionNetwork\Matcher;
 
-use Civi\Osdi\ActionNetwork\OsdiPerson;
+use Civi\Osdi\ActionNetwork\Object\Person;
 use Civi\Osdi\Exception\AmbiguousResultException;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\MatchResult;
@@ -72,7 +72,7 @@ class OneToOneEmailOrFirstLastEmail {
     return $this->makeSingleOrZeroMatchResult($remoteSystemFindResult);
   }
 
-  public function findLocalMatchForRemotePerson(OsdiPerson $remotePerson) {
+  public function findLocalMatchForRemotePerson(Person $remotePerson) {
     if (empty($email = $remotePerson->getEmailAddress())) {
       return new MatchResult(
         [],
@@ -94,7 +94,7 @@ class OneToOneEmailOrFirstLastEmail {
     }
   }
 
-  private function findLocalMatchByEmailAndName(OsdiPerson $remotePerson) {
+  private function findLocalMatchByEmailAndName(Person $remotePerson) {
     $civiApi4Result = $this->getCiviContactsBy(
       $remotePerson->getEmailAddress(),
       $remotePerson->getOriginal('given_name'),

@@ -1,6 +1,6 @@
 <?php
 
-use Civi\Osdi\ActionNetwork\OsdiPerson as ANPerson;
+use Civi\Osdi\ActionNetwork\Object\Person as ANPerson;
 use CRM_OSDI_Fixture_PersonMatching as PersonMatchFixture;
 
 /**
@@ -25,7 +25,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
   }
 
   public static function setUpBeforeClass(): void {
-    PersonMatchFixture::$personClass = Civi\Osdi\ActionNetwork\OsdiPerson::class;
+    PersonMatchFixture::$personClass = \Civi\Osdi\ActionNetwork\Object\Person::class;
 
     self::$syncProfile = CRM_OSDI_ActionNetwork_TestUtils::createSyncProfile();
 
@@ -115,7 +115,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
   }
 
   public function testGetSavedMatchForRemoteContact() {
-    $remotePerson = new \Civi\Osdi\Generic\OsdiPerson();
+    $remotePerson = new \Civi\Osdi\Generic\Person();
     $remotePerson->setId('foo');
 
     $retrievedMatch = self::$syncer->getSavedMatchForRemotePerson($remotePerson);
@@ -515,7 +515,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
     $emailTwo = "different-$emailOne";
     $nameTwo = "Not $firstNameOne";
 
-    $scratchPerson = new \Civi\Osdi\ActionNetwork\OsdiPerson();
+    $scratchPerson = new \Civi\Osdi\ActionNetwork\Object\Person();
     $scratchPerson->set('email_addresses', [['address' => $emailTwo]]);
     $scratchPerson->set('given_name', $nameTwo);
     $this->createdRemotePeople[] = self::$remoteSystem->save($scratchPerson);

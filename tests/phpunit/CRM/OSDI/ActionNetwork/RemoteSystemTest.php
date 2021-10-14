@@ -15,7 +15,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     TransactionalInterface {
 
   /**
-   * @var \Civi\Osdi\ActionNetwork\OsdiPerson[]
+   * @var \Civi\Osdi\ActionNetwork\Object\Person[]
    */
   private $createdPeople = [];
 
@@ -41,15 +41,15 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     parent::tearDown();
   }
 
-  public function makeBlankOsdiPerson(): \Civi\Osdi\ActionNetwork\OsdiPerson {
-    return new Civi\Osdi\ActionNetwork\OsdiPerson();
+  public function makeBlankOsdiPerson(): \Civi\Osdi\ActionNetwork\Object\Person {
+    return new \Civi\Osdi\ActionNetwork\Object\Person();
   }
 
   /**
-   * @return \Civi\Osdi\ActionNetwork\OsdiPerson
+   * @return \Civi\Osdi\ActionNetwork\Object\Person
    * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
-  private function makeNewOsdiPersonWithFirstLastEmailPhone(): \Civi\Osdi\ActionNetwork\OsdiPerson {
+  private function makeNewOsdiPersonWithFirstLastEmailPhone(): \Civi\Osdi\ActionNetwork\Object\Person {
     $unsavedNewPerson = $this->makeBlankOsdiPerson();
     $unsavedNewPerson->set('given_name', 'Testy');
     $unsavedNewPerson->set('family_name', 'McTest');
@@ -237,7 +237,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
 
     // CREATE
     $unsavedPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
-    /** @var \Civi\Osdi\ActionNetwork\OsdiPerson $savedPerson */
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $savedPerson */
     $savedPerson = $system->save($unsavedPerson);
     $savedPersonUrl = $savedPerson->getOwnUrl($system);
     $savedPersonEmail = $savedPerson->getEmailAddress();
@@ -290,7 +290,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
       ],
     ]);
     $resultIds = array_map(
-      function (\Civi\Osdi\ActionNetwork\OsdiPerson $foundPerson) {
+      function (\Civi\Osdi\ActionNetwork\Object\Person $foundPerson) {
         return $foundPerson->getId();
       },
       $searchResults->toArray());
@@ -356,7 +356,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
         ['family_name', 'eq', $familyName],
       ]);
     $resultIds = array_map(
-      function (\Civi\Osdi\ActionNetwork\OsdiPerson $foundPerson) {
+      function (\Civi\Osdi\ActionNetwork\Object\Person $foundPerson) {
         return $foundPerson->getId();
       },
       $searchResults->toArray());
@@ -397,7 +397,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
         $savedPerson2ModTime,
       ],
     ]);
-    /** @var \Civi\Osdi\ActionNetwork\OsdiPerson $foundPerson */
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $foundPerson */
     foreach ($searchResults->toArray() as $foundPerson) {
       $this->assertLessThan(
         strtotime($savedPerson2ModTime),
@@ -463,7 +463,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $savedTag = $system->save($unsavedTag);
 
     $unsavedPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
-    /** @var \Civi\Osdi\ActionNetwork\OsdiPerson $savedPerson */
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $savedPerson */
     $savedPerson = $system->save($unsavedPerson);
 
     /** @var \Civi\Osdi\ActionNetwork\OsdiTagging $unsavedTagging */
@@ -488,7 +488,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $savedTag = $system->save($unsavedTag);
 
     $unsavedPerson = $this->makeNewOsdiPersonWithFirstLastEmailPhone();
-    /** @var \Civi\Osdi\ActionNetwork\OsdiPerson $savedPerson */
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $savedPerson */
     $savedPerson = $system->save($unsavedPerson);
 
     /** @var \Civi\Osdi\ActionNetwork\OsdiTagging $unsavedTagging */

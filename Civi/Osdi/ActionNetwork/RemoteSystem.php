@@ -3,6 +3,7 @@
 
 namespace Civi\Osdi\ActionNetwork;
 
+use Civi\Osdi\ActionNetwork\Object\Person;
 use CRM_Osdi_ExtensionUtil as E;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
@@ -44,7 +45,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       ?HalResource $resource = NULL,
       ?array $initData = NULL): RemoteObjectInterface {
     if ('osdi:people' === $type) {
-      return new OsdiPerson($resource, $initData);
+      return new Person($resource, $initData);
     }
     if ('osdi:taggings' === $type) {
       return new OsdiTagging($resource, $initData);
@@ -190,7 +191,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     return new SaveResult($savedObject, $statusCode, $statusMessage, $context);
   }
 
-  protected function checkForEmailAddressConflict(OsdiPerson $objectToSave): array {
+  protected function checkForEmailAddressConflict(Person $objectToSave): array {
     if ($id = $objectToSave->getId()) {
       $newEmail = $objectToSave->getAltered('email_addresses')[0]['address'] ?? NULL;
 
@@ -343,7 +344,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       'Cannot "delete" (unsubscribe) Action Network person without an id');
     }
 
-    $person = OsdiPerson::blank();
+    $person = Person::blank();
     $person->setId($id);
 
     return $this->save($person);

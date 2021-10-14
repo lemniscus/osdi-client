@@ -1,17 +1,18 @@
 <?php
 
-namespace Civi\Osdi\ActionNetwork;
+namespace Civi\Osdi\ActionNetwork\Object;
 
+use Civi\Osdi\ActionNetwork\OsdiObject;
 use Jsor\HalClient\HalResource;
 
-class OsdiPerson extends OsdiObject {
+class Person extends OsdiObject {
 
   protected static $fieldsWithNullWorkarounds = [
     'given_name' => [[]],
     'family_name' => [[]],
     //'email_addresses' => [[0, 'address']],
     //'phone_numbers' => [[0, 'number']],
-    // see note at \Civi\Osdi\ActionNetwork\OsdiPerson::blank
+    // see note at \Civi\Osdi\ActionNetwork\Object\Person::blank
     'postal_addresses' => [[0, 'address_lines', 0], [0, 'postal_code']],
   ];
 
@@ -78,7 +79,7 @@ class OsdiPerson extends OsdiObject {
     return FALSE;
   }
 
-  public static function blank(): OsdiPerson {
+  public static function blank(): Person {
     $nullChar = "\xE2\x90\x80";
 
     /*
@@ -97,7 +98,7 @@ class OsdiPerson extends OsdiObject {
     $blank['postal_addresses'][0]['postal_code'] = $nullChar;
     $blank['postal_addresses'][0]['country'] = '';
 
-    return new OsdiPerson(NULL, $blank);
+    return new Person(NULL, $blank);
   }
 
 }

@@ -2,6 +2,7 @@
 
 namespace Civi\Osdi\ActionNetwork;
 
+use Civi\Osdi\ActionNetwork\Object\Person;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\RemoteObjectInterface;
@@ -10,7 +11,7 @@ use Jsor\HalClient\HalResource;
 class OsdiTagging extends OsdiObject {
 
   /**
-   * @var OsdiPerson
+   * @var Person
    */
   private $person;
 
@@ -29,7 +30,7 @@ class OsdiTagging extends OsdiObject {
     parent::__construct('osdi:taggings', $resource, $initData);
   }
 
-  public function setPerson(OsdiPerson $person, RemoteSystem $system) {
+  public function setPerson(Person $person, RemoteSystem $system) {
     if (!($url = $person->getOwnUrl($system))) {
       throw new InvalidArgumentException("We need to know the person's URL");
     }
@@ -57,10 +58,10 @@ class OsdiTagging extends OsdiObject {
     $this->tag = $tag;
   }
 
-  public function getPerson(): ?OsdiPerson {
+  public function getPerson(): ?Person {
     if (!$this->person) {
       $personResource = $this->resource->getFirstLink('osdi:person')->get();
-      $this->person = new OsdiPerson($personResource);
+      $this->person = new Person($personResource);
     }
     return $this->person;
   }

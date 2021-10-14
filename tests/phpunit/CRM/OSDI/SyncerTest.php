@@ -1,6 +1,6 @@
 <?php
 
-use Civi\Osdi\ActionNetwork\OsdiPerson as ANPerson;
+use Civi\Osdi\ActionNetwork\Object\Person as ANPerson;
 use CRM_OSDI_Fixture_PersonMatching as PersonMatchFixture;
 
 /**
@@ -40,7 +40,7 @@ class CRM_OSDI_SyncerTest extends PHPUnit\Framework\TestCase implements
   }
 
   public static function setUpBeforeClass(): void {
-    PersonMatchFixture::$personClass = Civi\Osdi\ActionNetwork\OsdiPerson::class;
+    PersonMatchFixture::$personClass = \Civi\Osdi\ActionNetwork\Object\Person::class;
 
     self::$syncProfile = \Civi\Api4\OsdiSyncProfile::create(FALSE)
       ->addValue('is_default', TRUE)
@@ -472,7 +472,7 @@ class CRM_OSDI_SyncerTest extends PHPUnit\Framework\TestCase implements
     $emailTwo = "different-$emailOne";
     $nameTwo = "Not $firstNameOne";
 
-    $scratchPerson = new \Civi\Osdi\ActionNetwork\OsdiPerson();
+    $scratchPerson = new \Civi\Osdi\ActionNetwork\Object\Person();
     $scratchPerson->set('email_addresses', [['address' => $emailTwo]]);
     $scratchPerson->set('given_name', $nameTwo);
     $this->createdRemotePeople[] = $conflictingPerson

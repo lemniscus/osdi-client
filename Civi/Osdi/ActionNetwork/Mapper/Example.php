@@ -4,7 +4,7 @@ namespace Civi\Osdi\ActionNetwork\Mapper;
 
 use Civi\Api4\Contact;
 use Civi\Api4\Generic\AbstractAction;
-use Civi\Osdi\ActionNetwork\OsdiPerson;
+use Civi\Osdi\ActionNetwork\Object\Person;
 use Civi\Osdi\RemoteSystemInterface;
 
 class Example {
@@ -21,10 +21,10 @@ class Example {
     $this->system = $system;
   }
 
-  public function mapContactOntoRemotePerson(int $id, OsdiPerson $remotePerson = NULL): OsdiPerson {
+  public function mapContactOntoRemotePerson(int $id, Person $remotePerson = NULL): Person {
     $c = $this->getSingleCiviContactById($id);
     if (is_null($remotePerson)) {
-      $remotePerson = new OsdiPerson();
+      $remotePerson = new Person();
     }
     $remotePerson->set('given_name', $c['first_name']);
     $remotePerson->set('family_name', $c['last_name']);
@@ -48,7 +48,7 @@ class Example {
   /**
    * @return \Civi\Api4\Generic\AbstractCreateAction|\Civi\Api4\Generic\AbstractUpdateAction
    */
-  public function mapRemotePersonOntoContact(OsdiPerson $remotePerson, int $contactId = NULL) {
+  public function mapRemotePersonOntoContact(Person $remotePerson, int $contactId = NULL) {
     if ($contactId) {
       $apiAction = Contact::update()->addWhere('id', '=', $contactId);
     }
@@ -188,7 +188,7 @@ class Example {
     return [$stateId, $countryId];
   }
 
-  public function mapLanguageFromActionNetwork(OsdiPerson $remotePerson): ?string {
+  public function mapLanguageFromActionNetwork(Person $remotePerson): ?string {
     if (!($rpLanguages = $remotePerson->get('languages_spoken'))) {
       return NULL;
     }

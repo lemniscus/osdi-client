@@ -3,7 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\Syncer;
 
 use Civi\Osdi\ActionNetwork\Mapper\Example;
-use Civi\Osdi\ActionNetwork\OsdiPerson;
+use Civi\Osdi\ActionNetwork\Object\Person as OsdiPersonObject;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\MatchResult;
 use Civi\Osdi\RemoteObjectInterface;
@@ -173,7 +173,7 @@ class Person {
     }
     return TRUE;
   }
-  private function syncRemotePerson(OsdiPerson $person) {
+  private function syncRemotePerson(OsdiPersonObject $person) {
     $savedMatch = $this->getSavedMatchForRemotePerson($person);
 
     if (empty($savedMatch)) {

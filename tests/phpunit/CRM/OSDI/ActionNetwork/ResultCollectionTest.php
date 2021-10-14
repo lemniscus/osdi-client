@@ -33,7 +33,7 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
   }
 
   public function testUnsubscribedPeopleAreNotCounted() {
-    $unsavedPerson = new \Civi\Osdi\ActionNetwork\OsdiPerson(
+    $unsavedPerson = new \Civi\Osdi\ActionNetwork\Object\Person(
       NULL,
       [
         'given_name' => 'Ozzy',
@@ -89,7 +89,7 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
       self::$system->delete($person);
     }
 
-    $thingOneUnsaved = new \Civi\Osdi\ActionNetwork\OsdiPerson(
+    $thingOneUnsaved = new \Civi\Osdi\ActionNetwork\Object\Person(
       NULL,
       [
         'given_name' => 'Thing',
@@ -105,7 +105,7 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
     );
     $thingOneSaved = self::$system->save($thingOneUnsaved);
 
-    $thingTwoUnsaved = new \Civi\Osdi\ActionNetwork\OsdiPerson(
+    $thingTwoUnsaved = new \Civi\Osdi\ActionNetwork\Object\Person(
       NULL,
       [
         'given_name' => 'Thing',
