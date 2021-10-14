@@ -47,9 +47,11 @@ class CRM_OSDI_Fixture_PersonMatching {
           'first_name',
           'last_name',
           'email.email',
+          'address.street_address'
         ],
         'join' => [
           ['Email AS email', TRUE],
+          ['Address AS address', 'LEFT', NULL, ['address.is_primary', '=', TRUE]],
         ],
         'where' => [
           ['id', '=', $id],

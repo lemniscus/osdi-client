@@ -1,77 +1,44 @@
 <?php
 
-namespace Civi\Osdi;
+namespace Civi\Osdi\ActionNetwork\Syncer;
 
+use Civi\Osdi\ActionNetwork\Mapper\Example;
+use Civi\Osdi\ActionNetwork\OsdiPerson;
+use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\MatchResult;
+use Civi\Osdi\RemoteObjectInterface;
+use Civi\Osdi\RemoteSystemInterface;
+use Civi\Osdi\SaveResult;
 use CRM_Osdi_ExtensionUtil as E;
-use Civi\Api4\Email;
 use Civi\Api4\OsdiMatch;
 use Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail;
 
-class Syncer {
+class Person {
 
-  /**
-   * @var array
-   */
-  private $syncProfile;
+  private array $syncProfile;
 
-  /**
-   * @var \Civi\Osdi\RemoteSystemInterface
-   */
-  private $remoteSystem;
+  private RemoteSystemInterface $remoteSystem;
 
   /**
    * @var mixed
    */
   private $matcher;
 
+  private Example $mapper;
+
   /**
    * Syncer constructor.
    */
-  public function __construct(int $syncProfileId = NULL) {
-    $this->setSyncProfile($syncProfileId);
+  public function __construct(RemoteSystemInterface $remoteSystem) {
+    $this->remoteSystem = $remoteSystem;
   }
 
-  public function setSyncProfile(int $syncProfileId = NULL): void {
-    $getAction = \Civi\Api4\OsdiSyncProfile::get(FALSE);
-    if ($syncProfileId) {
-      $getAction = $getAction->addWhere('id', '=', $syncProfileId);
-    }
-    else {
-      $getAction = $getAction->addWhere('is_default', '=', TRUE);
-    }
-    $this->syncProfile = $getAction->execute()->single();
-  }
-
-  public function getSyncProfile(): array {
-    if (empty($this->syncProfile)) {
-      $this->setSyncProfile();
-    }
-    return $this->syncProfile;
-  }
-
-  public function setRemoteSystem(RemoteSystemInterface $system = NULL): void {
-    if (empty($system)) {
-      $profile = new \CRM_OSDI_BAO_SyncProfile();
-      $profile->copyValues($this->getSyncProfile());
-      $systemClass = $profile->remote_system;
-      $system = new $systemClass($profile);
-    }
+  public function setRemoteSystem(RemoteSystemInterface $system): void {
     $this->remoteSystem = $system;
   }
 
   public function getRemoteSystem(): RemoteSystemInterface {
-    if (empty($this->remoteSystem)) {
-      $this->setRemoteSystem();
-    }
     return $this->remoteSystem;
-  }
-
-  private function getMatcher(): OneToOneEmailOrFirstLastEmail {
-    if (empty($this->matcher)) {
-      $matcherClass = $this->getSyncProfile()['matcher'];
-      $this->matcher = new $matcherClass($this->getRemoteSystem());
-    }
-    return $this->matcher;
   }
 
   private function getMapper() {
@@ -80,6 +47,44 @@ class Syncer {
       $this->mapper = new $mapperClass($this->getRemoteSystem());
     }
     return $this->mapper;
+  }
+
+  public function setMapper($mapper): void {
+    $this->mapper = $mapper;
+  }
+
+  public function getMatcher(): OneToOneEmailOrFirstLastEmail {
+    if (empty($this->matcher)) {
+      $matcherClass = $this->getSyncProfile()['matcher'];
+      $this->matcher = new $matcherClass($this->getRemoteSystem());
+    }
+    return $this->matcher;
+  }
+
+  public function setMatcher($matcher): void {
+    $this->matcher = $matcher;
+  }
+
+  public function getSyncProfile(): array {
+    return $this->syncProfile;
+  }
+
+  public function setSyncProfile(array $syncProfile): void {
+    $this->syncProfile = $syncProfile;
+  }
+
+  public function oneWaySync(string $inputType, $input) {
+    if ('ActionNetwork:Person:Object' === $inputType) {
+      return $this->syncRemotePerson($input);
+    }
+    if ('Local:Contact:Id' === $inputType) {
+      return $this->syncContact($input);
+    }
+    throw new InvalidArgumentException(
+      '%s is not a valid input type for ' . __CLASS__ . '::'
+      . __FUNCTION__,
+      $inputType
+    );
   }
 
   public function getSavedMatchForLocalContact(int $contactId): array {
@@ -120,7 +125,7 @@ class Syncer {
     return $this->getMatcher()->findLocalMatchForRemotePerson($remotePerson);
   }
 
-  public function syncContact($id) {
+  private function syncContact($id) {
     $savedMatch = $this->getSavedMatchForLocalContact($id);
     if (empty($savedMatch)) {
       $matchingRemotePeople = $this->findRemoteMatchForLocalContact($id);
@@ -168,18 +173,60 @@ class Syncer {
     }
     return TRUE;
   }
+  private function syncRemotePerson(OsdiPerson $person) {
+    $savedMatch = $this->getSavedMatchForRemotePerson($person);
 
-  public function syncRemotePerson(RemoteObjectInterface $person) {
-    $contactId = \Civi\Api4\Contact::create(FALSE)
-      ->addValue('contact_type', 'Individual')
-      ->addValue('first_name', 'Bee')
-      ->addValue('last_name', 'Bim')
-      ->execute()->single()['id'];
+    if (empty($savedMatch)) {
+      $matchingLocalContacts = $this->findLocalMatchForRemotePerson($person);
 
-    Email::create(FALSE)
-      ->addValue('contact_id', $contactId)
-      ->addValue('email', 'bop@yum.com')
-      ->execute();
+      if (0 === $matchingLocalContacts->count()) {
+        $contactId = NULL;
+      }
+      elseif (1 === $matchingLocalContacts->count()) {
+        $contactId = $matchingLocalContacts->first()['id'];
+      }
+    }
+    else {
+      $contactId = $savedMatch['contact_id'];
+    }
+
+    $contactSaveAction = $this->getMapper()->mapRemotePersonOntoContact($person, $contactId);
+    try {
+      $saveResult = $contactSaveAction->execute();
+      $contact = $saveResult->single();
+      $contactId = $contact['id'];
+      $status = SaveResult::SUCCESS;
+      $exception = NULL;
+    }
+    catch (\API_Exception $exception) {
+      $status = SaveResult::ERROR;
+    }
+
+    OsdiMatch::save(FALSE)
+      ->setRecords([
+        [
+          'id' => $savedMatch['id'] ?? NULL,
+          'contact_id' => $contactId ?? NULL,
+          'remote_person_id' => $person->getId(),
+          'sync_profile_id' => $this->syncProfile['id'],
+          'sync_status' => $status,
+          'sync_origin_modified_time' => NULL,
+          'sync_target_modified_time' => $contact ? $contact['modified_date'] : NULL,
+        ],
+      ])->execute();
+
+    $logContext = [];
+    if ($exception) {
+      $logContext[] = $exception->getMessage();
+    }
+    \Civi::log()->debug(
+      "OSDI sync attempt: contact $contactId: $status",
+      $logContext,
+    );
+    if (SaveResult::ERROR === $status) {
+      return FALSE;
+    }
+    return TRUE;
   }
 
 }

@@ -13,19 +13,19 @@ class MatchResult {
   const NO_MATCH = 'no match found';
 
   /**
-   * @var array[RemoteObjectInterface]
+   * @var array[RemoteObjectInterface]|array[array]
    */
-  protected $matches;
+  protected array $matches;
 
   /**
    * @var string
    */
-  protected $statusCode;
+  protected ?string $statusCode;
 
   /**
    * @var string
    */
-  protected $message;
+  protected ?string $message;
 
   /**
    * @var mixed

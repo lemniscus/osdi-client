@@ -45,7 +45,10 @@ class Example {
     return $remotePerson;
   }
 
-  public function mapRemotePersonOntoContact(OsdiPerson $remotePerson, int $contactId = NULL): AbstractAction {
+  /**
+   * @return \Civi\Api4\Generic\AbstractCreateAction|\Civi\Api4\Generic\AbstractUpdateAction
+   */
+  public function mapRemotePersonOntoContact(OsdiPerson $remotePerson, int $contactId = NULL) {
     if ($contactId) {
       $apiAction = Contact::update()->addWhere('id', '=', $contactId);
     }
@@ -170,7 +173,7 @@ class Example {
         $countryId = $idFromAbbrev;
       }
     }
-    if (!($stateAbbrev = $osdiAddress['region'])) {
+    if (!($stateAbbrev = $osdiAddress['region'] ?? FALSE)) {
       return [NULL, $countryId];
     }
     $stateAbbrevList = \CRM_Core_BAO_Address::buildOptions(
