@@ -466,7 +466,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $savedPerson */
     $savedPerson = $system->save($unsavedPerson);
 
-    /** @var \Civi\Osdi\ActionNetwork\OsdiTagging $unsavedTagging */
+    /** @var \Civi\Osdi\ActionNetwork\Object\Tagging $unsavedTagging */
     $unsavedTagging = $system->makeOsdiObject('osdi:taggings');
     $unsavedTagging->setTag($savedTag, $system);
     $unsavedTagging->setPerson($savedPerson, $system);
@@ -491,7 +491,7 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $savedPerson */
     $savedPerson = $system->save($unsavedPerson);
 
-    /** @var \Civi\Osdi\ActionNetwork\OsdiTagging $unsavedTagging */
+    /** @var \Civi\Osdi\ActionNetwork\Object\Tagging $unsavedTagging */
     $unsavedTagging = $system->makeOsdiObject('osdi:taggings');
     $unsavedTagging->setTag($savedTag, $system);
     $unsavedTagging->setPerson($savedPerson, $system);

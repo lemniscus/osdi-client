@@ -3,6 +3,7 @@
 
 namespace Civi\Osdi\ActionNetwork;
 
+use Civi\Osdi\ActionNetwork\Object\Tagging;
 use Civi\Osdi\ActionNetwork\Object\Person;
 use CRM_Osdi_ExtensionUtil as E;
 use Civi\Osdi\Exception\EmptyResultException;
@@ -48,7 +49,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       return new Person($resource, $initData);
     }
     if ('osdi:taggings' === $type) {
-      return new OsdiTagging($resource, $initData);
+      return new Tagging($resource, $initData);
     }
     if (in_array($type, ['osdi:tags', 'osdi:advocacy_campaigns'])) {
       return new \Civi\Osdi\ActionNetwork\OsdiObject($type, $resource, $initData);
@@ -273,7 +274,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       return $this->createPersonOnRemoteSystem($saveParams);
     }
     if ('osdi:taggings' === $type) {
-      /** @var \Civi\Osdi\ActionNetwork\OsdiTagging $osdiObject */
+      /** @var \Civi\Osdi\ActionNetwork\Object\Tagging $osdiObject */
       return $this->createTaggingOnRemoteSystem($saveParams, $osdiObject);
     }
     $endpoint = $this->getEndpointFor($type);
@@ -292,11 +293,12 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
   /**
    * @param array $saveParams
-   * @param OsdiTagging $tagging
+   * @param Tagging $tagging
+   *
    * @return \Jsor\HalClient\HalResource|ResponseInterface
    * @throws EmptyResultException
    */
-  private function createTaggingOnRemoteSystem(array $saveParams, OsdiTagging $tagging) {
+  private function createTaggingOnRemoteSystem(array $saveParams, Tagging $tagging) {
     $url = $tagging->getTag()->getOwnUrl($this) . '/taggings';
     $endpoint = $this->linkify($url);
     return $endpoint->post([], ['body' => $saveParams]);

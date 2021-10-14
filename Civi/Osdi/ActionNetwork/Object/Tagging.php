@@ -1,14 +1,16 @@
 <?php
 
-namespace Civi\Osdi\ActionNetwork;
+namespace Civi\Osdi\ActionNetwork\Object;
 
 use Civi\Osdi\ActionNetwork\Object\Person;
+use Civi\Osdi\ActionNetwork\OsdiObject;
+use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\RemoteObjectInterface;
 use Jsor\HalClient\HalResource;
 
-class OsdiTagging extends OsdiObject {
+class Tagging extends OsdiObject {
 
   /**
    * @var Person
@@ -21,7 +23,7 @@ class OsdiTagging extends OsdiObject {
   private $tag;
 
   /**
-   * OsdiTagging constructor.
+   * Tagging constructor.
    *
    * @param \Jsor\HalClient\HalResource|null $resource
    * @param array|null $initData
