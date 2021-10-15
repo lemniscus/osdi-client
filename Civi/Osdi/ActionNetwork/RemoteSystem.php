@@ -88,11 +88,14 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       if (404 === $e->getCode()) {
         throw new EmptyResultException('Nothing found at "%s"', $endpoint->getHref());
       }
+      throw $e;
     }
   }
 
-  public function fetchPersonById(string $id): OsdiPerson {
-    return $this->fetchById('osdi:people', $id);
+  public function fetchPersonById(string $id): Person {
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $person */
+    $person = $this->fetchById('osdi:people', $id);
+    return $person;
   }
 
   public function find(string $objectType, array $criteria): \Civi\Osdi\ResultCollection {
@@ -157,6 +160,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     $savedObject = $statusCode = $statusMessage = $context = NULL;
 
     if ('osdi:people' === $objectToSave->getType()) {
+      /** @var \Civi\Osdi\ActionNetwork\Object\Person $objectToSave */
       [$statusCode, $statusMessage, $context] =
         $this->checkForEmailAddressConflict($objectToSave);
     }
@@ -219,7 +223,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
   }
 
   /**
-   * @return \Jsor\HalClient\HalResource|ResponseInterface
+   * @return \Jsor\HalClient\HalResource|\Psr\Http\Message\ResponseInterface
    */
   private function getRootResource() {
     return $this->getClient()->root();
@@ -254,7 +258,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
    * @param string $type
    * @param string $id
    * @param array $saveParams
-   * @return \Jsor\HalClient\HalResource|ResponseInterface
+   * @return \Jsor\HalClient\HalResource|\Psr\Http\Message\ResponseInterface
    * @throws InvalidArgumentException
    */
   private function updateObjectOnRemoteSystem(string $type, string $id, array $saveParams) {
@@ -266,7 +270,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
    * @param string $type
    * @param array $saveParams
    * @param \Civi\Osdi\RemoteObjectInterface|null $osdiObject
-   * @return \Jsor\HalClient\HalResource|ResponseInterface
+   * @return \Jsor\HalClient\HalResource|\Psr\Http\Message\ResponseInterface
    * @throws InvalidArgumentException|EmptyResultException
    */
   private function createObjectOnRemoteSystem(string $type, array $saveParams, ?RemoteObjectInterface $osdiObject) {
@@ -283,7 +287,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
   /**
    * @param array $personParams
-   * @return \Jsor\HalClient\HalResource|ResponseInterface
+   * @return \Jsor\HalClient\HalResource|\Psr\Http\Message\ResponseInterface
    * @throws InvalidArgumentException
    */
   private function createPersonOnRemoteSystem(array $personParams) {
@@ -295,7 +299,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
    * @param array $saveParams
    * @param Tagging $tagging
    *
-   * @return \Jsor\HalClient\HalResource|ResponseInterface
+   * @return \Jsor\HalClient\HalResource|\Psr\Http\Message\ResponseInterface
    * @throws EmptyResultException
    */
   private function createTaggingOnRemoteSystem(array $saveParams, Tagging $tagging) {
