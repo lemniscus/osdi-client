@@ -3,6 +3,7 @@
 
 namespace Civi\Osdi\ActionNetwork;
 
+use Civi\Osdi\ActionNetwork\Object\Tag;
 use Civi\Osdi\ActionNetwork\Object\Tagging;
 use Civi\Osdi\ActionNetwork\Object\Person;
 use CRM_Osdi_ExtensionUtil as E;
@@ -47,6 +48,9 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       ?array $initData = NULL): RemoteObjectInterface {
     if ('osdi:people' === $type) {
       return new Person($resource, $initData);
+    }
+    if ('osdi:tags' === $type) {
+      return new Tag($resource, $initData);
     }
     if ('osdi:taggings' === $type) {
       return new Tagging($resource, $initData);
@@ -99,10 +103,15 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
   }
 
   public function find(string $objectType, array $criteria): \Civi\Osdi\ResultCollection {
+    $entitiesThatSupportOData = ['osdi:people', 'osdi:signatures', 'osdi:outreaches'];
+    if (!in_array($objectType, $entitiesThatSupportOData)) {
+      throw new InvalidArgumentException(
+        '%s is an unsupported object type for find', $objectType);
+    }
     $filterClauses = [];
     foreach ($criteria as $criterion) {
       if (count($criterion) !== 3) {
-        throw new InvalidArgumentException("Incorrect parameter format for findPeople");
+        throw new InvalidArgumentException('Incorrect parameter format for find');
       }
       [$key, $operator, $value] = $criterion;
       if (in_array($operator, ['eq', 'lt', 'gt'])) {
@@ -114,7 +123,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     }
     $endpoint = $this->getEndpointFor($objectType);
     $resultResource = $this->filter($endpoint, implode(' and ', $filterClauses));
-    return new \Civi\Osdi\ActionNetwork\ResultCollection($this, $objectType, $resultResource);
+    return new ResultCollection($this, $objectType, $resultResource);
   }
 
   private function filter(?HalLink $endpoint, string $query) {
