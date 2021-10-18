@@ -65,6 +65,6 @@ interface RemoteObjectInterface {
 
   public function isEdited(string $fieldName): bool;
 
-  public function isSupersetOf(RemoteObjectInterface $otherObject): bool;
+  public function isSupersetOf(RemoteObjectInterface $otherObject, bool $emptyValuesAreOk = FALSE, bool $ignoreModifiedDate = FALSE): bool;
 
 }
