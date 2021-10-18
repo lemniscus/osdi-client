@@ -2,6 +2,7 @@
 
 namespace Civi\Osdi\ActionNetwork\Syncer;
 
+use Civi\Api4\Contact;
 use Civi\Osdi\ActionNetwork\Mapper\Example;
 use Civi\Osdi\ActionNetwork\Object\Person as OsdiPersonObject;
 use Civi\Osdi\Exception\InvalidArgumentException;
@@ -9,6 +10,7 @@ use Civi\Osdi\MatchResult;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\SaveResult;
+use Civi\Osdi\SyncResult;
 use CRM_Osdi_ExtensionUtil as E;
 use Civi\Api4\OsdiMatch;
 use Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail;
@@ -75,16 +77,43 @@ class Person {
 
   public function oneWaySync(string $inputType, $input) {
     if ('ActionNetwork:Person:Object' === $inputType) {
-      return $this->syncRemotePerson($input);
+      return $this->oneWaySyncRemotePersonObject($input);
     }
     if ('Local:Contact:Id' === $inputType) {
-      return $this->syncContact($input);
+      return $this->oneWaySyncContactById($input);
     }
     throw new InvalidArgumentException(
       '%s is not a valid input type for ' . __CLASS__ . '::'
       . __FUNCTION__,
       $inputType
     );
+  }
+
+  public function getOrCreateMatch(string $inputType, $input): SyncResult {
+    if ('ActionNetwork:Person:Object' === $inputType) {
+      return $this->getOrCreateMatchForRemoteObject($input);
+    }
+    if ('Local:Contact:Id' === $inputType) {
+      return $this->getOrCreateMatchForLocalId($input);
+    }
+    throw new InvalidArgumentException(
+      '%s is not a valid input type for ' . __CLASS__ . '::'
+      . __FUNCTION__,
+      $inputType
+    );
+  }
+
+  private function getOrCreateMatchForLocalId(int $id): SyncResult {
+    if ($savedMatch = $this->getSavedMatchForLocalContact($id)) {
+      if ($remoteId = $savedMatch['remote_person_id']) {
+        $remotePerson = $this->getRemoteSystem()->fetchPersonById($remoteId);
+        return new SyncResult([], $remotePerson,
+          SyncResult::SUCCESS,
+          'saved match',
+        $savedMatch);
+      }
+    }
+    return $this->oneWaySyncContactById($id);
   }
 
   public function getSavedMatchForLocalContact(int $contactId): array {
@@ -120,12 +149,11 @@ class Person {
   public function findRemoteMatchForLocalContact(int $contactId): MatchResult {
     return $this->getMatcher()->findRemoteMatchForLocalContact($contactId);
   }
-
   public function findLocalMatchForRemotePerson($remotePerson): MatchResult {
     return $this->getMatcher()->findLocalMatchForRemotePerson($remotePerson);
   }
 
-  private function syncContact($id) {
+  private function oneWaySyncContactById($id) {
     $savedMatch = $this->getSavedMatchForLocalContact($id);
     if (empty($savedMatch)) {
       $matchingRemotePeople = $this->findRemoteMatchForLocalContact($id);
@@ -142,17 +170,17 @@ class Person {
     }
     $changedPerson = $this->getMapper()->mapContactOntoRemotePerson($id, $person);
     $saveResult = $this->getRemoteSystem()->trySave($changedPerson);
-    $remotePerson = $saveResult->object();
+    $remoteObject = $saveResult->object();
     OsdiMatch::save(FALSE)
       ->setRecords([
         [
           'id' => $savedMatch['id'] ?? NULL,
           'contact_id' => $id,
-          'remote_person_id' => $remotePerson ? $remotePerson->getId() : NULL,
+          'remote_person_id' => $remoteObject ? $remoteObject->getId() : NULL,
           'sync_profile_id' => $this->syncProfile['id'],
           'sync_status' => $saveResult->status(),
           'sync_origin_modified_time' => NULL,
-          'sync_target_modified_time' => $remotePerson ? $remotePerson
+          'sync_target_modified_time' => $remoteObject ? $remoteObject
             ->get('modified_date') : NULL,
         ],
       ])->execute();
@@ -168,12 +196,25 @@ class Person {
       "OSDI sync attempt: contact $id: {$saveResult->status()}",
       $logContext,
     );
+
     if ($saveResult->isError()) {
-      return FALSE;
+      return new SyncResult(
+        Contact::get(FALSE)->addWhere('id', '=', $id)->execute()->single(),
+        $remoteObject,
+        SyncResult::ERROR,
+        $saveResult->message(),
+        $saveResult->context()
+      );
     }
-    return TRUE;
+
+    return new SyncResult(
+      Contact::get(FALSE)->addWhere('id', '=', $id)->execute()->single(),
+      $remoteObject,
+      SyncResult::SUCCESS,
+    );
   }
-  private function syncRemotePerson(OsdiPersonObject $person) {
+
+  private function oneWaySyncRemotePersonObject(OsdiPersonObject $person) {
     $savedMatch = $this->getSavedMatchForRemotePerson($person);
 
     if (empty($savedMatch)) {
