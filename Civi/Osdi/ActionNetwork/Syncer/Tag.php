@@ -11,6 +11,9 @@ use Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail;
 
 class Tag {
 
+  const inputTypeLocalTagId = 'Local:Tag:Id';
+  const inputTypeActionNetworkTagObject = 'ActionNetwork:Tag:Object';
+
   private array $syncProfile;
 
   private RemoteSystemInterface $remoteSystem;
@@ -70,11 +73,11 @@ class Tag {
   }
 
   public function oneWaySync(string $inputType, $input) {
-    if ('ActionNetwork:Tag:Object' === $inputType) {
-      return $this->syncRemoteTag($input);
+    if (self::inputTypeActionNetworkTagObject === $inputType) {
+      return $this->oneWaySyncRemoteObject($input);
     }
-    if ('Local:Tag:Id' === $inputType) {
-      return $this->syncLocalTagById($input);
+    if (self::inputTypeLocalTagId === $inputType) {
+      return $this->oneWaySyncLocalById($input);
     }
     throw new InvalidArgumentException(
       '%s is not a valid input type for ' . __CLASS__ . '::'
@@ -83,21 +86,70 @@ class Tag {
     );
   }
 
-  public function getSavedMatch(int $syncProfileId, string $inputType, $input) {
+  public function getOrCreateMatch(string $inputType, $input): SyncResult {
+    if (self::inputTypeActionNetworkTagObject === $inputType) {
+      return $this->getOrCreateMatchForRemoteObject($input);
+    }
+    if (self::inputTypeLocalTagId === $inputType) {
+      return $this->getOrCreateMatchForLocalById($input);
+    }
+    throw new InvalidArgumentException(
+      '%s is not a valid input type for ' . __CLASS__ . '::'
+      . __FUNCTION__,
+      $inputType
+    );
+  }
+
+  private function getOrCreateMatchForRemoteObject(OsdiTagObject $tag) {
+    $type = self::inputTypeActionNetworkTagObject;
+    $savedMatch = $this->getSavedMatch($type, $tag);
+    if ($savedMatch && ($localId = $savedMatch[$type] ?? NULL)) {
+      $localTagArray = \Civi\Api4\Tag::get(FALSE)
+        ->addWhere('id', '=', $localId)
+        ->execute()->single();
+      return new SyncResult($localTagArray, NULL,
+        SyncResult::SUCCESS,
+        'saved match',
+        $savedMatch);
+    }
+    return $this->oneWaySyncRemoteObject($tag);
+  }
+
+  private function getOrCreateMatchForLocalById(int $id): SyncResult {
+    $type = self::inputTypeLocalTagId;
+    $savedMatch = $this->getSavedMatch($type, $id);
+    if ($savedMatch && ($remoteObjectId = $savedMatch[$type] ?? NULL)) {
+      $remoteObject = $this->getRemoteSystem()->fetchById('osdi:tags', $id);
+      return new SyncResult([], $remoteObject,
+        SyncResult::SUCCESS,
+        'saved match',
+        $savedMatch);
+    }
+    return $this->oneWaySyncLocalById($id);
+  }
+
+  /**
+   * @return array{local: array, remote: array}
+   */
+  public function getSavedMatch(string $inputType, $input, int $syncProfileId = NULL) {
+    $syncProfileId = $syncProfileId ?? $this->getSyncProfile()['id'];
     $savedMatches = self::getAllSavedMatches()[$syncProfileId] ?? [];
 
-    if ('Local:Tag:Id' !== $inputType) {
+    if (self::inputTypeActionNetworkTagObject === $inputType) {
+      $input = $input->getId();
+    }
+    elseif (self::inputTypeLocalTagId !== $inputType) {
       throw new \Exception("\"$inputType\" is not a valid way to look up saved Tag matches");
     }
 
-    return $savedMatches[$input] ?? [];
+    return $savedMatches[$inputType][$input] ?? [];
   }
 
   private function getAllSavedMatches(): array {
     return \Civi::cache('long')->get('osdi-client:tag-match', []);
   }
 
-  private function syncLocalTagById($id) {
+  private function oneWaySyncLocalById($id): SyncResult {
     try {
       $localTag = \Civi\Api4\Tag::get(FALSE)
         ->addWhere('id', '=', $id)
@@ -115,7 +167,7 @@ class Tag {
         $logContext[] = $saveResult->context();
       }
       \Civi::log()->debug(
-        "OSDI sync attempt: tag $id: {$saveResult->status()}",
+        "OSDI sync attempt: local tag $id: {$saveResult->status()}",
         $logContext,
       );
 
@@ -149,14 +201,54 @@ class Tag {
     }
   }
 
+  private function oneWaySyncRemoteObject(OsdiTagObject $remoteObject): SyncResult {
+    $name = $remoteObject->get('name');
+
+    if (empty($name)) {
+      throw new InvalidArgumentException('Invalid remote tag object supplied to '
+        . __CLASS__ . '::' . __FUNCTION__);
+    }
+
+    $civiApiTagGet = \Civi\Api4\Tag::get(FALSE)
+      ->addWhere('name', '=', $name)
+      ->execute();
+
+    if (!$civiApiTagGet->count()) {
+      $localTag = \Civi\Api4\Tag::create(FALSE)
+        ->addValue('name', $name)
+        ->addValue('used_for', ['Contact'])
+        ->execute()->single();
+    }
+    else {
+      $localTag = $civiApiTagGet->single();
+    }
+
+    \Civi::log()->debug(
+      "OSDI sync attempt: remote tag '$name': success"
+    );
+
+    $this->saveMatch($localTag, $remoteObject);
+
+    return new SyncResult(
+      $localTag,
+      $remoteObject,
+      SyncResult::SUCCESS
+    );
+  }
+
   private function saveMatch(array $localTag, \Civi\Osdi\RemoteObjectInterface $remoteObject): void {
     $savedMatches = self::getAllSavedMatches();
-    $savedMatches[self::getSyncProfile()['id']][$localTag['id']] = [
+    $recordToSave = [
       'local' => $localTag,
       'remote' => $remoteObject->getAllOriginal() + [
-          'id' => $remoteObject->getId()
-        ],
+        'id' => $remoteObject->getId(),
+      ],
     ];
+    $syncProfileId = self::getSyncProfile()['id'];
+    $savedMatches[$syncProfileId][self::inputTypeLocalTagId][$localTag['id']] = $recordToSave;
+    $savedMatches[$syncProfileId][self::inputTypeActionNetworkTagObject][$remoteObject->getId()] =
+      &$savedMatches[$syncProfileId][self::inputTypeLocalTagId][$localTag['id']];
+
     \Civi::cache('long')->set('osdi-client:tag-match', $savedMatches);
   }
 
