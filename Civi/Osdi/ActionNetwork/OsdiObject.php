@@ -69,6 +69,12 @@ class OsdiObject extends \Civi\Osdi\Generic\OsdiObject implements
     }
     $identifiers = $this->resource->getProperty('identifiers');
     if (!$identifiers) {
+      $selfLink = $resource->getFirstLink('self');
+      if ($selfLink) {
+        $selfUrl = $selfLink->getHref();
+        \Civi::log()->debug('Identifiers array was empty; got id from self link', [$selfUrl]);
+        return substr($selfUrl, strrpos($selfUrl, '/') + 1);
+      }
       return NULL;
     }
     $prefix = 'action_network:';
