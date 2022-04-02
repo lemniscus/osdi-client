@@ -102,6 +102,12 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     return $person;
   }
 
+  /**
+   * @param string $objectType such as 'osdi:people'
+   * @param array $criteria
+   *   [[$key, $operator, $value], [$key, $operator, $value]...]
+   *   where $operator is 'eq', 'lt', or 'gt'
+   */
   public function find(string $objectType, array $criteria): \Civi\Osdi\ResultCollection {
     $entitiesThatSupportOData = ['osdi:people', 'osdi:signatures', 'osdi:outreaches'];
     if (!in_array($objectType, $entitiesThatSupportOData)) {
