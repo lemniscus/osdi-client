@@ -26,10 +26,6 @@ class OneToOneEmailOrFirstLastEmail {
     $this->mapper = $syncer->getMapper();
   }
 
-  public function findRemoteMatchForLocalContact(int $id) {
-    return $this->tryToFindMatchForLocalContact($id);
-  }
-
   public function tryToFindMatchForLocalContact(int $id) {
     $api4ContactResult = $this->getContactById($id);
     if ($api4ContactResult->count() === 0) {
@@ -86,10 +82,6 @@ class OneToOneEmailOrFirstLastEmail {
       ]
     );
     return $this->makeSingleOrZeroMatchResult($originContactArray, $remoteSystemFindResult);
-  }
-
-  public function findLocalMatchForRemotePerson(Person $person) {
-    return $this->tryToFindMatchForRemotePerson($person);
   }
 
   public function tryToFindMatchForRemotePerson(Person $remotePerson) {

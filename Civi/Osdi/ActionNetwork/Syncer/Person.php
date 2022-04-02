@@ -4,8 +4,9 @@ namespace Civi\Osdi\ActionNetwork\Syncer;
 
 use Civi\Api4\Contact;
 use Civi\Osdi\ActionNetwork\Mapper\Example;
-use Civi\Osdi\ActionNetwork\Object\Person as OsdiPersonObject;
+use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MatchResult;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
@@ -28,11 +29,29 @@ class Person {
 
   private Example $mapper;
 
+  const inputTypeActionNetworkPersonObject = 'ActionNetwork:Person:Object';
+  const inputTypeLocalContactId = 'Local:Contact:Id';
+  const inputTypeLocalContactArray = 'Local:Contact:Array';
+
   /**
    * Syncer constructor.
    */
   public function __construct(RemoteSystemInterface $remoteSystem) {
     $this->remoteSystem = $remoteSystem;
+  }
+
+  private static function validateInputType(string $inputType) {
+    if (!in_array($inputType, [
+      self::inputTypeActionNetworkPersonObject,
+      self::inputTypeLocalContactId,
+      self::inputTypeLocalContactArray,
+    ])) {
+      throw new InvalidArgumentException(
+        '%s is not a valid input type for %s',
+        $inputType,
+        __CLASS__
+      );
+    }
   }
 
   public function setRemoteSystem(RemoteSystemInterface $system): void {
@@ -43,7 +62,7 @@ class Person {
     return $this->remoteSystem;
   }
 
-  private function getMapper() {
+  public function getMapper() {
     if (empty($this->mapper)) {
       $mapperClass = $this->getSyncProfile()['mapper'];
       $this->mapper = new $mapperClass($this->getRemoteSystem());
@@ -58,7 +77,7 @@ class Person {
   public function getMatcher(): OneToOneEmailOrFirstLastEmail {
     if (empty($this->matcher)) {
       $matcherClass = $this->getSyncProfile()['matcher'];
-      $this->matcher = new $matcherClass($this->getRemoteSystem());
+      $this->matcher = new $matcherClass($this);
     }
     return $this->matcher;
   }
@@ -75,11 +94,11 @@ class Person {
     $this->syncProfile = $syncProfile;
   }
 
-  public function oneWaySync(string $inputType, $input) {
-    if ('ActionNetwork:Person:Object' === $inputType) {
-      return $this->oneWaySyncRemotePersonObject($input);
+  public function oneWaySync(string $inputType, $input): SyncResult {
+    if (self::inputTypeActionNetworkPersonObject === $inputType) {
+      return $this->oneWaySyncRemoteObject($input);
     }
-    if ('Local:Contact:Id' === $inputType) {
+    if (self::inputTypeLocalContactId === $inputType) {
       return $this->oneWaySyncContactById($input);
     }
     throw new InvalidArgumentException(
@@ -89,12 +108,77 @@ class Person {
     );
   }
 
-  public function getOrCreateMatch(string $inputType, $input): SyncResult {
-    if ('ActionNetwork:Person:Object' === $inputType) {
-      return $this->getOrCreateMatchForRemoteObject($input);
+  public function getOrCreateLocalRemotePair(string $inputType, $input): LocalRemotePair {
+    if ($savedMatch = $this->getSavedMatch($inputType, $input)) {
+      $message = 'fetched saved match';
+      try {
+        $localObject = $this->getMapper()->getSingleCiviContactById($savedMatch['contact_id']);
+        $remoteObject = $this->getRemoteSystem()->fetchPersonById($savedMatch['remote_person_id']);
+      }
+      catch (InvalidArgumentException | EmptyResultException $e) {
+        OsdiMatch::delete(FALSE)
+          ->addWhere('id', '=', $savedMatch['id'])
+          ->execute();
+        $savedMatch = NULL;
+      }
     }
-    if ('Local:Contact:Id' === $inputType) {
-      return $this->getOrCreateMatchForLocalId($input);
+
+    if (empty($savedMatch)) {
+      $matchResult = $this->tryToFindMatch($inputType, $input);
+      if ($matchResult->isError()) {
+        $message = 'error finding match';
+        $isError = TRUE;
+      }
+
+      elseif (1 === $matchResult->count()) {
+        $message = 'found new match with existing object';
+        $inputTypeForSaveMatch = $inputType;
+        $originObject = $matchResult->getOriginObject();
+        $matchingObject = $matchResult->first();
+        if (is_array($originObject)) {
+          $inputTypeForSaveMatch = self::inputTypeLocalContactArray;
+          $localObject = $originObject;
+          $remoteObject = $matchingObject;
+        }
+        else {
+          $localObject = $matchingObject;
+          $remoteObject = $originObject;
+        }
+        $savedMatch = $this->saveMatch(
+          $inputTypeForSaveMatch,
+          $originObject,
+          $matchingObject,
+          NULL, NULL);
+      }
+
+      elseif (MatchResult::NO_MATCH == $matchResult->status()) {
+        $message = 'created matching object';
+        $syncResult = $this->oneWaySync($inputType, $input);
+        $localObject = $syncResult->getLocalObject();
+        $remoteObject = $syncResult->getRemoteObject();
+        if ($syncResult->isError()) {
+          $message = 'error creating matching object';
+          $isError = TRUE;
+        }
+      }
+    }
+
+    return new LocalRemotePair(
+      $localObject ?? NULL,
+      $remoteObject ?? NULL,
+      $isError ?? FALSE,
+      $message ?? '',
+      $savedMatch ?? [],
+      $matchResult ?? NULL,
+      $syncResult ?? NULL);
+  }
+
+  public function getOrCreateMatchingObject(string $inputType, $input): SyncResult {
+    if (self::inputTypeActionNetworkPersonObject === $inputType) {
+      return $this->getOrCreateMatchingObjectForRemoteObject($input);
+    }
+    if (self::inputTypeLocalContactId === $inputType) {
+      return $this->getOrCreateMatchingObjectForLocalId($input);
     }
     throw new InvalidArgumentException(
       '%s is not a valid input type for ' . __CLASS__ . '::'
@@ -103,7 +187,61 @@ class Person {
     );
   }
 
-  private function getOrCreateMatchForLocalId(int $id): SyncResult {
+  private function getOrCreateMatchingObjectForRemoteObject(\Civi\Osdi\ActionNetwork\Object\Person $person): SyncResult {
+    if ($savedMatch = $this->getSavedMatchForRemotePerson($person)) {
+      if ($localId = $savedMatch['contact_id']) {
+        try {
+          $localContactArray = $this->mapper->getSingleCiviContactById($localId);
+        }
+        catch (InvalidArgumentException $e) {
+          $localContactArray = NULL;
+          OsdiMatch::delete(FALSE)
+            ->addWhere('id', '=', $savedMatch['id'])
+            ->execute();
+        }
+        if ($localContactArray) {
+          return new SyncResult(
+            $localContactArray,
+            $person,
+            SyncResult::SUCCESS,
+            'saved match',
+            $savedMatch);
+        }
+      }
+    }
+
+    $match = $this->tryToFindMatch(self::inputTypeActionNetworkPersonObject, $person);
+
+    if ($match->isError()) {
+      return new SyncResult(
+        NULL,
+        $person,
+        SyncResult::ERROR,
+        'match error',
+        $match
+      );
+    }
+
+    if (MatchResult::NO_MATCH === $match->status()) {
+      return $this->oneWaySync(self::inputTypeActionNetworkPersonObject, $person);
+    }
+
+    $localContactArray = $match->first();
+    $this->saveMatch(
+      self::inputTypeActionNetworkPersonObject,
+      $person,
+      $localContactArray,
+    );
+
+    return new SyncResult(
+      $localContactArray,
+      $person,
+      NULL,
+      'new match',
+      $match);
+  }
+
+  private function getOrCreateMatchingObjectForLocalId(int $id): SyncResult {
     if ($savedMatch = $this->getSavedMatchForLocalContact($id)) {
       if ($remoteId = $savedMatch['remote_person_id']) {
         $remotePerson = $this->getRemoteSystem()->fetchPersonById($remoteId);
@@ -113,14 +251,64 @@ class Person {
         $savedMatch);
       }
     }
-    return $this->oneWaySyncContactById($id);
+
+    $match = $this->tryToFindMatch(self::inputTypeLocalContactId, $id);
+
+    if ($match->isError()) {
+      return new SyncResult(
+        $id,
+        NULL,
+        SyncResult::ERROR,
+        'match error',
+        $match
+      );
+    }
+
+    if (MatchResult::NO_MATCH === $match->status()) {
+      return $this->oneWaySync(self::inputTypeLocalContactId, $id);
+    }
+
+    $this->saveMatch(
+      self::inputTypeLocalContactArray,
+      $match->getOriginObject(),
+      $match->first()
+    );
+
+    return new SyncResult(
+      $match->getOriginObject(),
+      $match->first(),
+      NULL,
+      'new match',
+      $match);
   }
 
-  public function getSavedMatchForLocalContact(int $contactId): array {
-    $osdiMatchGet = OsdiMatch::get(FALSE)
-      ->addWhere('contact_id', '=', $contactId)
-      ->addWhere('sync_profile_id', '=', $this->syncProfile['id'])
-      ->execute();
+  /**
+   * @param string $inputType inputType constant from this class
+   * @param mixed $input thing to get a saved OsdiMatch for
+   *
+   * @return array OsdiMatch record, or empty array if none found
+   */
+  public function getSavedMatch(string $inputType, $input): array {
+    self::validateInputType($inputType);
+
+    $osdiMatchGetAction = OsdiMatch::get(FALSE)
+      ->addWhere('sync_profile_id', '=', $this->syncProfile['id']);
+
+    if (self::inputTypeActionNetworkPersonObject === $inputType) {
+      /** @var \Civi\Osdi\ActionNetwork\Object\Person $input */
+      $osdiMatchGetAction->addWhere('remote_person_id', '=', $input->getId());
+    }
+    if (self::inputTypeLocalContactId === $inputType) {
+      /** @var positive-int $input */
+      $osdiMatchGetAction->addWhere('contact_id', '=', $input);
+    }
+    if (self::inputTypeLocalContactArray === $inputType) {
+      /** @var array $input */
+      $osdiMatchGetAction->addWhere('contact_id', '=', $input['id']);
+    }
+
+    $osdiMatchGet = $osdiMatchGetAction->execute();
+
     if ($osdiMatchGet->count() > 1) {
       throw new \CRM_Core_Exception(E::ts(
         'There should only be one OsdiMatch per contact_id and '
@@ -128,35 +316,32 @@ class Person {
         [1 => $osdiMatchGet->count()]
       ));
     }
+
     return $osdiMatchGet->first() ?? [];
+  }
+
+  public function getSavedMatchForLocalContact(int $contactId): array {
+    return $this->getSavedMatch(self::inputTypeLocalContactId, $contactId);
   }
 
   public function getSavedMatchForRemotePerson(RemoteObjectInterface $remotePerson): array {
-    $osdiMatchGet = OsdiMatch::get(FALSE)
-      ->addWhere('remote_person_id', '=', $remotePerson->getId())
-      ->addWhere('sync_profile_id', '=', $this->syncProfile['id'])
-      ->execute();
-    if ($osdiMatchGet->count() > 1) {
-      throw new \CRM_Core_Exception(E::ts(
-        'There should only be one OsdiMatch per remote_person_id and '
-        . 'sync_profile_id, %1 found',
-        [1 => $osdiMatchGet->count()]
-      ));
+    return $this->getSavedMatch(self::inputTypeActionNetworkPersonObject, $remotePerson);
+  }
+
+  public function tryToFindMatch(string $inputType, $input) {
+    if (self::inputTypeActionNetworkPersonObject == $inputType) {
+      return $this->getMatcher()->tryToFindMatchForRemotePerson($input);
     }
-    return $osdiMatchGet->first() ?? [];
+    if (self::inputTypeLocalContactId == $inputType) {
+      return $this->getMatcher()->tryToFindMatchForLocalContact($input);
+    }
+    self::validateInputType($inputType);
   }
 
-  public function findRemoteMatchForLocalContact(int $contactId): MatchResult {
-    return $this->getMatcher()->findRemoteMatchForLocalContact($contactId);
-  }
-  public function findLocalMatchForRemotePerson($remotePerson): MatchResult {
-    return $this->getMatcher()->findLocalMatchForRemotePerson($remotePerson);
-  }
-
-  private function oneWaySyncContactById($id) {
+  private function oneWaySyncContactById($id): SyncResult {
     $savedMatch = $this->getSavedMatchForLocalContact($id);
     if (empty($savedMatch)) {
-      $matchingRemotePeople = $this->findRemoteMatchForLocalContact($id);
+      $matchingRemotePeople = $this->tryToFindMatch(self::inputTypeLocalContactId, $id);
       if (0 === $matchingRemotePeople->count()) {
         $person = $this->getRemoteSystem()->makeOsdiObject('osdi:people');
       }
@@ -170,6 +355,7 @@ class Person {
     }
     $changedPerson = $this->getMapper()->mapContactOntoRemotePerson($id, $person);
     $saveResult = $this->getRemoteSystem()->trySave($changedPerson);
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $remoteObject */
     $remoteObject = $saveResult->object();
     OsdiMatch::save(FALSE)
       ->setRecords([
@@ -179,6 +365,7 @@ class Person {
           'remote_person_id' => $remoteObject ? $remoteObject->getId() : NULL,
           'sync_profile_id' => $this->syncProfile['id'],
           'sync_status' => $saveResult->status(),
+          'sync_origin' => OsdiMatch::syncOriginLocal,
           'sync_origin_modified_time' => NULL,
           'sync_target_modified_time' => $remoteObject ? $remoteObject
             ->get('modified_date') : NULL,
@@ -214,11 +401,14 @@ class Person {
     );
   }
 
-  private function oneWaySyncRemotePersonObject(OsdiPersonObject $person) {
+  private function oneWaySyncRemoteObject(\Civi\Osdi\ActionNetwork\Object\Person $person): SyncResult {
     $savedMatch = $this->getSavedMatchForRemotePerson($person);
 
     if (empty($savedMatch)) {
-      $matchingLocalContacts = $this->findLocalMatchForRemotePerson($person);
+      $matchingLocalContacts = $this->tryToFindMatch(
+        self::inputTypeActionNetworkPersonObject,
+        $person
+      );
 
       if (0 === $matchingLocalContacts->count()) {
         $contactId = NULL;
@@ -251,6 +441,7 @@ class Person {
           'remote_person_id' => $person->getId(),
           'sync_profile_id' => $this->syncProfile['id'],
           'sync_status' => $status,
+          'sync_origin' => OsdiMatch::syncOriginRemote,
           'sync_origin_modified_time' => NULL,
           'sync_target_modified_time' => $contact ? $contact['modified_date'] : NULL,
         ],
@@ -267,7 +458,39 @@ class Person {
     if (SaveResult::ERROR === $status) {
       return FALSE;
     }
-    return TRUE;
+
+    return new SyncResult(
+      $this->mapper->getSingleCiviContactById($contactId),
+      $person,
+      SyncResult::SUCCESS,
+    );
+  }
+
+  private function saveMatch(string $inputType, $input, $matchingObject, string $syncStatus = NULL, int $matchId = NULL): array {
+    if (self::inputTypeLocalContactArray == $inputType) {
+      $localContactArray = $input;
+      $remotePerson = $matchingObject;
+    }
+    if (self::inputTypeActionNetworkPersonObject == $inputType) {
+      $localContactArray = $matchingObject;
+      $remotePerson = $input;
+    }
+    if (empty($localContactArray)) {
+      throw new InvalidArgumentException($inputType);
+    }
+
+    return OsdiMatch::save(FALSE)
+      ->setRecords([
+        [
+          'id' => $matchId,
+          'contact_id' => $localContactArray['id'],
+          'remote_person_id' => $remotePerson->getId(),
+          'sync_profile_id' => $this->syncProfile['id'],
+          'sync_status' => $syncStatus,
+          'sync_origin_modified_time' => $remotePerson->get('modified_date'),
+          'sync_target_modified_time' => $localContactArray['modified_date'],
+        ],
+      ])->execute()->single();
   }
 
 }

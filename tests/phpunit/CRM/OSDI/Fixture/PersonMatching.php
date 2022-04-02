@@ -109,11 +109,15 @@ class CRM_OSDI_Fixture_PersonMatching {
     return [$contactId, $savedRemotePerson];
   }
 
+  /**
+   * @return \Civi\Osdi\RemoteObjectInterface $unsavedNewPerson
+   * @throws \Civi\Osdi\Exception\InvalidArgumentException
+   */
   public static function makeNewOsdiPersonWithFirstLastEmail(): \Civi\Osdi\RemoteObjectInterface {
     $unsavedNewPerson = self::makeBlankOsdiPerson();
-    $unsavedNewPerson->set('given_name', 'Testy');
-    $unsavedNewPerson->set('family_name', 'McTest');
-    $unsavedNewPerson->set('email_addresses', [['address' => 'testy@test.net']]);
+    $unsavedNewPerson->set('given_name', 'Tester');
+    $unsavedNewPerson->set('family_name', 'Von Test');
+    $unsavedNewPerson->set('email_addresses', [['address' => 'tester@testify.net']]);
     return $unsavedNewPerson;
   }
 

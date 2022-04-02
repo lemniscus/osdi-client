@@ -39,6 +39,10 @@ class SyncResult {
     );
   }
 
+  public function getLocalObject() {
+    return $this->localObject;
+  }
+
   public function getRemoteObject(): ?RemoteObjectInterface {
     return $this->remoteObject;
   }
