@@ -13,17 +13,22 @@ class MatchResult {
   const NO_MATCH = 'no match found';
 
   /**
+   * @var RemoteObjectInterface|array
+   */
+  protected $originObject;
+
+  /**
    * @var array[RemoteObjectInterface]|array[array]
    */
   protected array $matches;
 
   /**
-   * @var string
+   * @var string|null
    */
   protected ?string $statusCode;
 
   /**
-   * @var string
+   * @var string|null
    */
   protected ?string $message;
 
@@ -32,11 +37,16 @@ class MatchResult {
    */
   protected $context;
 
-  public function __construct(array $matches, $errorType = NULL, $errorReason = NULL, $context = NULL) {
+  public function __construct($originObject, array $matches, $errorType = NULL, $errorReason = NULL, $context = NULL) {
+    $this->originObject = $originObject;
     $this->matches = $matches;
     $this->statusCode = $errorType;
     $this->message = $errorReason;
     $this->context = $context;
+  }
+
+  public function getOriginObject() {
+    return $this->originObject;
   }
 
   /**
