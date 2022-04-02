@@ -84,7 +84,7 @@ class Person extends OsdiObject {
 
     /*
      * we leave the actual email address and phone number untouched, because
-     * we aren't allowed to truly delete them, and we overwriting them with the
+     * we aren't allowed to truly delete them, and overwriting them with the
      * null char likely won't have the effect we want due to AN's deduplication
      * rules, https://help.actionnetwork.org/hc/en-us/articles/360038822392-Deduplicating-activists-on-Action-Network
      */
