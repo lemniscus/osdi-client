@@ -3,8 +3,8 @@
 namespace Civi\Osdi\ActionNetwork\Mapper;
 
 use Civi\Api4\Contact;
-use Civi\Api4\Generic\AbstractAction;
 use Civi\Osdi\ActionNetwork\Object\Person;
+use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\RemoteSystemInterface;
 
 class Example {
@@ -104,21 +104,14 @@ class Example {
     return $apiAction;
   }
 
-  private function getSingleCiviContactById($id): array {
-    $result = Contact::get(FALSE)
-      ->addJoin('Email AS email', FALSE, NULL, ['email.is_primary', '=', 1])
-      ->addJoin('Phone AS phone', FALSE, NULL, [
-        'phone.phone_type_id:name',
-        '=',
-        '"Mobile"',
-      ])
-      ->addJoin('Address AS address', FALSE, NULL, [
-        'address.is_primary',
-        '=',
-        1,
-      ])
-      ->setSelect([
+  /**
+   * @return array{select: array, join: array}
+   */
+  public function getFieldsToSelect(): array {
+    return [
+      'select' => [
         'id',
+        'modified_date',
         'first_name',
         'last_name',
         'preferred_language',
@@ -130,12 +123,28 @@ class Example {
         'address.postal_code',
         'address.country_id',
         'address.country_id:name',
-      ])
+      ],
+      'join' => [
+        ['Email AS email', FALSE, NULL, ['email.is_primary', '=', 1]],
+        ['Phone AS phone', FALSE, NULL, ['phone.phone_type_id:name', '=', '"Mobile"']],
+        ['Address AS address', FALSE, NULL, ['address.is_primary', '=', 1]],
+      ],
+    ];
+  }
+
+  public function getSingleCiviContactById($id): array {
+    $clauses = $this->getFieldsToSelect();
+    $result = Contact::get(FALSE)
+      ->setJoin($clauses['join'])
+      ->setSelect($clauses['select'])
       ->setWhere([
         ['id', '=', $id],
         ['is_deleted', '=', FALSE],
       ])
       ->execute();
+    if (!$result->count()) {
+      throw new InvalidArgumentException('Unable to retrieve contact id %d', $id);
+    }
     $result = $result->single();
     $result['address.state_province_id:abbreviation'] = NULL;
     if (isset($result['address.state_province_id'])) {

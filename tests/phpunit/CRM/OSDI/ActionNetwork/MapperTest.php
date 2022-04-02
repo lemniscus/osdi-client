@@ -210,6 +210,7 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
     $existingRemotePerson = $this->getCookieCutterOsdiPerson();
     $existingRemotePerson->set('given_name', 'DifferentFirst');
     $existingRemotePerson->set('family_name', 'DifferentLast');
+    /** @var Civi\Osdi\ActionNetwork\Object\Person $alteredRemotePerson */
     $alteredRemotePerson = $this->system->save($existingRemotePerson);
 
     $result = $this->mapper->mapRemotePersonOntoContact(
