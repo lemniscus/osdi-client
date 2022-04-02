@@ -267,8 +267,30 @@ class OsdiObject implements RemoteObjectInterface {
       return $merged;
     };
 
-    $originalData = $this->resource ? $this->resource->getProperties() : [];
+    $originalData = [];
+
+    if ($this->resource) {
+      $originalData = $this->resource->getProperties();
+      $linkTree = $this->resource->getLinks();
+
+      foreach ($linkTree as $name => $links) {
+        if (is_array($links)) {
+          if (count($links) === 1) {
+            $links = $links[0];
+          }
+          else {
+            foreach ($links as $index => $link) {
+              $originalData['_links'][$name][$index]['href'] = $link->getHref();
+            }
+            continue;
+          }
+        }
+        $originalData['_links'][$name]['href'] = $links->getHref();
+      }
+    }
+
     $alteredData = $this->alteredData ?? [];
+
     return $merge($originalData, $alteredData);
   }
 
