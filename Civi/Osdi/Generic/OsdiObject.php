@@ -90,7 +90,7 @@ class OsdiObject implements RemoteObjectInterface {
    */
   public function getOriginal(string $fieldName) {
     if (!$this->isValidField($fieldName)) {
-      throw new InvalidArgumentException('Not a valid field name: "%s', $fieldName);
+      throw new InvalidArgumentException('Not a valid field name: "%s"', $fieldName);
     }
     if ($this->resource) {
       return $this->resource->getProperty($fieldName);
