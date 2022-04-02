@@ -157,6 +157,9 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     if ('osdi:people' === $osdiObject->getType()) {
       return $this->deletePerson($osdiObject);
     }
+    if ('osdi:tags' === $osdiObject->getType()) {
+      throw new InvalidArgumentException('Action Network API does not allow deleting tags');
+    }
     $endpoint = $this->linkify($osdiObject->getOwnUrl($this));
     return $endpoint->delete();
   }

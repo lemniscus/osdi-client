@@ -454,6 +454,18 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
     $this->assertEquals('Tagalina', $fetchedOsdiTag->get('name'));
   }
 
+  public function testTagDeleteIsProhibited() {
+    $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+
+    // CREATE
+    $unsavedTag = $system->makeOsdiObject('osdi:tags');
+    $unsavedTag->set('name', 'Tagalina');
+    $savedTag = $system->save($unsavedTag);
+
+    self::expectException(\Civi\Osdi\Exception\InvalidArgumentException::class);
+    $system->delete($savedTag);
+  }
+
   public function testTaggingCreate_FetchComponents() {
     $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
