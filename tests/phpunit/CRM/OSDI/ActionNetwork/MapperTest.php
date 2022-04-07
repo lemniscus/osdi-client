@@ -185,7 +185,7 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
     $stateName = 'Missouri';
 
     $result = $this->mapper->mapRemotePersonOntoContact($remotePerson);
-    $this->assertEquals('Civi\Api4\Generic\DAOCreateAction', get_class($result));
+    $this->assertEquals('Civi\Api4\Action\Contact\Create', get_class($result));
     $cid = $result->execute()->single()['id'];
     $resultContact = Civi\Api4\Contact::get(0)
       ->addWhere('id', '=', $cid)
@@ -217,7 +217,7 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
         $alteredRemotePerson,
         $existingLocalContactId
     );
-    $this->assertEquals('Civi\Api4\Generic\DAOUpdateAction', get_class($result));
+    $this->assertEquals('Civi\Api4\Action\Contact\Update', get_class($result));
     $this->assertEquals('DifferentFirst', $result->getValue('first_name'));
     $this->assertEquals('DifferentLast', $result->getValue('last_name'));
     $this->assertEquals(
