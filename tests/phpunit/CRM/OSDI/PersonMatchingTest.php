@@ -62,15 +62,6 @@ class CRM_OSDI_PersonMatchingTest extends \PHPUnit\Framework\TestCase implements
       ->execute();
   }
 
-  public function testLocalContactHasFieldsNeededForMatching() {
-    $localPerson = new \Civi\Osdi\LocalPerson();
-    $localPersonFieldArray = $localPerson->getFields();
-    $this->assertArrayHasKey('email', $localPersonFieldArray);
-    $this->assertArrayHasKey('first_name', $localPersonFieldArray);
-    $this->assertArrayHasKey('last_name', $localPersonFieldArray);
-    $this->assertArrayHasKey('local_id', $localPersonFieldArray);
-  }
-
   public function testForOsdiMatchDataStructure() {
     $fieldNames = \Civi\Api4\OsdiMatch::getFields()->execute()->column('name');
     $this->assertContains('contact_id', $fieldNames);
