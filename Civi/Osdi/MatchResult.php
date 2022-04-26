@@ -10,6 +10,8 @@ class MatchResult {
 
   const ERROR_INVALID_ID = 'invalid contact id';
 
+  const ERROR_MISSING_DATA = 'one or more required fields are missing from the source contact';
+
   const NO_MATCH = 'no match found';
 
   /**
@@ -37,11 +39,11 @@ class MatchResult {
    */
   protected $context;
 
-  public function __construct($originObject, array $matches, $errorType = NULL, $errorReason = NULL, $context = NULL) {
+  public function __construct($originObject, array $matches, $statusCode = NULL, $message = NULL, $context = NULL) {
     $this->originObject = $originObject;
     $this->matches = $matches;
-    $this->statusCode = $errorType;
-    $this->message = $errorReason;
+    $this->statusCode = $statusCode;
+    $this->message = $message;
     $this->context = $context;
   }
 
@@ -77,6 +79,7 @@ class MatchResult {
       [
         self::ERROR_INDETERMINATE,
         self::ERROR_INVALID_ID,
+        self::ERROR_MISSING_DATA,
       ]
     );
   }

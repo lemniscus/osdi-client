@@ -211,4 +211,27 @@ class CRM_OSDI_Fixture_PersonMatching {
     return [$savedRemotePerson, $idsOfContactsWithSameEmailAndDifferentName];
   }
 
+  public static function setUpRemotePerson_TwoLocalContactsMatchingByEmail_BothMatchingByName(\Civi\Osdi\ActionNetwork\RemoteSystem $system): array {
+    $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
+    $savedRemotePerson = $system->save($unsavedRemotePerson);
+
+    $emailAddress = $savedRemotePerson->getEmailAddress();
+    TestCase::assertNotEmpty($emailAddress);
+
+    $firstName = $savedRemotePerson->get('given_name');
+    $lastName = $savedRemotePerson->get('family_name');
+
+    $idsOfContactsWithSameEmailAndSameName[] = self::civiApi4CreateContact(
+      $firstName,
+      $lastName,
+      $emailAddress
+    )->first()['id'];
+    $idsOfContactsWithSameEmailAndSameName[] = self::civiApi4CreateContact(
+      $firstName,
+      $lastName,
+      $emailAddress
+    )->first()['id'];
+    return [$savedRemotePerson, $idsOfContactsWithSameEmailAndSameName];
+  }
+
 }

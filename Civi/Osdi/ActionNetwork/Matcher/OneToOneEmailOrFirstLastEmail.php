@@ -37,7 +37,7 @@ class OneToOneEmailOrFirstLastEmail {
       return new MatchResult(
         $originContactArray,
         [],
-        MatchResult::NO_MATCH,
+        MatchResult::ERROR_MISSING_DATA,
         'Insufficient data in source contact to match on'
       );
     }
@@ -70,7 +70,8 @@ class OneToOneEmailOrFirstLastEmail {
         $originContactArray,
         [],
         MatchResult::ERROR_INDETERMINATE,
-        'The email, first name and last name of the source CiviCRM contact are not unique in CiviCRM', $civiApi4Result
+        'The email, first name and last name of the source CiviCRM contact are not unique in CiviCRM',
+        $civiApi4Result
       );
     }
     $remoteSystemFindResult = $this->system->find(
@@ -81,6 +82,15 @@ class OneToOneEmailOrFirstLastEmail {
         ['last_name', 'eq', $lastName],
       ]
     );
+    if (0 === $remoteSystemFindResult->filteredCurrentCount()) {
+      return new MatchResult(
+        $originContactArray,
+        [],
+        MatchResult::ERROR_INDETERMINATE,
+        'The email of the source CiviCRM contact is not unique, and no remote match was found by email, first name and last name.',
+        $civiApi4Result
+      );
+    }
     return $this->makeSingleOrZeroMatchResult($originContactArray, $remoteSystemFindResult);
   }
 
@@ -89,7 +99,7 @@ class OneToOneEmailOrFirstLastEmail {
       return new MatchResult(
         $remotePerson,
         [],
-        MatchResult::NO_MATCH, 'Insufficient data in source contact to match on');
+        MatchResult::ERROR_MISSING_DATA, 'Insufficient data in source contact to match on');
     }
 
     $civiContactsWithEmail = $this->getCiviContactsBy($email);
@@ -119,14 +129,17 @@ class OneToOneEmailOrFirstLastEmail {
         $remotePerson,
         [],
         MatchResult::ERROR_INDETERMINATE,
-        'The email, first name and last name of the source CiviCRM contact are not unique in CiviCRM', $civiApi4Result);
+        'The email, first name and last name of the source CiviCRM contact are not unique in CiviCRM',
+        $civiApi4Result);
     }
 
     if ($countOfCiviContactsWithSameEmailFirstLast === 0) {
       return new MatchResult(
         $remotePerson,
         [],
-        MatchResult::NO_MATCH, 'No match by email, first name and last name');
+        MatchResult::ERROR_INDETERMINATE,
+        'Multiple matches by email, but no match by email, first name and last name',
+        $civiApi4Result);
     }
 
     return new MatchResult($remotePerson, $civiApi4Result->getArrayCopy());

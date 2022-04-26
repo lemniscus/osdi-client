@@ -89,7 +89,9 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
     $contactId = $contactArr['id'];
 
     $matchResult = $this->matcher->tryToFindMatchForLocalContact($contactId);
-    $this->assertMatchResultIsNotError_NoMatch_ZeroCount($matchResult);
+    self::assertTrue($matchResult->isError());
+    self::assertEquals($matchResult::ERROR_MISSING_DATA, $matchResult->status());
+    $this->assertEquals(0, $matchResult->count());
   }
 
   public function testRemoteMatch_EmailIndeterminate_FirstLastSuccess() {
@@ -107,7 +109,9 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
       $matchResult1->first()->get('family_name'));
 
     $matchResult2 = $this->matcher->tryToFindMatchForLocalContact($idOf_Non_MatchingContact);
-    $this->assertMatchResultIsNotError_NoMatch_ZeroCount($matchResult2);
+    self::assertTrue($matchResult2->isError());
+    self::assertEquals($matchResult2::ERROR_INDETERMINATE, $matchResult2->status());
+    self::assertEquals(0, $matchResult2->count());
   }
 
   public function testRemoteMatch_EmailIndeterminate_NoMatchingFirstLast() {
@@ -116,7 +120,9 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
 
     foreach ($idsOfContactsWithSameEmailAndDifferentName as $id) {
       $matchResult = $this->matcher->tryToFindMatchForLocalContact($id);
-      $this->assertMatchResultIsNotError_NoMatch_ZeroCount($matchResult);
+      self::assertTrue($matchResult->isError());
+      self::assertEquals($matchResult::ERROR_INDETERMINATE, $matchResult->status());
+      self::assertEquals(0, $matchResult->count());
     }
   }
 
@@ -156,7 +162,16 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
       F::setUpRemotePerson_TwoLocalContactsMatchingByEmail_NeitherMatchingByName($this->system);
 
     $matchResult = $this->matcher->tryToFindMatchForRemotePerson($remotePerson);
-    $this->assertMatchResultIsNotError_NoMatch_ZeroCount($matchResult);
+    self::assertTrue($matchResult->isError());
+    self::assertEquals(0, $matchResult->count());
   }
 
+  public function testLocalMatch_EmailIndeterminate_FirstLastIndeterminate() {
+    [$remotePerson, $idsOfContactsWithSameEmailAndDifferentName] =
+      F::setUpRemotePerson_TwoLocalContactsMatchingByEmail_BothMatchingByName($this->system);
+
+    $matchResult = $this->matcher->tryToFindMatchForRemotePerson($remotePerson);
+    self::assertTrue($matchResult->isError());
+    self::assertEquals(0, $matchResult->count());
+  }
 }
