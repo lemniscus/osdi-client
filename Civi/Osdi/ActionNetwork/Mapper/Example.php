@@ -39,8 +39,21 @@ class Example {
         ],
       ]);
     }
-    $remotePerson->set('email_addresses', [['address' => $c['email.email']]]);
-    $remotePerson->set('phone_numbers', [['number' => $c['phone.phone_numeric']]]);
+    $noEmails = $c['is_opt_out'] || $c['do_not_email'];
+    $remotePerson->set('email_addresses', [
+      [
+        'address' => $c['email.email'],
+        'status' => $noEmails ? 'unsubscribed' : 'subscribed',
+      ],
+    ]);
+    $phoneNumber = $c['phone.phone_numeric'];
+    $noSms = $c['is_opt_out'] || $c['do_not_sms'] || empty($phoneNumber);
+    $remotePerson->set('phone_numbers', [
+      [
+        'number' => $phoneNumber ?? '',
+        'status' => $noSms ? 'unsubscribed' : 'subscribed',
+      ],
+    ]);
     $remotePerson->set('languages_spoken', [substr($c['preferred_language'], 0, 2)]);
     return $remotePerson;
   }
@@ -114,6 +127,9 @@ class Example {
         'modified_date',
         'first_name',
         'last_name',
+        'is_opt_out',
+        'do_not_email',
+        'do_not_sms',
         'preferred_language',
         'email.email',
         'phone.phone_numeric',
@@ -125,7 +141,7 @@ class Example {
         'address.country_id:name',
       ],
       'join' => [
-        ['Email AS email', FALSE, NULL, ['email.is_primary', '=', 1]],
+        ['Email AS email', 'LEFT', NULL, ['email.is_primary', '=', 1]],
         ['Phone AS phone', FALSE, NULL, ['phone.phone_type_id:name', '=', '"Mobile"']],
         ['Address AS address', FALSE, NULL, ['address.is_primary', '=', 1]],
       ],
