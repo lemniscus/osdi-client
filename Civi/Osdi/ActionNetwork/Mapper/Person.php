@@ -5,116 +5,83 @@ namespace Civi\Osdi\ActionNetwork\Mapper;
 use Civi\Api4\Contact;
 use Civi\Osdi\ActionNetwork\Object\Person as RemotePerson;
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\RemoteSystemInterface;
+use Civi\Osdi\LocalObject\Person as LocalPerson;
 
 class Person {
 
-  /**
-   * @var \Civi\Osdi\RemoteSystemInterface
-   */
-  private $system;
+  public function mapLocalToRemote(LocalPerson $localPerson,
+      RemotePerson $remotePerson = NULL): RemotePerson {
 
-  /**
-   * Generic constructor.
-   */
-  public function __construct(RemoteSystemInterface $system) {
-    $this->system = $system;
-  }
+    $l = $localPerson->loadOnce();
+    $remotePerson = $remotePerson ?? new RemotePerson();
 
-  public function mapContactOntoRemotePerson(int $id, RemotePerson $remotePerson = NULL): RemotePerson {
-    $c = $this->getSingleCiviContactById($id);
-    if (is_null($remotePerson)) {
-      $remotePerson = new RemotePerson();
-    }
-    $remotePerson->set('given_name', $c['first_name']);
-    $remotePerson->set('family_name', $c['last_name']);
-    if (isset($c['address.postal_code'])) {
-      $remotePerson->set('postal_addresses', [
-        [
-          'address_lines' => [$c['address.street_address']],
-          'locality' => $c['address.city'],
-          'region' => $c['address.state_province_id:abbreviation'],
-          'postal_code' => $c['address.postal_code'],
-          'country' => $c['address.country_id:name'],
-        ],
-      ]);
-    }
-    $noEmails = $c['is_opt_out'] || $c['do_not_email'];
+    $remotePerson->set('given_name', $l->firstName->get());
+    $remotePerson->set('family_name', $l->lastName->get());
+    $remotePerson->set('languages_spoken',
+      [substr($l->preferredLanguage->get(), 0, 2)]);
+
+    $noEmails = $l->isOptOut->get() || $l->doNotEmail->get();
     $remotePerson->set('email_addresses', [
       [
-        'address' => $c['email.email'],
+        'address' => $l->emailEmail->get(),
         'status' => $noEmails ? 'unsubscribed' : 'subscribed',
       ],
     ]);
-    $phoneNumber = $c['phone.phone_numeric'];
-    $noSms = $c['is_opt_out'] || $c['do_not_sms'] || empty($phoneNumber);
+
+    $phoneNumber = $l->phonePhoneNumeric->get();
+    $noSms = $l->isOptOut->get() || $l->doNotSms->get() || empty($phoneNumber);
     $remotePerson->set('phone_numbers', [
       [
         'number' => $phoneNumber ?? '',
         'status' => $noSms ? 'unsubscribed' : 'subscribed',
       ],
     ]);
-    $remotePerson->set('languages_spoken', [substr($c['preferred_language'], 0, 2)]);
+
+    if ($zip = $l->addressPostalCode->get()) {
+      $remotePerson->set('postal_addresses', [
+        [
+          'address_lines' => [$l->addressStreetAddress->get()],
+          'locality' => $l->addressCity->get(),
+          'region' => $l->addressStateProvinceIdAbbreviation->get(),
+          'postal_code' => $zip,
+          'country' => $l->addressCountryIdName->get(),
+        ],
+      ]);
+    }
+
     return $remotePerson;
   }
 
-  /**
-   * @return \Civi\Api4\Generic\AbstractCreateAction|\Civi\Api4\Generic\AbstractUpdateAction
-   */
-  public function mapRemotePersonOntoContact(RemotePerson $remotePerson, int $contactId = NULL) {
-    if ($contactId) {
-      $apiAction = Contact::update()->addWhere('id', '=', $contactId);
-    }
-    else {
-      $apiAction = Contact::create();
-    }
-    $apiAction->setValues(
-      [
-        'first_name' => $remotePerson->get('given_name'),
-        'last_name' => $remotePerson->get('family_name'),
-      ]
-    );
+  public function mapRemoteToLocal(RemotePerson $remotePerson,
+      LocalPerson $localPerson = NULL): LocalPerson {
 
+    $localPerson = $localPerson ?? new LocalPerson();
+
+    $localPerson->firstName->set($remotePerson->get('given_name'));
+    $localPerson->lastName->set($remotePerson->get('family_name'));
     if ($mappedLanguage = $this->mapLanguageFromActionNetwork($remotePerson)) {
-      $apiAction->addValue('preferred_language:name', $mappedLanguage);
+      $localPerson->preferredLanguageName->set($mappedLanguage);
     }
-    $rpEmail = $remotePerson->get('email_addresses')[0]['address'] ?? NULL;
-    if ($rpEmail) {
-      $emailCreate = \Civi\Api4\Email::create()->setValues(
-        [
-          'contact_id' => '$id',
-          'email' => $rpEmail,
-        ]
-      );
-      $apiAction->addChain('email', $emailCreate);
+
+    if ($rpEmail = $remotePerson->getEmailAddress() ?? NULL) {
+      $localPerson->emailEmail->set($rpEmail);
     }
-    $rpPhone = $remotePerson->get('phone_numbers')[0]['number'] ?? NULL;
-    if ($rpPhone) {
-      $phoneCreate = \Civi\Api4\Phone::create()->setValues(
-        [
-          'contact_id' => '$id',
-          'phone' => $rpPhone,
-        ]
-      );
-      $apiAction->addChain('phone', $phoneCreate);
+
+    if ($rpPhone = $remotePerson->get('phone_numbers')[0]['number'] ?? NULL) {
+      $localPerson->phonePhone->set($rpPhone);
     }
-    $rpAddress = $remotePerson->get('postal_addresses')[0] ?? NULL;
-    if ($rpAddress) {
+
+    if ($rpAddress = $remotePerson->get('postal_addresses')[0] ?? NULL) {
       [$stateId, $countryId]
-        = $this->getStateAndCountryIdsFromOsdiAddress($rpAddress);
-      $addressCreate = \Civi\Api4\Address::create()->setValues(
-        [
-          'contact_id' => '$id',
-          'street_address' => $rpAddress['address_lines'][0] ?? '',
-          'city' => $rpAddress['locality'],
-          'state_province_id' => $stateId,
-          'postal_code' => $rpAddress['postal_code'],
-          'country_id' => $countryId,
-        ]
-      );
-      $apiAction->addChain('address', $addressCreate);
+        = $this->getStateAndCountryIdsFromActNetAddress($rpAddress);
+      $localPerson->addressStreetAddress
+        ->set($rpAddress['address_lines'][0] ?? '');
+      $localPerson->addressCity->set($rpAddress['locality']);
+      $localPerson->addressStateProvinceId->set($stateId);
+      $localPerson->addressPostalCode->set($rpAddress['postal_code']);
+      $localPerson->addressCountryId->set($countryId);
     }
-    return $apiAction;
+    return $localPerson;
   }
 
   /**
@@ -170,11 +137,6 @@ class Person {
     return $result;
   }
 
-  /**
-   * @param array $contactData
-   *
-   * @return mixed
-   */
   private function getAbbreviatedState(array $contactData) {
     $countryId = $contactData['address.country_id'] ?? \CRM_Core_Config::singleton()->defaultContactCountry;
     $abbreviationList = \CRM_Core_BAO_Address::buildOptions(
@@ -182,23 +144,22 @@ class Person {
       'abbreviate',
       ['country_id' => $countryId]
     );
-    $abbreviation = $abbreviationList[$contactData['address.state_province_id']];
-    return $abbreviation;
+    return $abbreviationList[$contactData['address.state_province_id']];
   }
 
-  private function getStateAndCountryIdsFromOsdiAddress(array $osdiAddress): array {
+  private function getStateAndCountryIdsFromActNetAddress(array $actNetAddress): array {
     $countryId = \CRM_Core_Config::singleton()->defaultContactCountry;
-    if (isset($osdiAddress['country'])) {
+    if (isset($actNetAddress['country'])) {
       $countryIdList = \CRM_Core_BAO_Address::buildOptions(
         'country_id',
         'abbreviate'
       );
-      $idFromAbbrev = array_search($osdiAddress['country'], $countryIdList);
+      $idFromAbbrev = array_search($actNetAddress['country'], $countryIdList);
       if ($idFromAbbrev !== FALSE) {
         $countryId = $idFromAbbrev;
       }
     }
-    if (!($stateAbbrev = $osdiAddress['region'] ?? FALSE)) {
+    if (!($stateAbbrev = $actNetAddress['region'] ?? FALSE)) {
       return [NULL, $countryId];
     }
     $stateAbbrevList = \CRM_Core_BAO_Address::buildOptions(
@@ -219,7 +180,7 @@ class Person {
     }
     $rpLanguage = $rpLanguages[0];
     $map = ['en' => 'en_US', 'es' => 'es_MX'];
-    if (in_array($rpLanguage, $map)) {
+    if (array_key_exists($rpLanguage, $map)) {
       return $map[$rpLanguage];
     }
     $civiLangs = \CRM_Contact_BAO_Contact::buildOptions('preferred_language', 'create');

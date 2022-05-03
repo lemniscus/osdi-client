@@ -138,7 +138,8 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
     $this->assertEquals('Missouri', $civiContact['address.state_province_id:name']);
     $stateAbbreviation = 'MO';
 
-    $result = $this->mapper->mapContactOntoRemotePerson($civiContact['id']);
+    $result = $this->mapper->mapLocalToRemote(
+      new Civi\Osdi\LocalObject\Person($civiContact['id']));
     $this->assertEquals('Civi\Osdi\ActionNetwork\Object\Person', get_class($result));
     $this->assertEquals($civiContact['first_name'], $result->get('given_name'));
     $this->assertEquals($civiContact['last_name'], $result->get('family_name'));
@@ -160,8 +161,8 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
       ->setValues(['first_name' => 'DifferentFirst', 'last_name' => 'DifferentLast'])
       ->execute();
 
-    $result = $this->mapper->mapContactOntoRemotePerson(
-      $civiContact['id'],
+    $result = $this->mapper->mapLocalToRemote(
+      new \Civi\Osdi\LocalObject\Person($civiContact['id']),
       $existingRemotePerson
     );
     $this->assertEquals('Civi\Osdi\ActionNetwork\Object\Person', get_class($result));
@@ -180,8 +181,8 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
       ->addValue('phone', '19098887777')
       ->execute();
 
-    $result = $this->mapper->mapContactOntoRemotePerson(
-      $civiContact['id'],
+    $result = $this->mapper->mapLocalToRemote(
+      new \Civi\Osdi\LocalObject\Person($civiContact['id']),
       $existingRemotePerson
     );
     $this->assertEquals('Civi\Osdi\ActionNetwork\Object\Person', get_class($result));
@@ -198,8 +199,8 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
       ->addValue('do_not_email', TRUE)
       ->execute();
 
-    $result = $this->mapper->mapContactOntoRemotePerson(
-      $civiContact['id'],
+    $result = $this->mapper->mapLocalToRemote(
+      new \Civi\Osdi\LocalObject\Person($civiContact['id']),
       $existingRemotePerson
     );
     $this->assertEquals('unsubscribed',
@@ -214,8 +215,8 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
       ->addValue('do_not_sms', TRUE)
       ->execute();
 
-    $result = $this->mapper->mapContactOntoRemotePerson(
-      $civiContact['id'],
+    $result = $this->mapper->mapLocalToRemote(
+      new \Civi\Osdi\LocalObject\Person($civiContact['id']),
       $existingRemotePerson
     );
     $this->assertEquals('unsubscribed',
@@ -230,8 +231,8 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
       ->addWhere('phone_type_id:name', '=', 'Mobile')
       ->execute();
 
-    $result = $this->mapper->mapContactOntoRemotePerson(
-      $civiContact['id'],
+    $result = $this->mapper->mapLocalToRemote(
+      new \Civi\Osdi\LocalObject\Person($civiContact['id']),
       $existingRemotePerson
     );
     $this->assertEquals('unsubscribed',
@@ -246,8 +247,8 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
       ->addValue('is_opt_out', TRUE)
       ->execute();
 
-    $result = $this->mapper->mapContactOntoRemotePerson(
-      $civiContact['id'],
+    $result = $this->mapper->mapLocalToRemote(
+      new \Civi\Osdi\LocalObject\Person($civiContact['id']),
       $existingRemotePerson
     );
     $this->assertEquals('unsubscribed',
@@ -267,8 +268,8 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
       ->addValue('do_not_phone', TRUE)
       ->execute();
 
-    $result = $this->mapper->mapContactOntoRemotePerson(
-      $civiContact['id'],
+    $result = $this->mapper->mapLocalToRemote(
+      new \Civi\Osdi\LocalObject\Person($civiContact['id']),
       $existingRemotePerson
     );
     $this->assertEquals('subscribed',
@@ -287,9 +288,9 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
     $this->assertEquals('MO', $remotePerson->get('postal_addresses')[0]['region']);
     $stateName = 'Missouri';
 
-    $result = $this->mapper->mapRemotePersonOntoContact($remotePerson);
-    $this->assertEquals('Civi\Api4\Action\Contact\Create', get_class($result));
-    $cid = $result->execute()->single()['id'];
+    $result = $this->mapper->mapRemoteToLocal($remotePerson);
+    $this->assertEquals(\Civi\Osdi\LocalObject\Person::class, get_class($result));
+    $cid = $result->save()->getId();
     $resultContact = Civi\Api4\Contact::get(0)
       ->addWhere('id', '=', $cid)
       ->addJoin('Address')->addJoin('Email')->addJoin('Phone')
@@ -315,16 +316,16 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
     $existingRemotePerson->set('family_name', 'DifferentLast');
     $alteredRemotePerson = $this->system->save($existingRemotePerson);
 
-    $result = $this->mapper->mapRemotePersonOntoContact(
+    $result = $this->mapper->mapRemoteToLocal(
       $alteredRemotePerson,
-      $existingLocalContactId
+      new \Civi\Osdi\LocalObject\Person($existingLocalContactId)
     );
-    $this->assertEquals('Civi\Api4\Action\Contact\Update', get_class($result));
-    $this->assertEquals('DifferentFirst', $result->getValue('first_name'));
-    $this->assertEquals('DifferentLast', $result->getValue('last_name'));
+    $this->assertEquals(\Civi\Osdi\LocalObject\Person::class, get_class($result));
+    $this->assertEquals('DifferentFirst', $result->firstName->get());
+    $this->assertEquals('DifferentLast', $result->lastName->get());
     $this->assertEquals(
       $existingRemotePerson->get('email_addresses')[0]['address'],
-      $result->getChain()['email'][2]['values']['email']
+      $result->emailEmail->get()
     );
   }
 
@@ -334,13 +335,32 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
     $existingRemotePerson->set('phone_numbers', [['number' => '19098887777']]);
     $alteredRemotePerson = $this->system->save($existingRemotePerson);
 
-    $result = $this->mapper->mapRemotePersonOntoContact(
+    $result = $this->mapper->mapRemoteToLocal(
       $alteredRemotePerson,
-      $existingLocalContactId
+      new \Civi\Osdi\LocalObject\Person($existingLocalContactId)
     );
-    $this->assertEquals('19098887777', $result->getChain()['phone'][2]['values']['phone']);
-    $this->assertEquals($existingRemotePerson->get('given_name'), $result->getValue('first_name'));
-    $this->assertEquals($existingRemotePerson->get('family_name'), $result->getValue('last_name'));
+    $this->assertEquals('19098887777', $result->phonePhone->get());
+    $this->assertEquals($existingRemotePerson->get('given_name'), $result->firstName->get());
+    $this->assertEquals($existingRemotePerson->get('family_name'), $result->lastName->get());
+  }
+
+  public function testMapRemotePersonOntoExistingLocalContact_ChangeLanguage() {
+    $existingLocalContactId = $this->getCookieCutterCiviContact()['id'];
+    $existingLocalPerson =
+      (new \Civi\Osdi\LocalObject\Person($existingLocalContactId))->load();
+    $existingRemotePerson = $this->getCookieCutterOsdiPerson();
+
+    self::assertEquals('es_MX', $existingLocalPerson->preferredLanguageName->get());
+
+    $existingRemotePerson->set('languages_spoken', ['en']);
+    $alteredRemotePerson = $this->system->save($existingRemotePerson);
+
+    $alteredLocalPerson = $this->mapper->mapRemoteToLocal(
+      $alteredRemotePerson,
+      new \Civi\Osdi\LocalObject\Person($existingLocalContactId)
+    );
+
+    $this->assertEquals('en_US', $alteredLocalPerson->preferredLanguageName->get());
   }
 
 }

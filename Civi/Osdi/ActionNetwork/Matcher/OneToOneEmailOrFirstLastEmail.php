@@ -2,9 +2,11 @@
 
 namespace Civi\Osdi\ActionNetwork\Matcher;
 
-use Civi\Osdi\ActionNetwork\Object\Person;
+use Civi\Osdi\ActionNetwork\Object\Person as RemotePerson;
 use Civi\Osdi\Exception\AmbiguousResultException;
 use Civi\Osdi\Exception\EmptyResultException;
+use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\LocalObject\Person as LocalPerson;
 use Civi\Osdi\MatchResult;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\ResultCollection;
@@ -15,27 +17,25 @@ class OneToOneEmailOrFirstLastEmail {
 
   protected \Civi\Osdi\ActionNetwork\Syncer\Person $syncer;
 
-  private \Civi\Osdi\ActionNetwork\Mapper\Person $mapper;
-
   /**
    * OneToOneEmailOrFirstLastEmail constructor.
    */
   public function __construct(\Civi\Osdi\ActionNetwork\Syncer\Person $syncer) {
     $this->syncer = $syncer;
     $this->system = $syncer->getRemoteSystem();
-    $this->mapper = $syncer->getMapper();
   }
 
-  public function tryToFindMatchForLocalContact(int $id) {
-    $api4ContactResult = $this->getContactById($id);
-    if ($api4ContactResult->count() === 0) {
-      return new MatchResult($id, [], MatchResult::ERROR_INVALID_ID);
+  public function tryToFindMatchForLocalContact(LocalPerson $localPerson) {
+    try {
+      $localPerson->loadOnce();
+    }
+    catch (InvalidArgumentException $e) {
+      return new MatchResult($localPerson, [], MatchResult::ERROR_INVALID_ID);
     }
 
-    $originContactArray = $api4ContactResult->first();
-    if (empty($email = $originContactArray['email.email'])) {
+    if (empty($email = $localPerson->emailEmail->get())) {
       return new MatchResult(
-        $originContactArray,
+        $localPerson,
         [],
         MatchResult::ERROR_MISSING_DATA,
         'Insufficient data in source contact to match on'
@@ -45,7 +45,7 @@ class OneToOneEmailOrFirstLastEmail {
     $civiContactsWithEmail = $this->getCiviContactsBy($email);
     if ($civiContactsWithEmail->count() > 1) {
       return $this->findRemoteMatchByEmailAndName(
-        $originContactArray
+        $localPerson
       );
     }
 
@@ -56,18 +56,18 @@ class OneToOneEmailOrFirstLastEmail {
         $email,
       ],
     ]);
-    return $this->makeSingleOrZeroMatchResult($originContactArray, $remoteSystemFindResult);
+    return $this->makeSingleOrZeroMatchResult($localPerson, $remoteSystemFindResult);
   }
 
-  private function findRemoteMatchByEmailAndName(array $originContactArray): MatchResult {
-    $email = $originContactArray['email.email'];
-    $firstName = $originContactArray['first_name'] ?? '';
-    $lastName = $originContactArray['last_name'] ?? '';
+  private function findRemoteMatchByEmailAndName(LocalPerson $localPerson): MatchResult {
+    $email = $localPerson->emailEmail->get();
+    $firstName = $localPerson->firstName->get() ?? '';
+    $lastName = $localPerson->lastName->get() ?? '';
     $civiApi4Result = $this->getCiviContactsBy($email, $firstName, $lastName);
     $countOfCiviContactsWithSameEmailFirstLast = $civiApi4Result->count();
     if ($countOfCiviContactsWithSameEmailFirstLast > 1) {
       return new MatchResult(
-        $originContactArray,
+        $localPerson,
         [],
         MatchResult::ERROR_INDETERMINATE,
         'The email, first name and last name of the source CiviCRM contact are not unique in CiviCRM',
@@ -84,17 +84,17 @@ class OneToOneEmailOrFirstLastEmail {
     );
     if (0 === $remoteSystemFindResult->filteredCurrentCount()) {
       return new MatchResult(
-        $originContactArray,
+        $localPerson,
         [],
         MatchResult::ERROR_INDETERMINATE,
         'The email of the source CiviCRM contact is not unique, and no remote match was found by email, first name and last name.',
         $civiApi4Result
       );
     }
-    return $this->makeSingleOrZeroMatchResult($originContactArray, $remoteSystemFindResult);
+    return $this->makeSingleOrZeroMatchResult($localPerson, $remoteSystemFindResult);
   }
 
-  public function tryToFindMatchForRemotePerson(Person $remotePerson) {
+  public function tryToFindMatchForRemotePerson(RemotePerson $remotePerson) {
     if (empty($email = $remotePerson->getEmailAddress())) {
       return new MatchResult(
         $remotePerson,
@@ -104,7 +104,10 @@ class OneToOneEmailOrFirstLastEmail {
 
     $civiContactsWithEmail = $this->getCiviContactsBy($email);
     if ($civiContactsWithEmail->count() === 1) {
-      return new MatchResult($remotePerson, $civiContactsWithEmail->getArrayCopy());
+      return new MatchResult(
+        $remotePerson,
+        [new LocalPerson($civiContactsWithEmail->first()['id'])]
+      );
     }
 
     if ($civiContactsWithEmail->count() === 0) {
@@ -116,7 +119,7 @@ class OneToOneEmailOrFirstLastEmail {
     }
   }
 
-  private function findLocalMatchByEmailAndName(Person $remotePerson) {
+  private function findLocalMatchByEmailAndName(RemotePerson $remotePerson) {
     $civiApi4Result = $this->getCiviContactsBy(
       $remotePerson->getEmailAddress(),
       $remotePerson->getOriginal('given_name'),
@@ -125,9 +128,12 @@ class OneToOneEmailOrFirstLastEmail {
     $countOfCiviContactsWithSameEmailFirstLast = $civiApi4Result->count();
 
     if ($countOfCiviContactsWithSameEmailFirstLast > 1) {
+      foreach ($civiApi4Result as $contactArray) {
+        $localPeople[] = new LocalPerson($contactArray['id']);
+      }
       return new MatchResult(
         $remotePerson,
-        [],
+        $localPeople,
         MatchResult::ERROR_INDETERMINATE,
         'The email, first name and last name of the source CiviCRM contact are not unique in CiviCRM',
         $civiApi4Result);
@@ -142,19 +148,10 @@ class OneToOneEmailOrFirstLastEmail {
         $civiApi4Result);
     }
 
-    return new MatchResult($remotePerson, $civiApi4Result->getArrayCopy());
-  }
-
-  /**
-   * @throws \API_Exception
-   */
-  private function getContactById(int $id): \Civi\Api4\Generic\Result {
-    $apiParams = $this->mapper->getFieldsToSelect();
-    $apiParams['where'] = [['id', '=', $id]];
-    $apiParams['limit'] = 2;
-    $apiParams['checkPermissions'] = FALSE;
-
-    return civicrm_api4('Contact', 'get', $apiParams);
+    return new MatchResult(
+      $remotePerson,
+      [new LocalPerson($civiApi4Result->first()['id'])]
+    );
   }
 
   private function getCiviContactsBy(
@@ -162,12 +159,15 @@ class OneToOneEmailOrFirstLastEmail {
     string $firstName = NULL,
     string $lastName = NULL
   ): \Civi\Api4\Generic\Result {
-    $apiParams = $this->mapper->getFieldsToSelect();
+    $apiParams = [
+      'checkPermissions' => FALSE,
+      'select' => ['id'],
+      'join' => LocalPerson::JOINS,
+    ];
     $apiParams['where'] = [
         ['email.email', '=', $email],
         ['is_deleted', '=', 0],
     ];
-    $apiParams['checkPermissions'] = FALSE;
     if ($firstName !== NULL) {
       array_push($apiParams['where'], ['first_name', '=', $firstName]);
     }
@@ -179,8 +179,10 @@ class OneToOneEmailOrFirstLastEmail {
 
   /**
    * @param $originObject *
+   * @param \Civi\Osdi\ResultCollection $collection
    *
-   * @throws AmbiguousResultException
+   * @return \Civi\Osdi\MatchResult
+   * @throws \Civi\Osdi\Exception\AmbiguousResultException
    */
   private function makeSingleOrZeroMatchResult($originObject, ResultCollection $collection): MatchResult {
     if (($count = $collection->filteredCurrentCount()) > 1) {

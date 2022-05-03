@@ -2,9 +2,11 @@
 
 namespace Civi\Osdi;
 
+use Civi\Osdi\LocalObject\LocalObjectInterface;
+
 class LocalRemotePair {
 
-  private ?array $localObject;
+  private ?LocalObjectInterface $localObject;
   private ?RemoteObjectInterface $remoteObject;
   private bool $isError;
   private ?string $message;
@@ -13,7 +15,7 @@ class LocalRemotePair {
   private ?SyncResult $syncResult;
 
   /**
-   * @param array|null $localObject
+   * @param \Civi\Osdi\LocalObject\LocalObjectInterface|null $localObject
    * @param \Civi\Osdi\RemoteObjectInterface|null $remoteObject
    * @param bool $isError
    * @param string|null $message
@@ -21,7 +23,14 @@ class LocalRemotePair {
    * @param \Civi\Osdi\MatchResult|null $matchResult
    * @param \Civi\Osdi\SyncResult|null $syncResult
    */
-  public function __construct(array $localObject = NULL, RemoteObjectInterface $remoteObject = NULL, bool $isError = FALSE, string $message = NULL, array $savedMatch = NULL, MatchResult $matchResult = NULL, SyncResult $syncResult = NULL) {
+  public function __construct(
+      LocalObjectInterface $localObject = NULL,
+      RemoteObjectInterface $remoteObject = NULL,
+      bool $isError = FALSE,
+      string $message = NULL,
+      array $savedMatch = NULL,
+      MatchResult $matchResult = NULL,
+      SyncResult $syncResult = NULL) {
     $this->localObject = $localObject;
     $this->remoteObject = $remoteObject;
     $this->isError = $isError;

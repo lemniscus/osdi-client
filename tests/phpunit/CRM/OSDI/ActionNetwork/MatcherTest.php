@@ -3,6 +3,7 @@
 use Civi\Test\HeadlessInterface;
 use Civi\Test\TransactionalInterface;
 use CRM_OSDI_Fixture_PersonMatching as F;
+use Civi\Osdi\LocalObject\Person as LocalPerson;
 
 /**
  * Test \Civi\Osdi\RemoteSystemInterface
@@ -52,7 +53,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
   public function testRemoteMatch_OneToOneEmailSuccess() {
     [$emailAddress, $remotePerson, $contactId] =
       F::setUpExactlyOneMatchByEmail_DifferentNames($this->system);
-    $matchResult = $this->matcher->tryToFindMatchForLocalContact($contactId);
+    $matchResult = $this->matcher->tryToFindMatchForLocalContact(new LocalPerson($contactId));
     $this->assertEquals(1, $matchResult->count());
     $this->assertEquals($emailAddress, $matchResult->matches()[0]->getEmailAddress());
   }
@@ -60,7 +61,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
   public function testRemoteMatch_NoMatchingEmail() {
     [$contactId, $remotePerson] =
       F::setUpLocalAndRemotePeople_SameName_DifferentEmail($this->system);
-    $matchResult = $this->matcher->tryToFindMatchForLocalContact($contactId);
+    $matchResult = $this->matcher->tryToFindMatchForLocalContact(new LocalPerson($contactId));
     $this->assertMatchResultIsNotError_NoMatch_ZeroCount($matchResult);
   }
 
@@ -76,7 +77,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
     );
     $this->assertEquals(0, $contactsWithTheId->count());
 
-    $matchResult = $this->matcher->tryToFindMatchForLocalContact($contactId);
+    $matchResult = $this->matcher->tryToFindMatchForLocalContact(new LocalPerson($contactId));
     $this->assertEquals(0, $matchResult->count());
     $this->assertTrue($matchResult->isError());
     $this->assertEquals(\Civi\Osdi\MatchResult::ERROR_INVALID_ID, $matchResult->status());
@@ -88,7 +89,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
     $contactArr = F::civiApi4CreateContact('Testy', 'McTest')->first();
     $contactId = $contactArr['id'];
 
-    $matchResult = $this->matcher->tryToFindMatchForLocalContact($contactId);
+    $matchResult = $this->matcher->tryToFindMatchForLocalContact(new LocalPerson($contactId));
     self::assertTrue($matchResult->isError());
     self::assertEquals($matchResult::ERROR_MISSING_DATA, $matchResult->status());
     $this->assertEquals(0, $matchResult->count());
@@ -99,7 +100,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
       F::setUpRemotePerson_TwoLocalContactsMatchingByEmail_OneAlsoMatchingByName($this->system);
     $matchingContact = F::civiApi4GetSingleContactById($idOfMatchingContact);
 
-    $matchResult1 = $this->matcher->tryToFindMatchForLocalContact($idOfMatchingContact);
+    $matchResult1 = $this->matcher->tryToFindMatchForLocalContact(new LocalPerson($idOfMatchingContact));
     $this->assertEquals(1, $matchResult1->count());
     $this->assertEquals($matchingContact['email.email'],
       $matchResult1->first()->getEmailAddress());
@@ -108,7 +109,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
     $this->assertEquals($matchingContact['last_name'],
       $matchResult1->first()->get('family_name'));
 
-    $matchResult2 = $this->matcher->tryToFindMatchForLocalContact($idOf_Non_MatchingContact);
+    $matchResult2 = $this->matcher->tryToFindMatchForLocalContact(new LocalPerson($idOf_Non_MatchingContact));
     self::assertTrue($matchResult2->isError());
     self::assertEquals($matchResult2::ERROR_INDETERMINATE, $matchResult2->status());
     self::assertEquals(0, $matchResult2->count());
@@ -119,7 +120,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
       F::setUpRemotePerson_TwoLocalContactsMatchingByEmail_NeitherMatchingByName($this->system);
 
     foreach ($idsOfContactsWithSameEmailAndDifferentName as $id) {
-      $matchResult = $this->matcher->tryToFindMatchForLocalContact($id);
+      $matchResult = $this->matcher->tryToFindMatchForLocalContact(new LocalPerson($id));
       self::assertTrue($matchResult->isError());
       self::assertEquals($matchResult::ERROR_INDETERMINATE, $matchResult->status());
       self::assertEquals(0, $matchResult->count());
@@ -131,7 +132,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
       F::setUpExactlyOneMatchByEmail_DifferentNames($this->system);
     $matchResult = $this->matcher->tryToFindMatchForRemotePerson($remotePerson);
     $this->assertEquals(1, $matchResult->count());
-    $this->assertEquals($emailAddress, $matchResult->matches()[0]['email.email']);
+    $this->assertEquals($emailAddress, $matchResult->matches()[0]->loadOnce()->emailEmail->get());
   }
 
   public function testLocalMatch_NoMatchingEmail() {
@@ -148,13 +149,16 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
     $matchResult = $this->matcher->tryToFindMatchForRemotePerson($remotePerson);
     $this->assertEquals(1, $matchResult->count());
     $this->assertEquals($idOfMatchingContact,
-      $matchResult->first()['id']);
+      $matchResult->first()->getId());
+
+    $matchResult->first()->loadOnce();
+
     $this->assertEquals($remotePerson->getEmailAddress(),
-      $matchResult->first()['email.email']);
+      $matchResult->first()->emailEmail->get());
     $this->assertEquals($remotePerson->get('given_name'),
-      $matchResult->first()['first_name']);
+      $matchResult->first()->firstName->get());
     $this->assertEquals($remotePerson->get('family_name'),
-      $matchResult->first()['last_name']);
+      $matchResult->first()->lastName->get());
   }
 
   public function testLocalMatch_EmailIndeterminate_NoMatchingFirstLast() {
@@ -172,6 +176,6 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
 
     $matchResult = $this->matcher->tryToFindMatchForRemotePerson($remotePerson);
     self::assertTrue($matchResult->isError());
-    self::assertEquals(0, $matchResult->count());
+    self::assertEquals(2, $matchResult->count());
   }
 }

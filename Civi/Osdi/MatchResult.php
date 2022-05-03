@@ -15,12 +15,12 @@ class MatchResult {
   const NO_MATCH = 'no match found';
 
   /**
-   * @var RemoteObjectInterface|array
+   * @var RemoteObjectInterface|\Civi\Osdi\LocalObject\LocalObjectInterface
    */
   protected $originObject;
 
   /**
-   * @var array[RemoteObjectInterface]|array[array]
+   * @var array[RemoteObjectInterface]|array[\Civi\Osdi\LocalObject\LocalObjectInterface]
    */
   protected array $matches;
 
@@ -39,7 +39,11 @@ class MatchResult {
    */
   protected $context;
 
-  public function __construct($originObject, array $matches, $statusCode = NULL, $message = NULL, $context = NULL) {
+  public function __construct($originObject,
+                              array $matches,
+                              $statusCode = NULL,
+                              $message = NULL,
+                              $context = NULL) {
     $this->originObject = $originObject;
     $this->matches = $matches;
     $this->statusCode = $statusCode;
@@ -59,7 +63,7 @@ class MatchResult {
   }
 
   /**
-   * @return RemoteObjectInterface|array
+   * @return RemoteObjectInterface|\Civi\Osdi\LocalObject\LocalObjectInterface
    * @throws EmptyResultException
    */
   public function first() {

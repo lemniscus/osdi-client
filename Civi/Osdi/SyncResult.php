@@ -2,6 +2,8 @@
 
 namespace Civi\Osdi;
 
+use Civi\Osdi\LocalObject\LocalObjectInterface;
+
 class SyncResult {
 
   const SUCCESS = 'success';
@@ -10,7 +12,7 @@ class SyncResult {
 
   protected ?\Civi\Osdi\RemoteObjectInterface $remoteObject;
 
-  protected $localObject;
+  protected ?\Civi\Osdi\LocalObject\LocalObjectInterface $localObject;
 
   protected ?string $statusCode;
 
@@ -18,7 +20,7 @@ class SyncResult {
 
   protected $context;
 
-  public function __construct($localObject = NULL,
+  public function __construct(LocalObjectInterface $localObject = NULL,
                               RemoteObjectInterface $remoteObject = NULL,
                               $statusCode = NULL,
                               $statusMessage = NULL,
