@@ -153,6 +153,7 @@ class CRM_OSDI_LocalObject_PersonTest extends \PHPUnit\Framework\TestCase implem
       'doNotEmail' => '',
       'doNotSms' => '',
       'preferredLanguage' => 'es_MX',
+      'preferredLanguageName' => 'es_MX',
       'emailEmail' => 'cookie@yum.net',
       'phonePhone' => '12023334444',
       'phonePhoneNumeric' => '12023334444',
@@ -188,6 +189,7 @@ class CRM_OSDI_LocalObject_PersonTest extends \PHPUnit\Framework\TestCase implem
       'doNotEmail' => '',
       'doNotSms' => '',
       'preferredLanguage' => 'es_MX',
+      'preferredLanguageName' => 'es_MX',
       'emailEmail' => 'cookie@yum.net',
       'phonePhone' => '12023334444',
       'phonePhoneNumeric' => '12023334444',
@@ -259,6 +261,16 @@ class CRM_OSDI_LocalObject_PersonTest extends \PHPUnit\Framework\TestCase implem
     self::assertEquals(1, \Civi\Api4\Address::get(FALSE)
       ->addWhere('contact_id', '=', $cid)
       ->selectRowCount()->execute()->count());
+  }
+
+  public function testSaveWithEmptyEmailOrPhone() {
+    $this->person->firstName->set('Cookie');
+    $this->person->emailEmail->set(NULL);
+    $this->person->phonePhone->set(NULL);
+    $this->person->save();
+    $this->person->load();
+
+    self::assertNull($this->person->emailEmail->get());
   }
 
 }

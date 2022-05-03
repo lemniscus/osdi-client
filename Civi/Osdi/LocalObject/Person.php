@@ -212,6 +212,10 @@ class Person implements LocalObjectInterface {
     return $this;
   }
 
+  public function touch() {
+    $this->isTouched = TRUE;
+  }
+
   public function save(): Person {
     $cid = Contact::save(FALSE)->addRecord([
       'id' => $this->getId(),
@@ -226,6 +230,28 @@ class Person implements LocalObjectInterface {
 
     $this->id->load($cid);
 
+    if (!empty($this->emailEmail->get())) {
+      $this->saveEmail($cid);
+    };
+
+    if (!empty($this->phonePhone->get())) {
+      $this->savePhone($cid);
+    }
+
+    $addressIsEmpty =
+      empty($this->addressStreetAddress->get()) &&
+      empty($this->addressCity->get()) &&
+      empty($this->addressPostalCode->get()) &&
+      empty($this->addressStateProvinceId->get());
+
+    if (!$addressIsEmpty) {
+      $this->saveAddress($cid);
+    };
+
+    return $this;
+  }
+
+  private function saveEmail($cid): void {
     Email::save(FALSE)
       ->setMatch([
         'contact_id',
@@ -237,7 +263,9 @@ class Person implements LocalObjectInterface {
         'email' => $this->emailEmail->get(),
         'is_primary' => TRUE,
       ])->execute();
+  }
 
+  private function savePhone($cid): void {
     Phone::save(FALSE)
       ->setMatch([
         'contact_id',
@@ -249,7 +277,9 @@ class Person implements LocalObjectInterface {
         'phone' => $this->phonePhone->get(),
         'phone_type_id:name' => 'Mobile',
       ])->execute();
+  }
 
+  private function saveAddress($cid): void {
     if (!$this->addressId->get()) {
       $addressMatchGet = Address::get(FALSE)
         ->addWhere('contact_id', '=', $cid);
@@ -280,12 +310,6 @@ class Person implements LocalObjectInterface {
         'state_province_id' => $this->addressStateProvinceId->get(),
         'country_id' => $this->addressCountryId->get(),
       ])->execute();
-
-    return $this;
-  }
-
-  public function touch() {
-    $this->isTouched = TRUE;
   }
 
   public function updateStateAbbreviation(Field $stateIdField) {

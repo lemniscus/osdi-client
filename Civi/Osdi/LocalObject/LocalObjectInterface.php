@@ -20,6 +20,8 @@ interface LocalObjectInterface {
 
   public function load(): LocalObjectInterface;
 
+  public function loadOnce(): LocalObjectInterface;
+
   public function save(): LocalObjectInterface;
 
   public function delete(): ?\Civi\Api4\Generic\Result;
