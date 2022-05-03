@@ -39,7 +39,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
   private function createMatcher(\Civi\Osdi\RemoteSystemInterface $system
   ): \Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail {
     $syncer = new \Civi\Osdi\ActionNetwork\Syncer\Person($system);
-    $syncer->setSyncProfile(['mapper' => Civi\Osdi\ActionNetwork\Mapper\Example::class]);
+    $syncer->setSyncProfile(['mapper' => Civi\Osdi\ActionNetwork\Mapper\Person::class]);
     return new Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail($syncer);
   }
 

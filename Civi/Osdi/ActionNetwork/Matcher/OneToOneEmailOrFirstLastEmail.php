@@ -15,7 +15,7 @@ class OneToOneEmailOrFirstLastEmail {
 
   protected \Civi\Osdi\ActionNetwork\Syncer\Person $syncer;
 
-  private \Civi\Osdi\ActionNetwork\Mapper\Example $mapper;
+  private \Civi\Osdi\ActionNetwork\Mapper\Person $mapper;
 
   /**
    * OneToOneEmailOrFirstLastEmail constructor.

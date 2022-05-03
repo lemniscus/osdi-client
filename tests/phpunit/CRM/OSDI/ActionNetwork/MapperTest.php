@@ -22,7 +22,7 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
   private $system;
 
   /**
-   * @var \Civi\Osdi\ActionNetwork\Mapper\Example
+   * @var \Civi\Osdi\ActionNetwork\Mapper\Person
    */
   private $mapper;
 
@@ -56,7 +56,7 @@ class CRM_OSDI_ActionNetwork_MapperTest extends \PHPUnit\Framework\TestCase impl
   }
 
   private function createMapper(\Civi\Osdi\ActionNetwork\RemoteSystem $system) {
-    return new Civi\Osdi\ActionNetwork\Mapper\Example($system);
+    return new Civi\Osdi\ActionNetwork\Mapper\Person($system);
   }
 
   public function makeBlankOsdiPerson(): \Civi\Osdi\ActionNetwork\Object\Person {

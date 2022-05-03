@@ -3,7 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\Syncer;
 
 use Civi\Api4\Contact;
-use Civi\Osdi\ActionNetwork\Mapper\Example;
+use Civi\Osdi\ActionNetwork\Mapper\Person;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\LocalRemotePair;
@@ -27,7 +27,7 @@ class Person {
    */
   private $matcher;
 
-  private Example $mapper;
+  private Person $mapper;
 
   const inputTypeActionNetworkPersonObject = 'ActionNetwork:Person:Object';
   const inputTypeLocalContactId = 'Local:Contact:Id';

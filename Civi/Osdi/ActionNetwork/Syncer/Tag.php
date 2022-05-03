@@ -2,7 +2,7 @@
 
 namespace Civi\Osdi\ActionNetwork\Syncer;
 
-use Civi\Osdi\ActionNetwork\Mapper\Example;
+use Civi\Osdi\ActionNetwork\Mapper\Person;
 use Civi\Osdi\ActionNetwork\Object\Tag as OsdiTagObject;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\RemoteSystemInterface;
@@ -23,7 +23,7 @@ class Tag {
    */
   private $matcher;
 
-  private Example $mapper;
+  private Person $mapper;
 
   /**
    * Syncer constructor.

@@ -23,7 +23,7 @@ class CRM_OSDI_ActionNetwork_TestUtils {
         \Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail::class)
       ->addValue(
         'mapper',
-        \Civi\Osdi\ActionNetwork\Mapper\Example::class)
+        \Civi\Osdi\ActionNetwork\Mapper\Person::class)
       ->execute()->single();
   }
 
