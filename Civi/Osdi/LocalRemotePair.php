@@ -14,15 +14,6 @@ class LocalRemotePair {
   private ?MatchResult $matchResult;
   private ?SyncResult $syncResult;
 
-  /**
-   * @param \Civi\Osdi\LocalObject\LocalObjectInterface|null $localObject
-   * @param \Civi\Osdi\RemoteObjectInterface|null $remoteObject
-   * @param bool $isError
-   * @param string|null $message
-   * @param array|null $savedMatch
-   * @param \Civi\Osdi\MatchResult|null $matchResult
-   * @param \Civi\Osdi\SyncResult|null $syncResult
-   */
   public function __construct(
       LocalObjectInterface $localObject = NULL,
       RemoteObjectInterface $remoteObject = NULL,
@@ -40,31 +31,31 @@ class LocalRemotePair {
     $this->syncResult = $syncResult;
   }
 
-  public function getLocalObject() {
+  public function getLocalObject(): ?LocalObjectInterface {
     return $this->localObject;
   }
 
-  public function getRemoteObject() {
+  public function getRemoteObject(): ?RemoteObjectInterface {
     return $this->remoteObject;
   }
 
-  public function isError() {
+  public function isError(): bool {
     return $this->isError;
   }
 
-  public function getMessage() {
+  public function getMessage(): ?string {
     return $this->message;
   }
 
-  public function getSavedMatch() {
+  public function getSavedMatch(): ?array {
     return $this->savedMatch;
   }
 
-  public function getMatchResult() {
+  public function getMatchResult(): ? MatchResult {
     return $this->matchResult;
   }
 
-  public function getSyncResult() {
+  public function getSyncResult(): ?SyncResult {
     return $this->syncResult;
   }
 

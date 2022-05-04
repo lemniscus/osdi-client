@@ -2,7 +2,8 @@
 
 namespace Civi\Osdi;
 
-use Civi\Osdi\Exception\EmptyResultException;
+use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\LocalObject\LocalObjectInterface;
 
 class MatchResult {
 
@@ -14,24 +15,18 @@ class MatchResult {
 
   const NO_MATCH = 'no match found';
 
-  /**
-   * @var RemoteObjectInterface|\Civi\Osdi\LocalObject\LocalObjectInterface
-   */
-  protected $originObject;
+  const ORIGIN_LOCAL = 'local';
 
-  /**
-   * @var array[RemoteObjectInterface]|array[\Civi\Osdi\LocalObject\LocalObjectInterface]
-   */
-  protected array $matches;
+  const ORIGIN_REMOTE = 'remote';
 
-  /**
-   * @var string|null
-   */
+  protected ?LocalObjectInterface $localObject;
+
+  protected ?RemoteObjectInterface $remoteObject;
+
+  protected ?string $origin;
+
   protected ?string $statusCode;
 
-  /**
-   * @var string|null
-   */
   protected ?string $message;
 
   /**
@@ -39,42 +34,42 @@ class MatchResult {
    */
   protected $context;
 
-  public function __construct($originObject,
-                              array $matches,
-                              $statusCode = NULL,
-                              $message = NULL,
+  public function __construct(string $origin,
+                              LocalObjectInterface $localObject = NULL,
+                              RemoteObjectInterface $remoteObject = NULL,
+                              string $statusCode = NULL,
+                              string $message = NULL,
                               $context = NULL) {
-    $this->originObject = $originObject;
-    $this->matches = $matches;
+    if (!in_array($origin, [self::ORIGIN_LOCAL, self::ORIGIN_REMOTE])) {
+      throw new InvalidArgumentException('Invalid origin parameter given to '
+        . __CLASS__ . '::' . __FUNCTION__ . ': %s', var_export($origin));
+    }
+    $this->origin = $origin;
+    $this->localObject = $localObject;
+    $this->remoteObject = $remoteObject;
     $this->statusCode = $statusCode;
     $this->message = $message;
     $this->context = $context;
   }
 
+  /**
+   * @return \Civi\Osdi\LocalObject\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface|null
+   */
   public function getOriginObject() {
-    return $this->originObject;
-  }
-
-  /**
-   * @return array [RemoteObjectInterface]
-   */
-  public function matches(): array {
-    return $this->matches;
-  }
-
-  /**
-   * @return RemoteObjectInterface|\Civi\Osdi\LocalObject\LocalObjectInterface
-   * @throws EmptyResultException
-   */
-  public function first() {
-    if (empty($this->matches[0])) {
-      throw new EmptyResultException();
+    if (self::ORIGIN_LOCAL === $this->origin) {
+      return $this->localObject;
     }
-    return $this->matches[0];
+    return $this->remoteObject;
   }
 
-  public function count(): int {
-    return count($this->matches);
+  /**
+   * @return \Civi\Osdi\LocalObject\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface|null
+   */
+  public function getMatch() {
+    if (self::ORIGIN_LOCAL === $this->origin) {
+      return $this->remoteObject;
+    }
+    return $this->localObject;
   }
 
   public function isError(): bool {
@@ -88,12 +83,28 @@ class MatchResult {
     );
   }
 
-  public function status(): ?string {
+  public function getStatus(): ?string {
     return $this->statusCode;
   }
 
-  public function context() {
+  public function getContext() {
     return $this->context;
+  }
+
+  public function getLocalObject(): ?LocalObjectInterface {
+    return $this->localObject;
+  }
+
+  public function getOrigin(): string {
+    return $this->origin;
+  }
+
+  public function getRemoteObject(): ?RemoteObjectInterface {
+    return $this->remoteObject;
+  }
+
+  public function gotMatch() {
+    return !empty($this->getMatch());
   }
 
 }

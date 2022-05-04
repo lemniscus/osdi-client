@@ -131,12 +131,12 @@ class Person {
         $isError = TRUE;
       }
 
-      elseif (1 === $matchResult->count()) {
+      elseif ($matchResult->gotMatch()) {
         $message = 'found new match with existing object';
         $inputTypeForSaveMatch = $inputType;
         $originObject = $matchResult->getOriginObject();
-        $matchingObject = $matchResult->first();
-        if (LocalPerson::class === get_class($originObject)) {
+        $matchingObject = $matchResult->getMatch();
+        if (MatchResult::ORIGIN_LOCAL === $matchResult->getOrigin()) {
           $inputTypeForSaveMatch = self::inputTypeLocalPersonObject;
           $localObject = $originObject;
           $remoteObject = $matchingObject;
@@ -153,7 +153,7 @@ class Person {
           NULL, NULL);
       }
 
-      elseif (MatchResult::NO_MATCH == $matchResult->status()) {
+      elseif (MatchResult::NO_MATCH == $matchResult->getStatus()) {
         $message = 'created matching object';
         $syncResult = $this->oneWaySync($inputType, $input);
         $localObject = $syncResult->getLocalObject();
@@ -224,7 +224,7 @@ class Person {
       );
     }
 
-    if (MatchResult::NO_MATCH === $match->status()) {
+    if (MatchResult::NO_MATCH === $match->getStatus()) {
       return $this->oneWaySync(self::inputTypeActionNetworkPersonObject, $remotePerson);
     }
 
@@ -270,7 +270,7 @@ class Person {
       );
     }
 
-    if (MatchResult::NO_MATCH === $match->status()) {
+    if (MatchResult::NO_MATCH === $match->getStatus()) {
       return $this->oneWaySync(self::inputTypeLocalContactId, $id);
     }
 
@@ -351,12 +351,11 @@ class Person {
     $savedMatch = $this->getSavedMatchForLocalContact($id);
     if (empty($savedMatch)) {
       $matchingRemotePeople = $this->tryToFindMatch(self::inputTypeLocalContactId, $id);
-      if (0 === $matchingRemotePeople->count()) {
+      if (empty($matchingRemotePeople->getMatch())) {
         $actNetPerson = $this->getRemoteSystem()->makeOsdiObject('osdi:people');
       }
-      elseif (1 === $matchingRemotePeople->count()) {
-        /** @var \Civi\Osdi\ActionNetwork\Object\Person $actNetPerson */
-        $actNetPerson = $matchingRemotePeople->first();
+      else {
+        $actNetPerson = $matchingRemotePeople->getRemoteObject();
       }
     }
     else {
@@ -422,11 +421,11 @@ class Person {
         $remotePerson
       );
 
-      if (0 === $matchingLocalContacts->count()) {
+      if (empty($matchingLocalContacts->getLocalObject())) {
         $contactId = NULL;
       }
-      elseif (1 === $matchingLocalContacts->count()) {
-        $contactId = $matchingLocalContacts->first()->getId();
+      else {
+        $contactId = $matchingLocalContacts->getLocalObject()->getId();
       }
     }
     else {
