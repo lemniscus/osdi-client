@@ -7,37 +7,66 @@ use Jsor\HalClient\HalResource;
 
 class Person extends OsdiObject {
 
+  const NULLCHAR = "\xE2\x90\x80";
+
   protected static $fieldsWithNullWorkarounds = [
     'given_name' => [[]],
     'family_name' => [[]],
     //'email_addresses' => [[0, 'address']],
     //'phone_numbers' => [[0, 'number']],
     // see note at \Civi\Osdi\ActionNetwork\Object\Person::blank
-    'postal_addresses' => [[0, 'address_lines', 0], [0, 'postal_code']],
+    'postal_addresses' => [[0, 'address_lines', 0], [0, 'locality'], [0, 'postal_code']],
   ];
 
   public function __construct(?HalResource $resource = NULL, ?array $initData = NULL) {
     parent::__construct('osdi:people', $resource, $initData);
   }
 
-  protected static function restoreNulls($fieldName, $value) {
+  protected function storeNulls($fieldName, $newFieldContents) {
     $replacementPaths = static::$fieldsWithNullWorkarounds[$fieldName] ?? [];
+    if (!$replacementPaths) {
+      return $newFieldContents;
+    }
+
+    $oldFieldContents = $this->getOriginal($fieldName);
+
     foreach ($replacementPaths as $path) {
-      if ("\xE2\x90\x80" === \CRM_Utils_Array::pathGet($value, $path)) {
-        if (is_array($value)) {
-          \CRM_Utils_Array::pathSet($value, $path, NULL);
+      $newSubValue = \CRM_Utils_Array::pathGet($newFieldContents, $path, 'not set');
+      $oldSubValue = \CRM_Utils_Array::pathGet($oldFieldContents, $path, '');
+      if (empty($newSubValue) && !empty($oldSubValue)) {
+        if (is_array($newFieldContents)) {
+          \CRM_Utils_Array::pathSet($newFieldContents, $path, static::NULLCHAR);
         }
         else {
-          $value = NULL;
+          $newFieldContents = static::NULLCHAR;
         }
       }
     }
-    return $value;
+    return $newFieldContents;
+  }
+
+  protected static function restoreNulls($fieldName, $fieldContents) {
+    $replacementPaths = static::$fieldsWithNullWorkarounds[$fieldName] ?? [];
+    foreach ($replacementPaths as $path) {
+      if (static::NULLCHAR === \CRM_Utils_Array::pathGet($fieldContents, $path)) {
+        if (is_array($fieldContents)) {
+          \CRM_Utils_Array::pathSet($fieldContents, $path, NULL);
+        }
+        else {
+          $fieldContents = NULL;
+        }
+      }
+    }
+    return $fieldContents;
+  }
+
+  public function set(string $fieldName, $val) {
+    parent::set($fieldName, $this->storeNulls($fieldName, $val));
   }
 
   public function get(string $fieldName) {
     $val = parent::get($fieldName);
-    return self::restoreNulls($fieldName, $val);
+    return static::restoreNulls($fieldName, $val);
   }
 
   public function toArray(): array {
@@ -80,7 +109,7 @@ class Person extends OsdiObject {
   }
 
   public static function blank(): Person {
-    $nullChar = "\xE2\x90\x80";
+    $nullChar = static::NULLCHAR;
 
     /*
      * we leave the actual email address and phone number untouched, because
