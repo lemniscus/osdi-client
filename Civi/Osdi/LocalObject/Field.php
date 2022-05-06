@@ -14,11 +14,17 @@ class Field {
 
   private ?LocalObjectInterface $bundle;
 
-  private ?string $loadedValue = NULL;
-
   private string $name;
 
-  private ?string $newValue = NULL;
+  /**
+   * @var string|array|null
+   */
+  private $loadedValue = NULL;
+
+  /**
+   * @var string|array|null
+   */
+  private $newValue = NULL;
 
   private ?string $afterSet = NULL;
 
@@ -29,12 +35,22 @@ class Field {
     $this->isReadOnly = $options['readOnly'] ?? $this->isReadOnly;
   }
 
-  public function load(?string $value) {
+  /**
+   * @param string|array|null $value
+   *
+   * @return void
+   */
+  public function load($value) {
     $this->loadedValue = $value;
     $this->isLoaded = TRUE;
   }
 
-  public function set(?string $value) {
+  /**
+   * @param string|array|null $value
+   *
+   * @return void
+   */
+  public function set($value) {
     if ($this->isReadOnly) {
       throw new InvalidOperationException('Field "%s" is not settable',
         $this->name);
@@ -49,13 +65,19 @@ class Field {
     }
   }
 
-  public function get(): ?string {
+  /**
+   * @return string|array|null
+   */
+  public function get() {
     if ($this->isTouched) {
       return $this->newValue;
     }
     return $this->loadedValue;
   }
 
+  /**
+   * @return string|array|null
+   */
   public function getLoaded(): ?string {
     return $this->loadedValue;
   }
