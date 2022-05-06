@@ -360,7 +360,8 @@ class CRM_OSDI_ActionNetwork_RemoteSystemTest extends \PHPUnit\Framework\TestCas
         return $foundPerson->getId();
       },
       $searchResults->toArray());
-    $this->assertContains($savedPersonId, $resultIds, print_r($resultIds, TRUE));
+    $this->assertContains($savedPersonId, $resultIds, print_r($resultIds, TRUE)
+      . "\n(Is there a lag between writing to AN and finding the written data?)");
   }
 
   public function testPersonCreate_FindByDateModified() {
