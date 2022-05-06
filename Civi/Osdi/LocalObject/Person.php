@@ -11,6 +11,7 @@ use Civi\Osdi\Exception\InvalidArgumentException;
 class Person implements LocalObjectInterface {
 
   public Field $id;
+
   public Field $createdDate;
   public Field $modifiedDate;
   public Field $firstName;
@@ -33,10 +34,9 @@ class Person implements LocalObjectInterface {
   public Field $addressPostalCode;
   public Field $addressCountryId;
   public Field $addressCountryIdName;
+  protected bool $isLoaded = FALSE;
 
-  private bool $isLoaded = FALSE;
-  private bool $isTouched = FALSE;
-
+  protected bool $isTouched = FALSE;
   const FIELDS = [
     'id' => ['select' => 'id'],
     'createdDate' => ['select' => 'created_date', 'readOnly' => TRUE],
@@ -77,12 +77,16 @@ class Person implements LocalObjectInterface {
     ['Address AS address', FALSE, NULL, ['address.is_primary', '=', 1]],
   ];
 
+  const ORDER_BY = [
+    'phone.id' => 'ASC',
+  ];
+
   protected array $newData = [];
 
   protected array $originalData = [];
 
   public function __construct(int $idValue = NULL) {
-    foreach (self::FIELDS as $name => $metadata) {
+    foreach (static::FIELDS as $name => $metadata) {
       $options = array_merge($metadata, ['bundle' => $this]);
       $this->$name = new Field($name, $options);
     }
@@ -171,11 +175,7 @@ class Person implements LocalObjectInterface {
 
     $result = Contact::get(FALSE)
       ->setJoin(static::JOINS)
-      ->setOrderBy([
-        'email.id' => 'ASC',
-        'phone.id' => 'ASC',
-        'address.id' => 'ASC',
-      ])
+      ->setOrderBy(static::ORDER_BY)
       ->setSelect(array_keys($selects))
       ->setWhere([
         ['id', '=', $id],
@@ -217,6 +217,15 @@ class Person implements LocalObjectInterface {
   }
 
   public function save(): Person {
+    $cid = $this->saveCoreContactFields();
+    $this->id->load($cid);
+    $this->saveEmail($cid);
+    $this->savePhone($cid);
+    $this->saveAddress($cid);
+    return $this;
+  }
+
+  protected function saveCoreContactFields() {
     $cid = Contact::save(FALSE)->addRecord([
       'id' => $this->getId(),
       'first_name' => $this->firstName->get(),
@@ -227,31 +236,13 @@ class Person implements LocalObjectInterface {
       'preferred_language' => $this->preferredLanguage->get(),
       'preferred_language:name' => $this->preferredLanguageName->get(),
     ])->execute()->first()['id'];
-
-    $this->id->load($cid);
-
-    if (!empty($this->emailEmail->get())) {
-      $this->saveEmail($cid);
-    };
-
-    if (!empty($this->phonePhone->get())) {
-      $this->savePhone($cid);
-    }
-
-    $addressIsEmpty =
-      empty($this->addressStreetAddress->get()) &&
-      empty($this->addressCity->get()) &&
-      empty($this->addressPostalCode->get()) &&
-      empty($this->addressStateProvinceId->get());
-
-    if (!$addressIsEmpty) {
-      $this->saveAddress($cid);
-    };
-
-    return $this;
+    return $cid;
   }
 
-  private function saveEmail($cid): void {
+  protected function saveEmail($cid): void {
+    if (empty($this->emailEmail->get())) {
+      return;
+    };
     Email::save(FALSE)
       ->setMatch([
         'contact_id',
@@ -265,7 +256,10 @@ class Person implements LocalObjectInterface {
       ])->execute();
   }
 
-  private function savePhone($cid): void {
+  protected function savePhone($cid): void {
+    if (empty($this->phonePhone->get())) {
+      return;
+    }
     Phone::save(FALSE)
       ->setMatch([
         'contact_id',
@@ -279,7 +273,17 @@ class Person implements LocalObjectInterface {
       ])->execute();
   }
 
-  private function saveAddress($cid): void {
+  protected function saveAddress($cid): void {
+    $addressIsEmpty =
+      empty($this->addressStreetAddress->get()) &&
+      empty($this->addressCity->get()) &&
+      empty($this->addressPostalCode->get()) &&
+      empty($this->addressStateProvinceId->get());
+
+    if ($addressIsEmpty) {
+      return;
+    };
+
     if (!$this->addressId->get()) {
       $addressMatchGet = Address::get(FALSE)
         ->addWhere('contact_id', '=', $cid);
@@ -317,7 +321,7 @@ class Person implements LocalObjectInterface {
     $this->addressStateProvinceIdAbbreviation->set($abrv ?? NULL);
   }
 
-  private function getAbbreviatedState($stateField, $countryField) {
+  protected function getAbbreviatedState($stateField, $countryField) {
     if (empty($stateId = $this->addressStateProvinceId->get())) {
       return NULL;
     }
@@ -331,7 +335,7 @@ class Person implements LocalObjectInterface {
     return $abbreviation;
   }
 
-  private function defaultCountryId() {
+  protected function defaultCountryId() {
     return \CRM_Core_Config::singleton()->defaultContactCountry;
   }
 
