@@ -8,34 +8,28 @@ class SaveResult {
 
   const ERROR = 'error';
 
-  /**
-   * @var \Civi\Osdi\RemoteObjectInterface
-   */
-  protected $savedObject;
+  protected ?RemoteObjectInterface $savedObject;
 
-  /**
-   * @var string
-   */
-  protected $statusCode;
+  protected ?string $statusCode;
 
-  /**
-   * @var string
-   */
-  protected $message;
+  protected ?string $message;
 
   /**
    * @var mixed
    */
   protected $context;
 
-  public function __construct(RemoteObjectInterface $savedObject = NULL, $statusCode = NULL, $statusMessage = NULL, $context = NULL) {
+  public function __construct(RemoteObjectInterface $savedObject = NULL,
+                              $statusCode = NULL,
+                              $statusMessage = NULL,
+                              $context = NULL) {
     $this->savedObject = $savedObject;
     $this->statusCode = $statusCode;
     $this->message = $statusMessage;
     $this->context = $context;
   }
 
-  public function object(): ?RemoteObjectInterface {
+  public function getReturnedObject(): ?RemoteObjectInterface {
     return $this->savedObject;
   }
 
@@ -48,18 +42,18 @@ class SaveResult {
     );
   }
 
-  public function status(): ?string {
+  public function getStatus(): ?string {
     return $this->statusCode;
   }
 
-  public function context() {
+  public function getContext() {
     return $this->context;
   }
 
   /**
    * @return string
    */
-  public function message() {
+  public function getMessage() {
     return $this->message;
   }
 

@@ -28,6 +28,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
 
   public function setUp(): void {
     $this->system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    CRM_OSDI_Fixture_PersonMatching::$remoteSystem = $this->system;
     $this->matcher = $this->createMatcher($this->system);
     CRM_OSDI_FixtureHttpClient::resetHistory();
     parent::setUp();
@@ -52,10 +53,10 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
 
   public function testRemoteMatch_OneToOneEmailSuccess() {
     [$emailAddress, $remotePerson, $contactId] =
-      F::setUpExactlyOneMatchByEmail_DifferentNames($this->system);
+      F::setUpExactlyOneMatchByEmail_DifferentNames();
     $matchResult = $this->matcher->tryToFindMatchForLocalContact(new LocalPerson($contactId));
     $this->assertNotNull($matchResult->getMatch());
-    $this->assertEquals($emailAddress, $matchResult->getRemoteObject()->getEmailAddress());
+    $this->assertEquals($emailAddress, $matchResult->getRemoteObject()->emailAddress->get());
   }
 
   public function testRemoteMatch_NoMatchingEmail() {
@@ -85,7 +86,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
 
   public function testRemoteMatch_NoEmail() {
     $unsavedRemotePerson = F::makeNewOsdiPersonWithFirstLastEmail();
-    $this->system->save($unsavedRemotePerson);
+    $unsavedRemotePerson->save();
     $contactArr = F::civiApi4CreateContact('Testy', 'McTest')->first();
     $contactId = $contactArr['id'];
 
@@ -103,11 +104,11 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
     $matchResult1 = $this->matcher->tryToFindMatchForLocalContact(new LocalPerson($idOfMatchingContact));
     $this->assertNotNull($matchResult1->getMatch());
     $this->assertEquals($matchingContact['email.email'],
-      $matchResult1->getMatch()->getEmailAddress());
+      $matchResult1->getMatch()->emailAddress->get());
     $this->assertEquals($matchingContact['first_name'],
-      $matchResult1->getMatch()->get('given_name'));
+      $matchResult1->getMatch()->givenName->get());
     $this->assertEquals($matchingContact['last_name'],
-      $matchResult1->getMatch()->get('family_name'));
+      $matchResult1->getMatch()->familyName->get());
 
     $matchResult2 = $this->matcher->tryToFindMatchForLocalContact(new LocalPerson($idOf_Non_MatchingContact));
     self::assertTrue($matchResult2->isError());
@@ -153,11 +154,11 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
 
     $matchResult->getMatch()->loadOnce();
 
-    $this->assertEquals($remotePerson->getEmailAddress(),
+    $this->assertEquals($remotePerson->emailAddress->get(),
       $matchResult->getMatch()->emailEmail->get());
-    $this->assertEquals($remotePerson->get('given_name'),
+    $this->assertEquals($remotePerson->givenName->get(),
       $matchResult->getMatch()->firstName->get());
-    $this->assertEquals($remotePerson->get('family_name'),
+    $this->assertEquals($remotePerson->familyName->get(),
       $matchResult->getMatch()->lastName->get());
   }
 

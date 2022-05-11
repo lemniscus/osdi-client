@@ -2,69 +2,51 @@
 
 namespace Civi\Osdi;
 
+use Jsor\HalClient\HalResource;
+
 interface RemoteObjectInterface {
 
-  public static function getValidFields(): array;
+  public function __construct(RemoteSystemInterface $system,
+                              ?HalResource $resource = NULL);
 
-  public function getNamespace(): string;
-
-  public function getType(): string;
-
-  public function getOwnUrl(RemoteSystemInterface $system);
-
-  public function getId(): ?string;
-
-  public function setId(string $id);
-
-  /**
-   * @param string|null $fieldName
-   *
-   * @return mixed
-   * @throws \Civi\Osdi\Exception\InvalidArgumentException
-   */
-  public function get(string $fieldName);
-
-  /**
-   * @param string|null $fieldName
-   * @return mixed
-   * @throws \Civi\Osdi\Exception\InvalidArgumentException
-   */
-  public function getOriginal(string $fieldName);
+  public function getAll(): array;
 
   public function getAllOriginal(): array;
 
-  /**
-   * @param string $fieldName
-   * @return mixed|null
-   */
-  public function getAltered(string $fieldName);
+  public function getArrayForCreate(): array;
 
-  public function getAllAltered(): array;
+  public function getArrayForUpdate(): array;
 
-  /**
-   * @param string $fieldName
-   * @param mixed $val
-   * @throws \Civi\Osdi\Exception\InvalidArgumentException
-   */
-  public function set(string $fieldName, $val);
+  public function setId(string $val);
 
-  /**
-   * @param string $fieldName
-   * @param mixed $val
-   * @throws \Civi\Osdi\Exception\InvalidArgumentException
-   */
-  public function appendTo(string $fieldName, $val);
+  public function getId(): ?string;
 
-  /**
-   * @param string $fieldName
-   * @throws \Civi\Osdi\Exception\InvalidArgumentException
-   */
-  public function clearField(string $fieldName);
+  public function getResource(): ?HalResource;
 
-  public function getFieldsToClearBeforeWriting(): array;
+  public function getType(): string;
 
-  public function isEdited(string $fieldName): bool;
+  public function getUrlForCreate(): string;
+
+  public function getUrlForDelete(): string;
+
+  public function getUrlForRead(): ?string;
+
+  public function getUrlForUpdate(): string;
+
+  public function isAltered(): bool;
+
+  public function isLoaded(): bool;
+
+  public function isTouched(): bool;
 
   public function isSupersetOf(RemoteObjectInterface $otherObject, bool $emptyValuesAreOk = FALSE, bool $ignoreModifiedDate = FALSE): bool;
+
+  public function delete();
+
+  public function load(): RemoteObjectInterface;
+
+  public function loadOnce(): RemoteObjectInterface;
+
+  public function save(): RemoteObjectInterface;
 
 }

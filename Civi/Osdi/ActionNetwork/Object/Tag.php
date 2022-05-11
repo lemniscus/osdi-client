@@ -2,26 +2,26 @@
 
 namespace Civi\Osdi\ActionNetwork\Object;
 
-use Civi\Osdi\ActionNetwork\OsdiObject;
-use Jsor\HalClient\HalResource;
+class Tag extends Base implements \Civi\Osdi\RemoteObjectInterface {
 
-class Tag extends OsdiObject {
+  public Field $identifiers;
+  public Field $createdDate;
+  public Field $modifiedDate;
+  public Field $name;
 
-  public function __construct(?HalResource $resource = NULL, ?array $initData = NULL) {
-    parent::__construct('osdi:tags', $resource, $initData);
+  const FIELDS = [
+    'identifiers' => ['path' => ['identifiers'], 'appendOnly' => TRUE],
+    'createdDate' => ['path' => ['created_date'], 'readOnly' => TRUE],
+    'modifiedDate' => ['path' => ['modified_date'], 'readOnly' => TRUE],
+    'name' => ['path' => ['name'], 'createOnly' => TRUE],
+  ];
+
+  public function getType(): string {
+    return 'osdi:tags';
   }
 
-  public static function getValidFields(): array {
-    return [
-      'identifiers',
-      'created_date',
-      'modified_date',
-      'name',
-    ];
-  }
-
-  public static function isValidField(string $name): bool {
-    return in_array($name, self::getValidFields());
+  public function getUrlForCreate(): string {
+    return 'https://actionnetwork.org/api/v2/tags';
   }
 
 }

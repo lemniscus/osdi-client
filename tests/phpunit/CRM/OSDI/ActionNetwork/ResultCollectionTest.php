@@ -32,27 +32,15 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
     parent::tearDown();
   }
 
-  public function testUnsubscribedPeopleAreNotCounted() {
-    $unsavedPerson = new \Civi\Osdi\ActionNetwork\Object\Person(
-      NULL,
-      [
-        'given_name' => 'Ozzy',
-        'family_name' => 'Mandias',
-        'email_addresses' => [
-          [
-            'address' => 'traveler@antique.land',
-            'status' => 'unsubscribed',
-          ],
-        ],
-        'phone_numbers' => [
-          [
-            'number' => '12021234444',
-            'status' => 'unsubscribed',
-          ],
-        ],
-      ]
-    );
-    $savedPerson = self::$system->save($unsavedPerson);
+  public function testUnsubscribedPeopleAreNotIncludedInFilteredCount() {
+    $person = new \Civi\Osdi\ActionNetwork\Object\Person(self::$system);
+    $person->givenName->set('Ozzy');
+    $person->familyName->set('Mandias');
+    $person->emailAddress->set('traveler@antique.land');
+    $person->emailStatus->set('unsubscribed');
+    $person->phoneNumber->set('12021234444');
+    $person->phoneStatus->set('unsubscribed');
+    $person->save();
 
     $remotePeopleWithTheEmail = self::$system->find(
       'osdi:people',
@@ -60,16 +48,8 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
 
     self::assertEquals(0, $remotePeopleWithTheEmail->filteredCurrentCount());
 
-    $savedPerson->set(
-      'email_addresses',
-      [
-        [
-          'address' => 'traveler@antique.land',
-          'status' => 'subscribed',
-        ],
-      ]
-    );
-    self::$system->save($savedPerson);
+    $person->emailStatus->set('subscribed');
+    $person->save();
 
     $remotePeopleWithTheEmail = self::$system->find(
       'osdi:people',
@@ -86,40 +66,24 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
       [['given_name', 'eq', 'Thing']]);
 
     foreach ($remotePeopleWithTheName->toArray() as $person) {
-      self::$system->delete($person);
+      $person->delete();
     }
 
-    $thingOneUnsaved = new \Civi\Osdi\ActionNetwork\Object\Person(
-      NULL,
-      [
-        'given_name' => 'Thing',
-        'family_name' => 'One',
-        'email_addresses' => [
-          [
-            'address' => 'one@big.red.wood.box',
-            'status' => 'subscribed',
-          ],
-        ],
-        'phone_numbers' => [['status' => 'unsubscribed']],
-      ]
-    );
-    $thingOneSaved = self::$system->save($thingOneUnsaved);
+    $thingOne = new \Civi\Osdi\ActionNetwork\Object\Person(self::$system);
+    $thingOne->givenName->set('Thing');
+    $thingOne->familyName->set('One');
+    $thingOne->emailAddress->set('one@big.red.wood.box');
+    $thingOne->emailStatus->set('subscribed');
+    $thingOne->phoneStatus->set('unsubscribed');
+    $thingOne->save();
 
-    $thingTwoUnsaved = new \Civi\Osdi\ActionNetwork\Object\Person(
-      NULL,
-      [
-        'given_name' => 'Thing',
-        'family_name' => 'Two',
-        'email_addresses' => [
-          [
-            'address' => 'two@big.red.wood.box',
-            'status' => 'unsubscribed',
-          ],
-        ],
-        'phone_numbers' => [['status' => 'unsubscribed']],
-      ]
-    );
-    $thingTwoSaved = self::$system->save($thingTwoUnsaved);
+    $thingTwo = new \Civi\Osdi\ActionNetwork\Object\Person(self::$system);
+    $thingTwo->givenName->set('Thing');
+    $thingTwo->familyName->set('Two');
+    $thingTwo->emailAddress->set('two@big.red.wood.box');
+    $thingTwo->emailStatus->set('unsubscribed');
+    $thingTwo->phoneStatus->set('unsubscribed');
+    $thingTwo->save();
 
     // TEST PROPER, PART A
 
@@ -129,15 +93,15 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
 
     $first = $remotePeopleWithTheName->filteredFirst();
 
-    self::assertEquals('One', $first->get('family_name'));
+    self::assertEquals('One', $first->familyName->get());
 
     // TEST PROPER, PART B
 
-    $thingOneSaved->set('email_addresses', [['status' => 'unsubscribed']]);
-    self::$system->save($thingOneSaved);
+    $thingOne->emailStatus->set('unsubscribed');
+    $thingOne->save();
 
-    $thingTwoSaved->set('email_addresses', [['status' => 'subscribed']]);
-    self::$system->save($thingTwoSaved);
+    $thingTwo->emailStatus->set('subscribed');
+    $thingTwo->save();
 
     $remotePeopleWithTheName = self::$system->find(
       'osdi:people',
@@ -145,7 +109,7 @@ class CRM_OSDI_ActionNetwork_ResultCollectionTest extends \PHPUnit\Framework\Tes
 
     $first = $remotePeopleWithTheName->filteredFirst();
 
-    self::assertEquals('Two', $first->get('family_name'));
+    self::assertEquals('Two', $first->familyName->get());
 
   }
 

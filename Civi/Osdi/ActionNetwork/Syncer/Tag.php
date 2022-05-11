@@ -5,6 +5,7 @@ namespace Civi\Osdi\ActionNetwork\Syncer;
 use Civi\Osdi\ActionNetwork\Mapper\Person;
 use Civi\Osdi\ActionNetwork\Object\Tag as OsdiTagObject;
 use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\LocalObject\LocalObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\SyncResult;
 use Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail;
@@ -151,23 +152,23 @@ class Tag {
 
   private function oneWaySyncLocalById($id): SyncResult {
     try {
-      $localTag = \Civi\Api4\Tag::get(FALSE)
-        ->addWhere('id', '=', $id)
-        ->execute()->single();
+      $localTag = new \Civi\Osdi\LocalObject\Tag($id);
+      $localTag->loadOnce();
 
-      $draftRemoteTag = new OsdiTagObject(NULL, ['name' => $localTag['name']]);
+      $draftRemoteTag = new OsdiTagObject($this->getRemoteSystem());
+      $draftRemoteTag->name->set($localTag->name->get());
       $saveResult = $this->getRemoteSystem()->trySave($draftRemoteTag);
-      $remoteObject = $saveResult->object();
+      $remoteObject = $saveResult->getReturnedObject();
 
       $logContext = [];
-      if ($message = $saveResult->message()) {
+      if ($message = $saveResult->getMessage()) {
         $logContext[] = $message;
       }
       if ($saveResult->isError()) {
-        $logContext[] = $saveResult->context();
+        $logContext[] = $saveResult->getContext();
       }
       \Civi::log()->debug(
-        "OSDI sync attempt: local tag $id: {$saveResult->status()}",
+        "OSDI sync attempt: local tag $id: {$saveResult->getStatus()}",
         $logContext,
       );
 
@@ -176,8 +177,8 @@ class Tag {
           $localTag,
           $remoteObject,
           SyncResult::ERROR,
-          $saveResult->message(),
-          $saveResult->context()
+          $saveResult->getMessage(),
+          $saveResult->getContext()
         );
       }
 
@@ -202,7 +203,7 @@ class Tag {
   }
 
   private function oneWaySyncRemoteObject(OsdiTagObject $remoteObject): SyncResult {
-    $name = $remoteObject->get('name');
+    $name = $remoteObject->name->get();
 
     if (empty($name)) {
       throw new InvalidArgumentException('Invalid remote tag object supplied to '
@@ -214,19 +215,20 @@ class Tag {
       ->execute();
 
     if (!$civiApiTagGet->count()) {
-      $localTag = \Civi\Api4\Tag::create(FALSE)
+      $localTagArray = \Civi\Api4\Tag::create(FALSE)
         ->addValue('name', $name)
         ->addValue('used_for', ['Contact'])
         ->execute()->single();
     }
     else {
-      $localTag = $civiApiTagGet->single();
+      $localTagArray = $civiApiTagGet->single();
     }
 
     \Civi::log()->debug(
       "OSDI sync attempt: remote tag '$name': success"
     );
 
+    $localTag = new \Civi\Osdi\LocalObject\Tag($localTagArray['id']);
     $this->saveMatch($localTag, $remoteObject);
 
     return new SyncResult(
@@ -236,10 +238,10 @@ class Tag {
     );
   }
 
-  private function saveMatch(array $localTag, \Civi\Osdi\RemoteObjectInterface $remoteObject): void {
+  private function saveMatch(LocalObjectInterface $localTag, \Civi\Osdi\RemoteObjectInterface $remoteObject): void {
     $savedMatches = self::getAllSavedMatches();
     $recordToSave = [
-      'local' => $localTag,
+      'local' => $localTag->getAllLoaded(),
       'remote' => $remoteObject->getAllOriginal() + [
         'id' => $remoteObject->getId(),
       ],

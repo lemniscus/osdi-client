@@ -25,11 +25,13 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
   }
 
   public static function setUpBeforeClass(): void {
+    self::$remoteSystem = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+
     PersonMatchFixture::$personClass = \Civi\Osdi\ActionNetwork\Object\Person::class;
+    PersonMatchFixture::$remoteSystem = self::$remoteSystem;
 
     self::$syncProfile = CRM_OSDI_ActionNetwork_TestUtils::createSyncProfile();
 
-    self::$remoteSystem = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     self::$syncer = new \Civi\Osdi\ActionNetwork\Syncer\Person(self::$remoteSystem);
 
@@ -46,7 +48,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
 
   protected function tearDown(): void {
     while ($person = array_pop($this->createdRemotePeople)) {
-      self::$remoteSystem->delete($person);
+      $person->delete();
     }
 
     while ($contactId = array_pop($this->createdContacts)) {
@@ -94,9 +96,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
   public function testGetOrCreatePairIncoming() {
     // SETUP
 
-    $remotePerson = self::$remoteSystem->save(
-      PersonMatchFixture::makeNewOsdiPersonWithFirstLastEmail()
-    );
+    $remotePerson = PersonMatchFixture::makeNewOsdiPersonWithFirstLastEmail()->save();
     $this->createdRemotePeople[] = $remotePerson;
 
     // PRE-ASSERTS
@@ -123,9 +123,9 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
 
     self::assertEquals(\Civi\Osdi\LocalObject\Person::class, get_class($createdLocalObject));
 
-    self::assertEquals($remotePerson->get('given_name'), $createdLocalObject->firstName->get());
-    self::assertEquals($remotePerson->get('family_name'), $createdLocalObject->lastName->get());
-    self::assertEquals($remotePerson->getEmailAddress(), $createdLocalObject->emailEmail->get());
+    self::assertEquals($remotePerson->givenName->get(), $createdLocalObject->firstName->get());
+    self::assertEquals($remotePerson->familyName->get(), $createdLocalObject->lastName->get());
+    self::assertEquals($remotePerson->emailAddress->get(), $createdLocalObject->emailEmail->get());
 
     $pair = self::$syncer->getOrCreateLocalRemotePair(
       \Civi\Osdi\ActionNetwork\Syncer\Person::inputTypeActionNetworkPersonObject,
@@ -195,9 +195,9 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
       \Civi\Osdi\ActionNetwork\Object\Person::class,
       get_class($createdRemoteObject));
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $createdRemoteObject */
-    self::assertEquals($firstName, $createdRemoteObject->get('given_name'));
-    self::assertEquals($lastName, $createdRemoteObject->get('family_name'));
-    self::assertEquals($emailAddress, $createdRemoteObject->getEmailAddress());
+    self::assertEquals($firstName, $createdRemoteObject->givenName->get());
+    self::assertEquals($lastName, $createdRemoteObject->familyName->get());
+    self::assertEquals($emailAddress, $createdRemoteObject->emailAddress->get());
 
     $pair = self::$syncer->getOrCreateLocalRemotePair(
       \Civi\Osdi\ActionNetwork\Syncer\Person::inputTypeLocalContactId,
@@ -205,7 +205,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
 
     self::assertFalse($pair->isError());
     self::assertEquals('fetched saved match', $pair->getMessage());
-    self::assertEquals($createdRemoteObject->toArray(), $pair->getRemoteObject()->toArray());
+    self::assertEquals($createdRemoteObject->getAll(), $pair->getRemoteObject()->getAll());
 
     $savedMatch = $pair->getSavedMatch();
 
@@ -222,15 +222,13 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
     self::assertFalse($pair->isError());
     self::assertEquals('found new match with existing object', $pair->getMessage());
     self::assertEquals($createdRemoteObject->getId(), $pair->getRemoteObject()->getId());
-    self::assertEquals($createdRemoteObject->getEmailAddress(), $pair->getRemoteObject()->getEmailAddress());
+    self::assertEquals($createdRemoteObject->emailAddress->get(), $pair->getRemoteObject()->emailAddress->get());
   }
 
   public function testGetOrCreatePair_ContactIsDeletedButASavedMatchStillExists() {
     // SETUP
 
-    $remotePerson = self::$remoteSystem->save(
-      PersonMatchFixture::makeNewOsdiPersonWithFirstLastEmail()
-    );
+    $remotePerson = PersonMatchFixture::makeNewOsdiPersonWithFirstLastEmail()->save();
     $this->createdRemotePeople[] = $remotePerson;
 
     $pair = self::$syncer->oneWaySync(
@@ -269,12 +267,11 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
     $lastName = 'Bim';
     $emailAddress = 'bop@yum.com';
 
-    $person = self::$remoteSystem->save(new ANPerson(NULL, [
-      'given_name' => $firstName,
-      'family_name' => $lastName,
-      'email_addresses' => [['address' => $emailAddress]],
-    ]));
-    $this->createdRemotePeople[] = $person;
+    $person = $this->createdRemotePeople[] = new ANPerson(self::$remoteSystem);
+    $person->givenName->set($firstName);
+    $person->familyName->set($lastName);
+    $person->emailAddress->set($emailAddress);
+    $person->save();
 
     \Civi\Api4\Email::delete(FALSE)
       ->addWhere('email', '=', $emailAddress)
@@ -334,7 +331,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
       [['email', 'eq', $emailAddress]]);
 
     if ($remotePeopleWithTheEmail->filteredCurrentCount()) {
-      self::$remoteSystem->delete($remotePeopleWithTheEmail->filteredFirst());
+      $remotePeopleWithTheEmail->filteredFirst()->delete();
       $remotePeopleWithTheEmail = self::$remoteSystem->find(
         'osdi:people',
         [['email', 'eq', $emailAddress]]);
@@ -359,16 +356,17 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
 
     self::assertEquals(
       $firstName,
-      $remotePeopleWithTheEmail->filteredFirst()->get('given_name'));
+      $remotePeopleWithTheEmail->filteredFirst()->givenName->get());
 
     self::assertEquals(
       $lastName,
-      $remotePeopleWithTheEmail->filteredFirst()->get('family_name'));
+      $remotePeopleWithTheEmail->filteredFirst()->familyName->get());
   }
 
   public function testSyncChangedNameIncoming() {
     // SETUP
 
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $originalRemotePerson */
     [$originalRemotePerson, $contactId] =
       PersonMatchFixture::setUpExactlyOneMatchByEmailAndName(self::$remoteSystem);
     $this->createdRemotePeople[] = $originalRemotePerson;
@@ -378,10 +376,10 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
 
     // TEST PROPER
 
-    $changedFirstName = $originalRemotePerson->get('given_name') . ' plus this';
+    $changedFirstName = $originalRemotePerson->givenName->get() . ' plus this';
     $changedRemotePerson = $originalRemotePerson;
-    $changedRemotePerson->set('given_name', $changedFirstName);
-    self::$remoteSystem->save($changedRemotePerson);
+    $changedRemotePerson->givenName->set($changedFirstName);
+    $changedRemotePerson->save();
 
     self::assertNotEquals(
       $changedFirstName,
@@ -396,7 +394,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
       $syncedContact['first_name']);
 
     self::assertEquals(
-      $originalRemotePerson->get('family_name'),
+      $originalRemotePerson->familyName->get(),
       $syncedContact['last_name']);
   }
 
@@ -407,12 +405,13 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
   public function testSyncChangedNameOutgoing() {
     // SETUP
 
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $originalRemotePerson */
     [$originalRemotePerson, $contactId] =
       PersonMatchFixture::setUpExactlyOneMatchByEmailAndName(self::$remoteSystem);
     $this->createdRemotePeople[] = $originalRemotePerson;
     $this->createdContacts[] = $contactId;
 
-    $originalFirstName = $originalRemotePerson->get('given_name');
+    $originalFirstName = $originalRemotePerson->givenName->get();
 
     // TEST PROPER
 
@@ -427,41 +426,40 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
 
     $remotePeopleWithTheEmail = self::$remoteSystem->find(
       'osdi:people',
-      [['email', 'eq', $originalRemotePerson->getEmailAddress()]]);
+      [['email', 'eq', $originalRemotePerson->emailAddress->get()]]);
     $this->createdRemotePeople[] = $remotePeopleWithTheEmail->filteredFirst();
 
     self::assertEquals(
       $changedFirstName,
-      $remotePeopleWithTheEmail->filteredFirst()->get('given_name'));
+      $remotePeopleWithTheEmail->filteredFirst()->givenName->get());
 
     self::assertEquals(
-      $originalRemotePerson->get('family_name'),
-      $remotePeopleWithTheEmail->filteredFirst()->get('family_name'));
+      $originalRemotePerson->familyName->get(),
+      $remotePeopleWithTheEmail->filteredFirst()->familyName->get());
   }
 
   public function testSyncAddedAddressIncoming() {
     // SETUP
 
-    [$originalRemotePerson, $contactId] =
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $remotePerson */
+    [$remotePerson, $contactId] =
       PersonMatchFixture::setUpExactlyOneMatchByEmailAndName(self::$remoteSystem);
-    $this->createdRemotePeople[] = $originalRemotePerson;
+    $this->createdRemotePeople[] = $remotePerson;
     $this->createdContacts[] = $contactId;
 
     $originalContact = PersonMatchFixture::civiApi4GetSingleContactById($contactId);
-    $newStreet = '123 Test St.';
 
     // TEST PROPER
 
-    $address = $originalRemotePerson->get('postal_addresses')[0];
-    $address['address_lines'][0] = $newStreet;
-    $changedRemotePerson = $originalRemotePerson;
-    $changedRemotePerson->set('postal_addresses', [$address]);
-    self::$remoteSystem->save($changedRemotePerson);
+    $newStreet = '123 Test St.';
+    $remotePerson->postalStreet->set($newStreet);
+    $remotePerson->postalCode->set('83001');
+    $remotePerson->save();
 
     self::assertNotEquals($newStreet,
       $originalContact['address.street_address'] ?? NULL);
 
-    self::$syncer->oneWaySync(\Civi\Osdi\ActionNetwork\Syncer\Person::inputTypeActionNetworkPersonObject, $changedRemotePerson);
+    self::$syncer->oneWaySync(\Civi\Osdi\ActionNetwork\Syncer\Person::inputTypeActionNetworkPersonObject, $remotePerson);
 
     $syncedContact = PersonMatchFixture::civiApi4GetSingleContactById($contactId);
 
@@ -485,9 +483,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
     $reFetchedRemotePerson = self::$remoteSystem
       ->fetchPersonById($originalRemotePerson->getId());
 
-    self::assertNotEquals($newStreet,
-      $reFetchedRemotePerson
-        ->get('postal_addresses')[0]['address_lines'][0] ?? NULL);
+    self::assertNotEquals($newStreet, $reFetchedRemotePerson->postalStreet->get());
 
     \Civi\Api4\Address::create()
       ->addValue('contact_id', $contactId)
@@ -502,10 +498,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
     $reFetchedRemotePerson = self::$remoteSystem
       ->fetchPersonById($originalRemotePerson->getId());
 
-    self::assertEquals(
-      $newStreet,
-      $reFetchedRemotePerson
-        ->get('postal_addresses')[0]['address_lines'][0] ?? NULL);
+    self::assertEquals($newStreet, $reFetchedRemotePerson->postalStreet->get());
   }
 
   public function testSyncAddedAddressOutgoingFailsBecauseNoZip() {
@@ -534,7 +527,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
 
     self::assertNull(
       $reFetchedRemotePerson
-        ->get('postal_addresses')[0]['region'] ?? NULL);
+        ->postalRegion->get() ?? NULL);
   }
 
   public function testSyncChangedEmailOutgoingSuccess() {
@@ -560,9 +553,10 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
     $remotePeopleWithEmail1 = self::$remoteSystem->find(
       'osdi:people',
       [['email', 'eq', $emailOne]]);
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $originalPerson */
     $originalPerson = $this->createdRemotePeople[] = $remotePeopleWithEmail1->filteredFirst();
 
-    self::assertEquals($firstNameOne, $originalPerson->get('given_name'));
+    self::assertEquals($firstNameOne, $originalPerson->givenName->get());
 
     $emailTwo = microtime(TRUE) . "-$emailOne";
     $nameTwo = "Bride of $firstNameOne";
@@ -595,17 +589,16 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
       [['email', 'eq', $emailTwo]]);
     $this->createdRemotePeople[] = $remotePeopleWithEmail2->filteredFirst();
 
-    $changedPerson = self::$remoteSystem->fetchById(
-      'osdi:people',
+    $changedPerson = self::$remoteSystem->fetchPersonById(
       $originalPerson->getId()
     );
-    $changedPersonEmail = $changedPerson->getEmailAddress();
-    $changedPersonName = $changedPerson->get('given_name');
+    $changedPersonEmail = $changedPerson->emailAddress->get();
+    $changedPersonName = $changedPerson->givenName->get();
 
     // CLEAN UP BEFORE ASSERTING
 
-    $changedPerson->set('email_addresses', [['address' => $emailOne]]);
-    self::$remoteSystem->save($changedPerson);
+    $changedPerson->emailAddress->set($emailOne);
+    $changedPerson->save();
 
     self::assertEquals($emailTwo,
       $changedPersonEmail,
@@ -639,19 +632,20 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
     $remotePeopleWithEmail1 = self::$remoteSystem->find(
       'osdi:people',
       [['email', 'eq', $emailOne]]);
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $originalPerson */
     $originalPerson = $this->createdRemotePeople[] = $remotePeopleWithEmail1->filteredFirst();
 
-    self::assertEquals($firstNameOne, $originalPerson->get('given_name'));
+    self::assertEquals($firstNameOne, $originalPerson->givenName->get());
 
     // CONFLICTING PERSON
 
     $emailTwo = "different-$emailOne";
     $nameTwo = "Not $firstNameOne";
 
-    $scratchPerson = new \Civi\Osdi\ActionNetwork\Object\Person();
-    $scratchPerson->set('email_addresses', [['address' => $emailTwo]]);
-    $scratchPerson->set('given_name', $nameTwo);
-    $this->createdRemotePeople[] = self::$remoteSystem->save($scratchPerson);
+    $scratchPerson = new \Civi\Osdi\ActionNetwork\Object\Person(self::$remoteSystem);
+    $scratchPerson->emailAddress->set($emailTwo);
+    $scratchPerson->givenName->set($nameTwo);
+    $this->createdRemotePeople[] = $scratchPerson->save();
 
     // CHANGE EMAIL LOCALLY
 
@@ -671,12 +665,11 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
 
     self::assertTrue($result->isError());
 
-    $changedPerson = self::$remoteSystem->fetchById(
-      'osdi:people',
+    $changedPerson = self::$remoteSystem->fetchPersonById(
       $originalPerson->getId()
     );
-    $changedPersonEmail = $changedPerson->getEmailAddress();
-    $changedPersonName = $changedPerson->get('given_name');
+    $changedPersonEmail = $changedPerson->emailAddress->get();
+    $changedPersonName = $changedPerson->givenName->get();
 
     self::assertEquals($emailOne,
       $changedPersonEmail,

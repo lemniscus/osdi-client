@@ -53,12 +53,13 @@ class CRM_OSDI_ActionNetwork_TagSyncerTest extends PHPUnit\Framework\TestCase im
     // SETUP
 
     $name = 'Comms: This is a Test';
-    $draftRemoteTag = new ActionNetworkTagObject(NULL, ['name' => $name]);
+    $draftRemoteTag = new ActionNetworkTagObject(self::$remoteSystem);
     $saveResult = self::$remoteSystem->trySave($draftRemoteTag);
 
-    self::assertFalse($saveResult->isError());
+    self::assertFalse($saveResult->isError(), $saveResult->getMessage()
+      . "\n" . print_r($saveResult->getContext(), TRUE));
 
-    $this->createdRemoteTags[] = $remoteObject = $saveResult->object();
+    $this->createdRemoteTags[] = $remoteObject = $saveResult->getReturnedObject();
 
     // PRE-ASSERTS
 
@@ -118,7 +119,7 @@ class CRM_OSDI_ActionNetwork_TagSyncerTest extends PHPUnit\Framework\TestCase im
     $remoteTag = $result->getRemoteObject();
 
     self::assertEquals(ActionNetworkTagObject::class, get_class($remoteTag));
-    self::assertEquals($name, $remoteTag->get('name'));
+    self::assertEquals($name, $remoteTag->name->get());
     self::assertNotNull($remoteTag->getId());
 
     $existingMatch = self::$syncer

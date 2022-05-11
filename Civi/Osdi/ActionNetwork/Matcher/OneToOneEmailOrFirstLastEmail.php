@@ -93,7 +93,7 @@ class OneToOneEmailOrFirstLastEmail {
       ]
     );
 
-    if (0 === $remoteSystemFindResult->filteredCurrentCount()) {
+    if (0 === $remoteSystemFindResult->rawCurrentCount()) {
       return new MatchResult(
         MatchResult::ORIGIN_LOCAL,
         $localPerson,
@@ -112,7 +112,7 @@ class OneToOneEmailOrFirstLastEmail {
   }
 
   public function tryToFindMatchForRemotePerson(RemotePerson $remotePerson): MatchResult {
-    if (empty($email = $remotePerson->getEmailAddress())) {
+    if (empty($email = $remotePerson->emailAddress->get())) {
       return new MatchResult(
         MatchResult::ORIGIN_REMOTE,
         NULL,
@@ -148,9 +148,9 @@ class OneToOneEmailOrFirstLastEmail {
 
   private function findLocalMatchByEmailAndName(RemotePerson $remotePerson): MatchResult {
     $civiApi4Result = $this->getCiviContactsBy(
-      $remotePerson->getEmailAddress(),
-      $remotePerson->getOriginal('given_name'),
-      $remotePerson->getOriginal('family_name')
+      $remotePerson->emailAddress->get(),
+      $remotePerson->givenName->getOriginal(),
+      $remotePerson->familyName->getOriginal()
     );
     $countOfCiviContactsWithSameEmailFirstLast = $civiApi4Result->count();
 
@@ -209,14 +209,14 @@ class OneToOneEmailOrFirstLastEmail {
   private function makeSingleOrZeroMatchResult(LocalPerson $localPerson,
                                                ResultCollection $collection,
                                                string $message): MatchResult {
-    if (($count = $collection->filteredCurrentCount()) > 1) {
+    if (($count = $collection->rawCurrentCount()) > 1) {
       throw new AmbiguousResultException('At most one match expected, %d returned', $count);
     }
     try {
       return new MatchResult(
         MatchResult::ORIGIN_LOCAL,
         $localPerson,
-        $collection->filteredFirst(),
+        $collection->rawFirst(),
         NULL,
         $message);
     }

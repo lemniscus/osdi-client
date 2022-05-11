@@ -4,7 +4,7 @@ namespace Civi\Osdi\Mock;
 
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Generic\OsdiPerson;
-use Civi\Osdi\RemoteObjectInterface;
+use Civi\Osdi\RemoteObjectInterfaceOLD;
 use Civi\Osdi\ResultCollection;
 use Jsor\HalClient\HalClient;
 use Jsor\HalClient\HalResource;
@@ -35,7 +35,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     if ('osdi:people' === $objectType) {
       if ([['email', '=', 'testy@test.net']] === $criteria) {
         $osdiPersonArr = array_filter($this->database['osdi:people'], function ($person) use ($criteria) {
-          /** @var \Civi\Osdi\RemoteObjectInterface $person */
+          /** @var \Civi\Osdi\RemoteObjectInterfaceOLD $person */
           $theirEmails = $person->getOriginal('email_addresses');
           foreach ((array) $theirEmails as $emailArr) {
             if ($emailArr['address'] === $criteria[0][2]) {
@@ -50,7 +50,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     }
   }
 
-  public function save(\Civi\Osdi\RemoteObjectInterface $osdiObject): OsdiPerson {
+  public function save(\Civi\Osdi\RemoteObjectInterfaceOLD $osdiObject): HalResource {
     if ('osdi:people' === $osdiObject->getType()) {
       return $this->savePerson($osdiObject);
     }
@@ -87,7 +87,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     return $newRemotePerson;
   }
 
-  public function delete(RemoteObjectInterface $object) {
+  public function delete(RemoteObjectInterfaceOLD $object) {
     unset($this->database['osdi:people'][$object->getId()]);
   }
 
@@ -95,7 +95,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     // TODO: Implement getUrlFor() method.
   }
 
-  public function makeOsdiObject(string $type, ?HalResource $resource, ?array $initData = NULL): RemoteObjectInterface {
+  public function makeOsdiObject(string $type, ?HalResource $resource, ?array $initData = NULL): RemoteObjectInterfaceOLD {
     // TODO: Implement makeOsdiObject() method.
   }
 
@@ -103,7 +103,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     // TODO: Implement getEntryPoint() method.
   }
 
-  public function trySave(RemoteObjectInterface $objectToSave): \Civi\Osdi\SaveResult {
+  public function trySave(RemoteObjectInterfaceOLD $objectToSave): \Civi\Osdi\SaveResult {
     // TODO: Implement trySave() method.
   }
 

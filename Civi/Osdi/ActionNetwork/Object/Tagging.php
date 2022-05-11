@@ -2,90 +2,85 @@
 
 namespace Civi\Osdi\ActionNetwork\Object;
 
-use Civi\Osdi\ActionNetwork\Object\Person;
-use Civi\Osdi\ActionNetwork\OsdiObject;
-use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\RemoteObjectInterface;
-use Jsor\HalClient\HalResource;
 
-class Tagging extends OsdiObject {
+class Tagging extends Base implements RemoteObjectInterface {
 
-  /**
-   * @var Person
-   */
-  private $person;
+  protected Person $person;
+  protected Tag $tag;
 
-  /**
-   * @var OsdiObject
-   */
-  private $tag;
+  public Field $personHref;
+  public Field $tagHref;
+  public Field $identifiers;
+  public Field $createdDate;
+  public Field $modifiedDate;
+  public Field $itemType;
 
-  /**
-   * Tagging constructor.
-   *
-   * @param \Jsor\HalClient\HalResource|null $resource
-   * @param array|null $initData
-   */
-  public function __construct(?HalResource $resource, ?array $initData) {
-    parent::__construct('osdi:taggings', $resource, $initData);
+  const FIELDS = [
+    'personHref' => ['path' => ['_links', 'osdi:person', 'href'], 'createOnly' => TRUE],
+    'tagHref' => ['path' => ['_links', 'osdi:tag', 'href'], 'readOnly' => TRUE],
+    'identifiers' => ['path' => ['identifiers'], 'appendOnly' => TRUE],
+    'createdDate' => ['path' => ['created_date'], 'readOnly' => TRUE],
+    'modifiedDate' => ['path' => ['modified_date'], 'readOnly' => TRUE],
+    'itemType' => ['path' => ['item_type'], 'readOnly' => TRUE],
+  ];
+
+  public function getType(): string {
+    return 'osdi:taggings';
   }
 
-  public function setPerson(Person $person, RemoteSystem $system) {
-    if (!($url = $person->getOwnUrl($system))) {
+  public function getUrlForCreate(): string {
+    if (empty($tagUrl = $this->tagHref->get())) {
+      if (!($tagUrl = $this->tag->getUrlForRead())) {
+        throw new InvalidOperationException('Cannot construct a url to '
+          . 'create a tagging; missing tag url');
+      }
+    }
+    return "$tagUrl/taggings";
+  }
+
+  public function getUrlForRead(): ?string {
+    return parent::getUrlForRead();
+  }
+
+  public function delete() {
+    return $this->_system->delete($this);
+  }
+
+  public function setPerson(Person $person) {
+    if (!($url = $person->getUrlForRead())) {
       throw new InvalidArgumentException("We need to know the person's URL");
     }
-    if ($this->id) {
+    if ($this->_id) {
       throw new InvalidOperationException('Modifying an existing tagging is not allowed');
     }
-    $this->set('_links', ['osdi:person' => ['href' => $url]]);
+    $this->personHref->set($url);
     $this->person = $person;
   }
 
-  /**
-   * @param \Civi\Osdi\RemoteObjectInterface $tag
-   * @param RemoteSystem $system
-   *
-   * @throws InvalidArgumentException
-   * @throws InvalidOperationException
-   */
-  public function setTag(RemoteObjectInterface $tag, RemoteSystem $system) {
-    if (!($url = $tag->getOwnUrl($system))) {
-      throw new InvalidArgumentException("We need to know the tag's URL");
-    }
-    if ($this->id) {
+  public function setTag(Tag $tag) {
+    if ($this->_id) {
       throw new InvalidOperationException('Modifying an existing tagging is not allowed');
     }
     $this->tag = $tag;
   }
 
   public function getPerson(): ?Person {
-    if (!$this->person) {
-      $personResource = $this->resource->getFirstLink('osdi:person')->get();
-      $this->person = new Person($personResource);
+    if (empty($this->person)) {
+      $personResource = $this->_resource->getFirstLink('osdi:person')->get();
+      $this->person = new Person($this->_system, $personResource);
     }
     return $this->person;
   }
 
-  public function getTag(): ?OsdiObject {
-    if (!$this->tag) {
-      $tagResource = $this->resource->getFirstLink('osdi:tag')->get();
-      $this->tag = new OsdiObject('osdi:tags', $tagResource);
+  public function getTag(): Tag {
+    if (empty($this->tag)) {
+      $tagResource = $this->_resource->getFirstLink('osdi:tag')->get();
+      $this->tag = new Tag($this->_system, $tagResource);
     }
     return $this->tag;
-  }
-
-  public static function isValidField(string $name): bool {
-    $validFields = [
-      'identifiers',
-      '_links',
-    ];
-    return in_array($name, $validFields);
-  }
-
-  public static function isMultipleValueField(string $name): bool {
-    return ($name === 'identifiers');
   }
 
 }

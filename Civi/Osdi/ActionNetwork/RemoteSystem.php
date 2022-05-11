@@ -3,13 +3,13 @@
 
 namespace Civi\Osdi\ActionNetwork;
 
+use Civi\Osdi\ActionNetwork\Object\Person;
 use Civi\Osdi\ActionNetwork\Object\Tag;
 use Civi\Osdi\ActionNetwork\Object\Tagging;
-use Civi\Osdi\ActionNetwork\Object\Person;
+use Civi\Osdi\RemoteObjectInterface;
 use CRM_Osdi_ExtensionUtil as E;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\SaveResult;
 use Jsor\HalClient\Exception\BadResponseException;
 use Jsor\HalClient\HalClient;
@@ -29,7 +29,8 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
    */
   private $systemProfile;
 
-  public function __construct(?\CRM_OSDI_BAO_SyncProfile $systemProfile, ?HalClientInterface $client = NULL) {
+  public function __construct(?\CRM_OSDI_BAO_SyncProfile $systemProfile,
+                              ?HalClientInterface $client = NULL) {
     if ($systemProfile) {
       $this->systemProfile = $systemProfile;
     }
@@ -47,16 +48,13 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       ?HalResource $resource = NULL,
       ?array $initData = NULL): RemoteObjectInterface {
     if ('osdi:people' === $type) {
-      return new Person($resource, $initData);
+      return new Person($this, $resource);
     }
     if ('osdi:tags' === $type) {
-      return new Tag($resource, $initData);
+      return new Tag($this, $resource);
     }
     if ('osdi:taggings' === $type) {
-      return new Tagging($resource, $initData);
-    }
-    if (in_array($type, ['osdi:tags', 'osdi:advocacy_campaigns'])) {
-      return new \Civi\Osdi\ActionNetwork\OsdiObject($type, $resource, $initData);
+      return new Tagging($this, $resource);
     }
     throw new InvalidArgumentException('Cannot make OSDI object of type "%s"', $type);
   }
@@ -73,12 +71,24 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     return $this->makeOsdiObject($type, $resource);
   }
 
+  public function fetch(RemoteObjectInterface $osdiObject): HalResource {
+    if (!($url = $osdiObject->getUrlForRead())) {
+      throw new InvalidArgumentException('Cannot fetch: the %s has no url',
+        get_class($osdiObject));
+    }
+    try {
+      $resource = $this->linkify($url)->get();
+    }
+    catch (BadResponseException $e) {
+      if (404 === $e->getCode()) {
+        throw new EmptyResultException('Nothing found at "%s"', $url);
+      }
+    }
+    return $resource;
+  }
+
   /**
-   * @param string $type
-   * @param string $id
-   * @return \Civi\Osdi\RemoteObjectInterface
-   * @throws EmptyResultException
-   * @throws InvalidArgumentException
+   * @deprecated
    */
   public function fetchById(string $type, string $id): RemoteObjectInterface {
     if (0 === strlen($id)) {
@@ -96,10 +106,13 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     }
   }
 
+  /**
+   * @deprecated
+   */
   public function fetchPersonById(string $id): Person {
-    /** @var \Civi\Osdi\ActionNetwork\Object\Person $person */
-    $person = $this->fetchById('osdi:people', $id);
-    return $person;
+    $person = new Person($this);
+    $person->setId($id);
+    return $person->load();
   }
 
   /**
@@ -138,40 +151,24 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     return $endPointWithQuery->get();
   }
 
-  public function save(RemoteObjectInterface $osdiObject): RemoteObjectInterface {
-    $type = $osdiObject->getType();
-    $saveParams = $osdiObject->getAllAltered();
-
-    if ('osdi:people' === $type) {
-      $saveParams = $this->subscribePersonDuringSaveByDefault($saveParams, $osdiObject);
-    }
+  public function save(RemoteObjectInterface $osdiObject): HalResource {
     if ($id = $osdiObject->getId()) {
       try {
-        $result = $this->updateObjectOnRemoteSystem($type, $id, $saveParams);
+        $result = $this->updateOnRemoteSystem($osdiObject, $id);
       }
       catch (\Throwable $e) {
-        $result = $this->createObjectOnRemoteSystem($type, $saveParams, $osdiObject);
+        $result = $this->createOnRemoteSystem($osdiObject);
       }
     }
     else {
-      $result = $this->createObjectOnRemoteSystem($type, $saveParams, $osdiObject);
+      $result = $this->createOnRemoteSystem($osdiObject);
     }
-    return $this->makeOsdiObject($type, $result);
+    return $result;
   }
 
   public function delete(RemoteObjectInterface $osdiObject) {
-    if ('osdi:people' === $osdiObject->getType()) {
-      return $this->deletePerson($osdiObject);
-    }
-    if ('osdi:tags' === $osdiObject->getType()) {
-      throw new InvalidArgumentException('Action Network API does not allow deleting tags');
-    }
-    $endpoint = $this->linkify($osdiObject->getOwnUrl($this));
+    $endpoint = $this->linkify($osdiObject->getUrlForDelete());
     return $endpoint->delete();
-  }
-
-  public function getPeopleUrl() {
-    return $this->constructUrlFor('osdi:people', NULL);
   }
 
   public function trySave(RemoteObjectInterface $objectToSave): SaveResult {
@@ -179,22 +176,21 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
     if ('osdi:people' === $objectToSave->getType()) {
       /** @var \Civi\Osdi\ActionNetwork\Object\Person $objectToSave */
-      [$statusCode, $statusMessage, $context] =
-        $this->checkForEmailAddressConflict($objectToSave);
+      [$statusCode, $statusMessage, $context] = $objectToSave->checkForEmailAddressConflict();
     }
 
     if ($statusCode !== SaveResult::ERROR) {
       try {
-        $savedObject = $this->save($objectToSave);
+        $savedObject = $objectToSave->save();
         $statusCode = SaveResult::SUCCESS;
       }
 
-      catch (InvalidArgumentException $e) {
+      catch (\Throwable $e) {
         $statusCode = SaveResult::ERROR;
         $statusMessage = $e->getMessage();
         $context = [
           'object' => $objectToSave,
-          'errorData' => $e->getErrorData(),
+          'exception' => $e,
         ];
       }
     }
@@ -206,38 +202,12 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
         [1 => $objectToSave->getType()],
       );
       $context = [
-        'sent' => $objectToSave->getAllAltered(),
+        'sent' => $objectToSave->getAll(),
         'response' => $savedObject->getAllOriginal(),
       ];
     }
 
     return new SaveResult($savedObject, $statusCode, $statusMessage, $context);
-  }
-
-  protected function checkForEmailAddressConflict(Person $objectToSave): array {
-    if ($id = $objectToSave->getId()) {
-      $newEmail = $objectToSave->getAltered('email_addresses')[0]['address'] ?? NULL;
-
-      if ($newEmail) {
-        $criteria = [['email', 'eq', $newEmail]];
-        $peopleWithTheEmail = $this->find('osdi:people', $criteria);
-
-        if ($peopleWithTheEmail->rawCurrentCount()) {
-          if ($id !== $peopleWithTheEmail->rawFirst()->getId()) {
-            $statusCode = SaveResult::ERROR;
-            $statusMessage = E::ts('The person cannot be saved because '
-              . 'there is a record on Action Network with a the same '
-              . 'email address and a different ID.');
-            $context = [
-              'object' => $objectToSave,
-              'conflictingObject' => $peopleWithTheEmail->rawFirst(),
-            ];
-          }
-        }
-      }
-    }
-
-    return [$statusCode ?? NULL, $statusMessage ?? NULL, $context ?? NULL];
   }
 
   /**
@@ -262,68 +232,19 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     }
   }
 
-  /**
-   * @return \Jsor\HalClient\HalLink|null
-   * @throws InvalidArgumentException
-   */
-  private function getPersonSignupHelperEndpoint(): ?HalLink {
-    return $this->getEndpointFor('osdi:people');
-    //$rootResource = $this->getRootResource();
-    //return $rootResource->getFirstLink('osdi:person_signup_helper');
+  private function updateOnRemoteSystem(RemoteObjectInterface $osdiObject, string $id) {
+    $endpoint = $this->linkify($osdiObject->getUrlForUpdate());
+    return $endpoint->put([], ['body' => $osdiObject->getArrayForUpdate()]);
   }
 
   /**
-   * @param string $type
-   * @param string $id
-   * @param array $saveParams
-   * @return \Jsor\HalClient\HalResource|\Psr\Http\Message\ResponseInterface
-   * @throws InvalidArgumentException
-   */
-  private function updateObjectOnRemoteSystem(string $type, string $id, array $saveParams) {
-    $endpoint = $this->getEndpointFor($type, $id);
-    return $endpoint->put([], ['body' => $saveParams]);
-  }
-
-  /**
-   * @param string $type
-   * @param array $saveParams
-   * @param \Civi\Osdi\RemoteObjectInterface|null $osdiObject
-   * @return \Jsor\HalClient\HalResource|\Psr\Http\Message\ResponseInterface
-   * @throws InvalidArgumentException|EmptyResultException
-   */
-  private function createObjectOnRemoteSystem(string $type, array $saveParams, ?RemoteObjectInterface $osdiObject) {
-    if ('osdi:people' === $type) {
-      return $this->createPersonOnRemoteSystem($saveParams);
-    }
-    if ('osdi:taggings' === $type) {
-      /** @var \Civi\Osdi\ActionNetwork\Object\Tagging $osdiObject */
-      return $this->createTaggingOnRemoteSystem($saveParams, $osdiObject);
-    }
-    $endpoint = $this->getEndpointFor($type);
-    return $endpoint->post([], ['body' => $saveParams]);
-  }
-
-  /**
-   * @param array $personParams
-   * @return \Jsor\HalClient\HalResource|\Psr\Http\Message\ResponseInterface
-   * @throws InvalidArgumentException
-   */
-  private function createPersonOnRemoteSystem(array $personParams) {
-    $endpoint = $this->getPersonSignupHelperEndpoint();
-    return $endpoint->post([], ['body' => ['person' => $personParams]]);
-  }
-
-  /**
-   * @param array $saveParams
-   * @param Tagging $tagging
+   * @param \Civi\Osdi\RemoteObjectInterface $osdiObject
    *
    * @return \Jsor\HalClient\HalResource|\Psr\Http\Message\ResponseInterface
-   * @throws EmptyResultException
    */
-  private function createTaggingOnRemoteSystem(array $saveParams, Tagging $tagging) {
-    $url = $tagging->getTag()->getOwnUrl($this) . '/taggings';
-    $endpoint = $this->linkify($url);
-    return $endpoint->post([], ['body' => $saveParams]);
+  private function createOnRemoteSystem(RemoteObjectInterface $osdiObject) {
+    $endpoint = $this->linkify($osdiObject->getUrlForCreate());
+    return $endpoint->post([], ['body' => $osdiObject->getArrayForCreate()]);
   }
 
   public function getClient(): HalClientInterface {
@@ -340,19 +261,35 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     return $this->client;
   }
 
+  protected function getEndPointHrefFor(string $objectType): ?string {
+    $urlMap = [
+      'osdi:advocacy_campaigns' => 'https://actionnetwork.org/api/v2/advocacy_campaigns',
+      'osdi:donations' => 'https://actionnetwork.org/api/v2/donations',
+      'osdi:events' => 'https://actionnetwork.org/api/v2/events',
+      'osdi:forms' => 'https://actionnetwork.org/api/v2/forms',
+      'osdi:fundraising_pages' => 'https://actionnetwork.org/api/v2/fundraising_pages',
+      'osdi:lists' => 'https://actionnetwork.org/api/v2/lists',
+      'osdi:messages' => 'https://actionnetwork.org/api/v2/messages',
+      'osdi:people' => 'https://actionnetwork.org/api/v2/people',
+      'osdi:person_signup_helper' => 'https://actionnetwork.org/api/v2/people',
+      'osdi:petitions' => 'https://actionnetwork.org/api/v2/petitions',
+      'osdi:queries' => 'https://actionnetwork.org/api/v2/queries',
+      'osdi:tags' => 'https://actionnetwork.org/api/v2/tags',
+      'osdi:wrappers' => 'https://actionnetwork.org/api/v2/wrappers',
+    ];
+    $url = $urlMap[$objectType] ?? NULL;
+    return $url;
+  }
+
   /**
    * @param string $objectType
    * @param string|null $id
    * @return string|null
    * @throws EmptyResultException
    */
-  public function constructUrlFor(string $objectType, string $id = NULL): ?string {
-    $urlMap = [
-      'osdi:people' => 'https://actionnetwork.org/api/v2/people',
-      'osdi:tags' => 'https://actionnetwork.org/api/v2/tags',
-      'osdi:taggings' => 'https://actionnetwork.org/api/v2/tags',
-    ];
-    if ($url = $urlMap[$objectType] ?? NULL) {
+  private function constructUrlFor(string $objectType, string $id = NULL): ?string {
+    $url = $this->getEndPointHrefFor($objectType);
+    if ($url) {
       return $url . ($id ? "/$id" : '');
     }
     throw new EmptyResultException('Could not find url for "%s"', $objectType);
@@ -360,44 +297,6 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
   private function linkify(string $url): HalLink {
     return new HalLink($this->getClient(), $url);
-  }
-
-  private function deletePerson(RemoteObjectInterface $osdiObject) {
-    if (empty($id = $osdiObject->getId())) {
-      throw new InvalidArgumentException(
-      'Cannot "delete" (unsubscribe) Action Network person without an id');
-    }
-
-    $person = Person::blank();
-    $person->setId($id);
-
-    return $this->save($person);
-  }
-
-  private function subscribePersonDuringSaveByDefault(array $saveParams, RemoteObjectInterface $osdiObject): array {
-    if (!empty($saveParams['email_addresses'][0]['address'])) {
-      if (empty($saveParams['email_addresses'][0]['status'])) {
-        $saveParams['email_addresses'][0]['status'] = 'subscribed';
-      }
-    }
-    if (!empty($saveParams['phone_numbers'][0]['number'])) {
-      if (empty($saveParams['phone_numbers'][0]['status'])) {
-        $saveParams['phone_numbers'][0]['status'] = 'subscribed';
-      }
-    }
-    if (empty($saveParams['email_addresses'][0]['status'])
-      && empty($saveParams['phone_numbers'][0]['status'])) {
-      if (!empty($osdiObject->get('email_addresses')[0]['address'])) {
-        $saveParams['email_addresses'][0]['status'] = 'subscribed';
-      }
-      elseif (!empty($osdiObject->get('phone_numbers')[0]['number'])) {
-        $saveParams['phone_numbers'][0]['status'] = 'subscribed';
-      }
-      else {
-        $saveParams['email_addresses'][0]['status'] = 'subscribed';
-      }
-    }
-    return $saveParams;
   }
 
 }

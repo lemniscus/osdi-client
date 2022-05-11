@@ -2,27 +2,25 @@
 
 namespace Civi\Osdi;
 
+use Jsor\HalClient\HalResource;
+
 interface RemoteSystemInterface {
+
+  public function delete(RemoteObjectInterface $osdiObject);
 
   public function getEntryPoint(): string;
 
-  public function constructUrlFor(string $objectType, ?string $id = NULL);
+  public function fetch(RemoteObjectInterface $param);
 
-  public function getPeopleUrl();
+  public function find(string $objectType, array $criteria): ResultCollection;
 
   public function makeOsdiObject(
-      string $type,
-      ?\Jsor\HalClient\HalResource $resource,
-      ?array $initData = NULL): RemoteObjectInterface;
+    string $type,
+    ?HalResource $resource,
+    ?array $initData = NULL): RemoteObjectInterface;
 
-  public function fetchPersonById(string $id);
+  public function save(RemoteObjectInterface $osdiObject): HalResource;
 
-  public function find(string $objectType, array $criteria): \Civi\Osdi\ResultCollection;
-
-  public function save(\Civi\Osdi\RemoteObjectInterface $osdiObject);
-
-  public function delete(\Civi\Osdi\RemoteObjectInterface $osdiObject);
-
-  public function trySave(RemoteObjectInterface $objectToSave): \Civi\Osdi\SaveResult;
+  public function trySave(RemoteObjectInterface $objectToSave): SaveResult;
 
 }

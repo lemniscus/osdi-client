@@ -2,132 +2,133 @@
 
 namespace Civi\Osdi\ActionNetwork\Object;
 
-use Civi\Osdi\ActionNetwork\OsdiObject;
-use Jsor\HalClient\HalResource;
+use Civi\Osdi\Exception\InvalidOperationException;
+use Civi\Osdi\SaveResult;
 
-class Person extends OsdiObject {
+class Person extends Base implements \Civi\Osdi\RemoteObjectInterface {
 
-  const NULLCHAR = "\xE2\x90\x80";
+  public Field $identifiers;
+  public Field $createdDate;
+  public Field $modifiedDate;
+  public Field $givenName;
+  public Field $familyName;
+  public Field $emailAddress;
+  public Field $emailStatus;
+  public Field $phoneNumber;
+  public Field $phoneStatus;
+  public Field $postalStreet;
+  public Field $postalLocality;
+  public Field $postalRegion;
+  public Field $postalCode;
+  public Field $postalCountry;
+  public Field $languageSpoken;
+  public Field $customFields;
 
-  protected static $fieldsWithNullWorkarounds = [
-    'given_name' => [[]],
-    'family_name' => [[]],
-    //'email_addresses' => [[0, 'address']],
-    //'phone_numbers' => [[0, 'number']],
-    // see note at \Civi\Osdi\ActionNetwork\Object\Person::blank
-    'postal_addresses' => [[0, 'address_lines', 0], [0, 'locality'], [0, 'postal_code']],
+  const FIELDS = [
+    'identifiers' => ['path' => ['identifiers'], 'appendOnly' => TRUE],
+    'createdDate' => ['path' => ['created_date'], 'readOnly' => TRUE],
+    'modifiedDate' => ['path' => ['modified_date'], 'readOnly' => TRUE],
+    'givenName' => ['path' => ['given_name'], 'mungeNulls' => TRUE],
+    'familyName' => ['path' => ['family_name'], 'mungeNulls' => TRUE],
+    'emailAddress' => ['path' => ['email_addresses', '0', 'address']],
+    'emailStatus' => ['path' => ['email_addresses', '0', 'status']],
+    'phoneNumber' => ['path' => ['phone_numbers', '0', 'number']],
+    'phoneStatus' => ['path' => ['phone_numbers', '0', 'status']],
+    'postalStreet' => [
+      'path' => ['postal_addresses', '0', 'address_lines', '0'],
+      'mungeNulls' => TRUE,
+    ],
+    'postalLocality' => [
+      'path' => ['postal_addresses', '0', 'locality'],
+      'mungeNulls' => TRUE,
+    ],
+    'postalRegion' => [
+      'path' => ['postal_addresses', '0', 'region'],
+      'mungeNulls' => TRUE,
+    ],
+    'postalCode' => [
+      'path' => ['postal_addresses', '0', 'postal_code'],
+      'mungeNulls' => TRUE,
+    ],
+    'postalCountry' => [
+      'path' => ['postal_addresses', '0', 'country'],
+      'mungeNulls' => TRUE,
+    ],
+    'languageSpoken' => ['path' => ['languages_spoken', '0']],
+    'customFields' => ['path' => ['custom_fields']],
   ];
 
-  public function __construct(?HalResource $resource = NULL, ?array $initData = NULL) {
-    parent::__construct('osdi:people', $resource, $initData);
+  public function getType(): string {
+    return 'osdi:people';
   }
 
-  protected function storeNulls($fieldName, $newFieldContents) {
-    $replacementPaths = static::$fieldsWithNullWorkarounds[$fieldName] ?? [];
-    if (!$replacementPaths) {
-      return $newFieldContents;
+  public function getArrayForCreate(): array {
+    if (empty($this->emailStatus->get()) && !empty($this->emailAddress->get())) {
+      $this->emailStatus->set('subscribed');
+    }
+    if (empty($this->phoneStatus->get()) && !empty($this->phoneNumber->get())) {
+      $this->phoneStatus->set('subscribed');
     }
 
-    $oldFieldContents = $this->getOriginal($fieldName);
 
-    foreach ($replacementPaths as $path) {
-      $newSubValue = \CRM_Utils_Array::pathGet($newFieldContents, $path, 'not set');
-      $oldSubValue = \CRM_Utils_Array::pathGet($oldFieldContents, $path, '');
-      if (empty($newSubValue) && !empty($oldSubValue)) {
-        if (is_array($newFieldContents)) {
-          \CRM_Utils_Array::pathSet($newFieldContents, $path, static::NULLCHAR);
-        }
-        else {
-          $newFieldContents = static::NULLCHAR;
-        }
-      }
+    return ['person' => parent::getArrayForCreate()];
+  }
+
+  public function delete() {
+    if (!$this->getId()) {
+      throw new InvalidOperationException('Cannot delete person without id');
     }
-    return $newFieldContents;
-  }
-
-  protected static function restoreNulls($fieldName, $fieldContents) {
-    $replacementPaths = static::$fieldsWithNullWorkarounds[$fieldName] ?? [];
-    foreach ($replacementPaths as $path) {
-      if (static::NULLCHAR === \CRM_Utils_Array::pathGet($fieldContents, $path)) {
-        if (is_array($fieldContents)) {
-          \CRM_Utils_Array::pathSet($fieldContents, $path, NULL);
-        }
-        else {
-          $fieldContents = NULL;
-        }
-      }
-    }
-    return $fieldContents;
-  }
-
-  public function set(string $fieldName, $val) {
-    parent::set($fieldName, $this->storeNulls($fieldName, $val));
-  }
-
-  public function get(string $fieldName) {
-    $val = parent::get($fieldName);
-    return static::restoreNulls($fieldName, $val);
-  }
-
-  public function toArray(): array {
-    $arr = parent::toArray();
-    foreach ($arr as $fieldName => $value) {
-      $arr[$fieldName] = self::restoreNulls($fieldName, $value);
-    }
-    return $arr;
-  }
-
-  public function getEmailAddress(): ?string {
-    return $this->get('email_addresses')[0]['address'];
-  }
-
-  public static function getValidFields(): array {
-    return [
-      'identifiers',
-      'created_date',
-      'modified_date',
-      'family_name',
-      'given_name',
-      'languages_spoken',
-      'postal_addresses',
-      'email_addresses',
-      'phone_numbers',
-      'custom_fields',
-    ];
-  }
-
-  public static function isValidField(string $name): bool {
-    return in_array($name, self::getValidFields());
-  }
-
-  public static function isMultipleValueField(string $name): bool {
-    return ($name === 'identifiers');
-  }
-
-  public static function isClearableField(string $fieldName): bool {
-    return FALSE;
-  }
-
-  public static function blank(): Person {
-    $nullChar = static::NULLCHAR;
 
     /*
-     * we leave the actual email address and phone number untouched, because
-     * we aren't allowed to truly delete them, and overwriting them with the
-     * null char likely won't have the effect we want due to AN's deduplication
-     * rules, https://help.actionnetwork.org/hc/en-us/articles/360038822392-Deduplicating-activists-on-Action-Network
+     * This is as close as we can get to deleting someone through the AN API.
+     *
+     * We leave the email address and phone number untouched, because we aren't
+     * allowed to truly delete them, and overwriting them with the null char
+     * likely won't have the effect we want due to AN's deduplication rules,
+     * https://help.actionnetwork.org/hc/en-us/articles/360038822392-Deduplicating-activists-on-Action-Network
      */
 
-    $blank['email_addresses'][0]['status'] = 'unsubscribed';
-    $blank['phone_numbers'][0]['status'] = 'unsubscribed';
-    $blank['given_name'] = $nullChar;
-    $blank['family_name'] = $nullChar;
-    $blank['languages_spoken'] = ['en'];
-    $blank['postal_addresses'][0]['address_lines'][0] = $nullChar;
-    $blank['postal_addresses'][0]['postal_code'] = $nullChar;
-    $blank['postal_addresses'][0]['country'] = '';
+    $this->emailStatus->set('unsubscribed');
+    $this->phoneStatus->set('unsubscribed');
+    $this->givenName->set(NULL);
+    $this->familyName->set(NULL);
+    $this->languageSpoken->set('en');
+    $this->postalStreet->set(NULL);
+    $this->postalCode->set(NULL);
+    $this->postalCountry->set(NULL);
 
-    return new Person(NULL, $blank);
+    $this->save();
+  }
+
+  public function getUrlForCreate(): string {
+    return 'https://actionnetwork.org/api/v2/people';
+  }
+
+  public function checkForEmailAddressConflict(): array {
+    if (!($this->getId() && $this->emailAddress->isAltered())) {
+      return [NULL, NULL, NULL];
+    }
+
+    $criteria = [['email', 'eq', $this->emailAddress->get()]];
+    $peopleWithTheEmail = $this->_system->find($this->getType(), $criteria);
+
+    if (0 == $peopleWithTheEmail->rawCurrentCount()) {
+      return [NULL, NULL, NULL];
+    }
+
+    if ($this->getId() === $peopleWithTheEmail->rawFirst()->getId()) {
+      return [NULL, NULL, NULL];
+    }
+
+    $statusCode = SaveResult::ERROR;
+    $statusMessage = 'The person cannot be saved because '
+      . 'there is a record on Action Network with a the same '
+      . 'email address and a different ID.';
+    $context = [
+      'object' => $this,
+      'conflictingObject' => $peopleWithTheEmail->rawFirst(),
+    ];
+    return [$statusCode, $statusMessage, $context];
   }
 
 }

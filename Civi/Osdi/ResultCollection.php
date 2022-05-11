@@ -2,6 +2,7 @@
 
 namespace Civi\Osdi;
 
+use Civi\Osdi\ActionNetwork\Object\Person;
 use Civi\Osdi\Exception\EmptyResultException;
 use Jsor\HalClient\HalResource;
 
@@ -77,7 +78,7 @@ class ResultCollection {
   public function column(string $key): array {
     /** @var RemoteObjectInterface $remoteObject */
     foreach ($this->toArray() as $remoteObject) {
-      $result[] = $remoteObject->getOriginal($key);
+      $result[] = $remoteObject->$key->getOriginal();
     }
     return $result;
   }

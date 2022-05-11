@@ -4,10 +4,9 @@ use PHPUnit\Framework\TestCase;
 
 class CRM_OSDI_Fixture_PersonMatching {
 
-  /**
-   * @var string
-   */
-  public static $personClass;
+  public static string $personClass;
+
+  public static \Civi\Osdi\RemoteSystemInterface $remoteSystem;
 
   /**
    * @param $address
@@ -91,43 +90,39 @@ class CRM_OSDI_Fixture_PersonMatching {
     return civicrm_api4('Contact', 'create', $apiCreateParams);
   }
 
-  public static function makeBlankOsdiPerson(): \Civi\Osdi\RemoteObjectInterface {
-    return new self::$personClass();
+  public static function makeBlankOsdiPerson() {
+    return new self::$personClass(self::$remoteSystem);
   }
 
   public static function setUpLocalAndRemotePeople_SameName_DifferentEmail($system) {
     $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
-    $savedRemotePerson = $system->save($unsavedRemotePerson);
-    $emailAddress = $savedRemotePerson->getEmailAddress();
+    $savedRemotePerson = $unsavedRemotePerson->save();
+    $emailAddress = $savedRemotePerson->emailAddress->get();
 
     $differentEmailAddress = "fuzzityfizz.$emailAddress";
     $contactId = self::civiApi4CreateContact(
-      $savedRemotePerson->get('given_name'),
-      $savedRemotePerson->get('family_name'),
+      $savedRemotePerson->givenName->get(),
+      $savedRemotePerson->familyName->get(),
       $differentEmailAddress
     )->first()['id'];
     return [$contactId, $savedRemotePerson];
   }
 
-  /**
-   * @return \Civi\Osdi\RemoteObjectInterface $unsavedNewPerson
-   * @throws \Civi\Osdi\Exception\InvalidArgumentException
-   */
-  public static function makeNewOsdiPersonWithFirstLastEmail(): \Civi\Osdi\RemoteObjectInterface {
+  public static function makeNewOsdiPersonWithFirstLastEmail() {
     $unsavedNewPerson = self::makeBlankOsdiPerson();
-    $unsavedNewPerson->set('given_name', 'Tester');
-    $unsavedNewPerson->set('family_name', 'Von Test');
-    $unsavedNewPerson->set('email_addresses', [['address' => 'tester@testify.net']]);
+    $unsavedNewPerson->givenName->set('Tester');
+    $unsavedNewPerson->familyName->set('Von Test');
+    $unsavedNewPerson->emailAddress->set('tester@testify.net');
     return $unsavedNewPerson;
   }
 
   public static function setUpExactlyOneMatchByEmailAndName(\Civi\Osdi\RemoteSystemInterface $system): array {
     $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
-    $savedRemotePerson = $system->save($unsavedRemotePerson);
+    $savedRemotePerson = $unsavedRemotePerson->save();
 
-    $emailAddress = $savedRemotePerson->getEmailAddress();
-    $firstName = $savedRemotePerson->get('given_name');
-    $lastName = $savedRemotePerson->get('family_name');
+    $emailAddress = $savedRemotePerson->emailAddress->get();
+    $firstName = $savedRemotePerson->givenName->get();
+    $lastName = $savedRemotePerson->familyName->get();
 
     TestCase::assertNotEmpty($emailAddress);
     TestCase::assertNotEmpty($firstName);
@@ -154,10 +149,10 @@ class CRM_OSDI_Fixture_PersonMatching {
   public static function setUpRemotePerson_TwoLocalContactsMatchingByEmail_OneAlsoMatchingByName($system): array {
     [$savedRemotePerson, $idOfMatchingContact] = self::setUpExactlyOneMatchByEmailAndName($system);
 
-    $emailAddress = $savedRemotePerson->getEmailAddress();
+    $emailAddress = $savedRemotePerson->emailAddress->get();
 
     $idOf_Non_MatchingContact = self::civiApi4CreateContact(
-      "{$savedRemotePerson->get('given_name')} with some extra",
+      "{$savedRemotePerson->givenName->get()} with some extra",
       'foo',
       $emailAddress
     )->first()['id'];
@@ -175,11 +170,11 @@ class CRM_OSDI_Fixture_PersonMatching {
   /**
    * @return array [$emailAddress, $savedRemotePerson, $contactId]
    */
-  public static function setUpExactlyOneMatchByEmail_DifferentNames($system): array {
-    $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
-    $savedRemotePerson = $system->save($unsavedRemotePerson);
-    $emailAddress = $savedRemotePerson->getEmailAddress();
+  public static function setUpExactlyOneMatchByEmail_DifferentNames(): array {
+    $savedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail()->save();
+    $emailAddress = $savedRemotePerson->emailAddress->get();
     TestCase::assertNotEmpty($emailAddress);
+    TestCase::assertNotEquals('Fizz', $savedRemotePerson->givenName->get());
     $contactId = self::civiApi4CreateContact('Fizz', 'Bang', $emailAddress)
       ->first()['id'];
     $ContactsWithTheEmailAddress = self::civiApi4GetContactByEmail($emailAddress);
@@ -187,14 +182,14 @@ class CRM_OSDI_Fixture_PersonMatching {
     return [$emailAddress, $savedRemotePerson, $contactId];
   }
 
-  public static function setUpRemotePerson_TwoLocalContactsMatchingByEmail_NeitherMatchingByName($system): array {
+  public static function setUpRemotePerson_TwoLocalContactsMatchingByEmail_NeitherMatchingByName(): array {
     $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
-    $savedRemotePerson = $system->save($unsavedRemotePerson);
+    $savedRemotePerson = $unsavedRemotePerson->save();
 
-    $emailAddress = $savedRemotePerson->getEmailAddress();
+    $emailAddress = $savedRemotePerson->emailAddress->get();
     TestCase::assertNotEmpty($emailAddress);
 
-    $firstName = $savedRemotePerson->get('given_name');
+    $firstName = $savedRemotePerson->givenName->get();
     TestCase::assertNotEquals($firstName, 'foo');
     TestCase::assertNotEquals($firstName, 'bar');
 
@@ -213,13 +208,13 @@ class CRM_OSDI_Fixture_PersonMatching {
 
   public static function setUpRemotePerson_TwoLocalContactsMatchingByEmail_BothMatchingByName(\Civi\Osdi\ActionNetwork\RemoteSystem $system): array {
     $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
-    $savedRemotePerson = $system->save($unsavedRemotePerson);
+    $savedRemotePerson = $unsavedRemotePerson->save();
 
-    $emailAddress = $savedRemotePerson->getEmailAddress();
+    $emailAddress = $savedRemotePerson->emailAddress->get();
     TestCase::assertNotEmpty($emailAddress);
 
-    $firstName = $savedRemotePerson->get('given_name');
-    $lastName = $savedRemotePerson->get('family_name');
+    $firstName = $savedRemotePerson->givenName->get();
+    $lastName = $savedRemotePerson->familyName->get();
 
     $idsOfContactsWithSameEmailAndSameName[] = self::civiApi4CreateContact(
       $firstName,
