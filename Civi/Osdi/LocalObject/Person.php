@@ -6,11 +6,8 @@ use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Api4\Email;
 use Civi\Api4\Phone;
-use Civi\Osdi\Exception\InvalidArgumentException;
 
-class Person implements LocalObjectInterface {
-
-  public Field $id;
+class Person extends Base implements LocalObjectInterface {
 
   public Field $createdDate;
   public Field $modifiedDate;
@@ -34,9 +31,9 @@ class Person implements LocalObjectInterface {
   public Field $addressPostalCode;
   public Field $addressCountryId;
   public Field $addressCountryIdName;
-  protected bool $isLoaded = FALSE;
 
-  protected bool $isTouched = FALSE;
+  const CIVI_ENTITY = 'Contact';
+
   const FIELDS = [
     'id' => ['select' => 'id'],
     'createdDate' => ['select' => 'created_date', 'readOnly' => TRUE],
@@ -76,147 +73,29 @@ class Person implements LocalObjectInterface {
     ],
     ['Address AS address', FALSE, NULL, ['address.is_primary', '=', 1]],
   ];
-
   const ORDER_BY = [
     'phone.id' => 'ASC',
   ];
 
-  protected array $newData = [];
-
-  protected array $originalData = [];
-
-  public function __construct(int $idValue = NULL) {
-    foreach (static::FIELDS as $name => $metadata) {
-      $options = array_merge($metadata, ['bundle' => $this]);
-      $this->$name = new Field($name, $options);
-    }
-    if ($idValue) {
-      $this->id->load($idValue);
-    }
+  protected function getWhereClause(): array {
+    return [['id', '=', $this->getId()], ['is_deleted', '=', FALSE]];
   }
 
-  public function getId(): ?int {
-    return $this->id->get();
-  }
+  public function load(): self {
+    parent::load();
 
-  public function setId(int $value) {
-    $this->id->set($value);
-  }
-
-  public function getAll(): array {
-    $this->loadOnce();
-    return $this->getAllWithoutLoading();
-  }
-
-  public function getAllWithoutLoading(): array {
-    $return = [];
-    foreach (static::FIELDS as $fieldName => $x) {
-      $return[$fieldName] = $this->$fieldName->get();
-    }
-    return $return;
-  }
-
-  public function getAllLoaded(): array {
-    $this->loadOnce();
-    $return = [];
-    foreach (static::FIELDS as $fieldName => $x) {
-      $return[$fieldName] = $this->$fieldName->getLoaded();
-    }
-    return $return;
-  }
-
-  public static function isValidField(string $name): bool {
-    return array_key_exists($name, static::FIELDS);
-  }
-
-  public function isTouched(): bool {
-    return $this->isTouched;
-  }
-
-  public function isAltered(): bool {
-    if (!$this->isTouched) {
-      return FALSE;
-    }
-    $this->loadOnce();
-    foreach (static::FIELDS as $fieldName => $x) {
-      if ($this->$fieldName->isAltered()) {
-        return TRUE;
-      }
-    }
-    return FALSE;
-  }
-
-  public function isLoaded(): bool {
-    return $this->isLoaded;
-  }
-
-  public function delete(): ?\Civi\Api4\Generic\Result {
-    if (empty($id = $this->getId())) {
-      return NULL;
-    }
-    return Contact::delete(FALSE)
-      ->addWhere('id', '=', $id)
-      ->execute();
-  }
-
-  public function load(): Person {
-    $this->isLoaded = FALSE;
-
-    if (!($id = $this->getId())) {
-      throw new InvalidArgumentException('%s::%s requires the %s to have an id',
-        static::class, __FUNCTION__, static::class);
+    if ($this->isLoaded()) {
+      $abrv = $this->getAbbreviatedState(
+        $this->addressStateProvinceId,
+        $this->addressCountryId
+      );
+      $this->addressStateProvinceIdAbbreviation->load($abrv ?? NULL);
     }
 
-    foreach (static::FIELDS as $camelName => $fieldMetaData) {
-      if (array_key_exists('select', $fieldMetaData)) {
-        $selects[$fieldMetaData['select']] = $camelName;
-      }
-    }
-
-    $result = Contact::get(FALSE)
-      ->setJoin(static::JOINS)
-      ->setOrderBy(static::ORDER_BY)
-      ->setSelect(array_keys($selects))
-      ->setWhere([
-        ['id', '=', $id],
-        ['is_deleted', '=', FALSE],
-      ])
-      ->execute();
-
-    if (!$result->count()) {
-      throw new InvalidArgumentException('Unable to retrieve contact id %d', $id);
-    }
-
-    $result = $result->last();
-
-    foreach ($result as $key => $val) {
-      /** @var \Civi\Osdi\LocalObject\Field $field */
-      $field = $this->{$selects[$key]};
-      $field->load($val);
-    }
-
-    $abrv = $this->getAbbreviatedState(
-      $this->addressStateProvinceId,
-      $this->addressCountryId
-    );
-    $this->addressStateProvinceIdAbbreviation->load($abrv ?? NULL);
-
-    $this->isLoaded = TRUE;
     return $this;
   }
 
-  public function loadOnce(): Person {
-    if (!$this->isLoaded()) {
-      return $this->load();
-    }
-    return $this;
-  }
-
-  public function touch() {
-    $this->isTouched = TRUE;
-  }
-
-  public function save(): Person {
+  public function save(): self {
     $cid = $this->saveCoreContactFields();
     $this->id->load($cid);
     $this->saveEmail($cid);
