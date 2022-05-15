@@ -45,6 +45,8 @@ interface RemoteObjectInterface {
 
   public function load(): RemoteObjectInterface;
 
+  public function loadFromArray(array $flatFields): RemoteObjectInterface;
+
   public function loadOnce(): RemoteObjectInterface;
 
   public function save(): RemoteObjectInterface;

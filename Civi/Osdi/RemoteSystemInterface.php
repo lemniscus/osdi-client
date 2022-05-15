@@ -2,9 +2,12 @@
 
 namespace Civi\Osdi;
 
+use Jsor\HalClient\HalClientInterface;
 use Jsor\HalClient\HalResource;
 
 interface RemoteSystemInterface {
+
+  public function getClient(): HalClientInterface;
 
   public function delete(RemoteObjectInterface $osdiObject);
 

@@ -44,16 +44,6 @@ class Field {
    *
    * @return void
    */
-  public function load($value) {
-    $this->loadedValue = $value;
-    $this->isLoaded = TRUE;
-  }
-
-  /**
-   * @param string|array|null $value
-   *
-   * @return void
-   */
   public function set($value) {
     if ($this->readOnly) {
       throw new InvalidOperationException('Field "%s" is not settable',

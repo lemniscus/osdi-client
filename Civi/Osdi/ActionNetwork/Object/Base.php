@@ -32,6 +32,12 @@ abstract class Base implements RemoteObjectInterface {
     }
   }
 
+  public function __clone() {
+    foreach (static::FIELDS as $name => $metadata) {
+      $this->$name = clone $this->$name;
+    }
+  }
+
   public function isAltered(): bool {
     if (!$this->_isTouched) {
       return FALSE;
@@ -114,6 +120,16 @@ abstract class Base implements RemoteObjectInterface {
     }
 
     return $this;
+  }
+
+  public function loadFromArray(array $flatFields): self {
+    $nestedArray = [];
+    foreach ($flatFields as $flatFieldName => $value) {
+      $path = static::FIELDS[$flatFieldName]['path'];
+      \CRM_Utils_Array::pathSet($nestedArray, $path, $value);
+    }
+    $resource = HalResource::fromArray($this->_system->getClient(), $nestedArray);
+    return $this->load($resource);
   }
 
   public function loadOnce(): self {
@@ -213,7 +229,8 @@ abstract class Base implements RemoteObjectInterface {
     }
     $identifiers = $this->_resource->getProperty('identifiers');
     if (!$identifiers) {
-      $selfLink = $resource->getFirstLink('self');
+      $selfLink = $resource->hasLink('self') ? $resource->getFirstLink('self') : NULL;
+
       if ($selfLink) {
         $selfUrl = $selfLink->getHref();
         \Civi::log()
