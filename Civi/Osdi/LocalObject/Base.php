@@ -31,6 +31,12 @@ abstract class Base implements LocalObjectInterface {
     }
   }
 
+  public function __clone() {
+    foreach (static::FIELDS as $name => $metadata) {
+      $this->$name = clone $this->$name;
+    }
+  }
+
   protected function getWhereClauseForLoad(): array {
     return [['id', '=', $this->getId()]];
   }

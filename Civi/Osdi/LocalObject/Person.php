@@ -16,6 +16,7 @@ class Person extends Base implements LocalObjectInterface {
   public Field $isOptOut;
   public Field $doNotEmail;
   public Field $doNotSms;
+  public Field $isDeleted;
   public Field $preferredLanguage;
   public Field $preferredLanguageName;
   public Field $emailId;
@@ -43,6 +44,7 @@ class Person extends Base implements LocalObjectInterface {
     'isOptOut' => ['select' => 'is_opt_out'],
     'doNotEmail' => ['select' => 'do_not_email'],
     'doNotSms' => ['select' => 'do_not_sms'],
+    'isDeleted' => ['select' => 'is_deleted'],
     'preferredLanguage' => ['select' => 'preferred_language'],
     'preferredLanguageName' => ['select' => 'preferred_language:name'],
     'emailId' => ['select' => 'email.id'],
@@ -78,7 +80,7 @@ class Person extends Base implements LocalObjectInterface {
   ];
 
   protected function getWhereClause(): array {
-    return [['id', '=', $this->getId()], ['is_deleted', '=', FALSE]];
+    return [['id', '=', $this->getId()], ['contact_type', '=', 'Individual']];
   }
 
   public function load(): self {
@@ -106,6 +108,7 @@ class Person extends Base implements LocalObjectInterface {
 
   protected function saveCoreContactFields() {
     $cid = Contact::save(FALSE)->addRecord([
+      'contact_type' => 'Individual',
       'id' => $this->getId(),
       'first_name' => $this->firstName->get(),
       'last_name' => $this->lastName->get(),
