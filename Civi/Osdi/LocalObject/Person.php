@@ -213,7 +213,7 @@ class Person extends Base implements LocalObjectInterface {
       'abbreviate',
       ['country_id' => $countryId]
     );
-    $abbreviation = $abbreviationList[$stateId];
+    $abbreviation = $abbreviationList[$stateId] ?? NULL;
     return $abbreviation;
   }
 
