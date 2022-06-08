@@ -107,52 +107,47 @@ class Person extends Base implements LocalObjectInterface {
   }
 
   protected function saveCoreContactFields() {
-    $cid = Contact::save(FALSE)->addRecord([
-      'contact_type' => 'Individual',
-      'id' => $this->getId(),
-      'first_name' => $this->firstName->get(),
-      'last_name' => $this->lastName->get(),
-      'is_opt_out' => $this->isOptOut->get(),
-      'do_not_email' => $this->doNotEmail->get(),
-      'do_not_sms' => $this->doNotSms->get(),
-      'preferred_language' => $this->preferredLanguage->get(),
-      'preferred_language:name' => $this->preferredLanguageName->get(),
-    ])->execute()->first()['id'];
-    return $cid;
+    $record = $this->getSaveableFieldContents('');
+    $record['contact_type'] = 'Individual';
+    $record['id'] = $this->getId();
+
+    return Contact::save(FALSE)
+      ->addRecord($record)->execute()->first()['id'];
   }
 
   protected function saveEmail($cid): void {
     if (empty($this->emailEmail->get())) {
       return;
     };
+
+    $record = $this->getSaveableFieldContents('email');
+
+    $record['contact_id'] = $cid;
+    $record['is_primary'] = TRUE;
+
     Email::save(FALSE)
       ->setMatch([
         'contact_id',
         'email',
       ])
-      ->addRecord([
-        'id' => $this->emailId->get(),
-        'contact_id' => $cid,
-        'email' => $this->emailEmail->get(),
-        'is_primary' => TRUE,
-      ])->execute();
+      ->addRecord($record)->execute();
   }
 
   protected function savePhone($cid): void {
     if (empty($this->phonePhone->get())) {
       return;
     }
+
+    $record = $this->getSaveableFieldContents('phone');
+    $record['contact_id'] = $cid;
+    $record['phone_type_id:name'] = 'Mobile';
+
     Phone::save(FALSE)
       ->setMatch([
         'contact_id',
         'phone',
       ])
-      ->addRecord([
-        'id' => $this->phoneId->get(),
-        'contact_id' => $cid,
-        'phone' => $this->phonePhone->get(),
-        'phone_type_id:name' => 'Mobile',
-      ])->execute();
+      ->addRecord($record)->execute();
   }
 
   protected function saveAddress($cid): void {
@@ -219,6 +214,26 @@ class Person extends Base implements LocalObjectInterface {
 
   protected function defaultCountryId() {
     return \CRM_Core_Config::singleton()->defaultContactCountry;
+  }
+
+  protected function getSaveableFieldContents($joinName, $keepJoinName = FALSE): array {
+    $record = [];
+    foreach (static::FIELDS as $camelName => $metaData) {
+      if (!($select = $metaData['select'] ?? FALSE)) {
+        continue;
+      }
+      if ($metaData['readOnly'] ?? FALSE) {
+        continue;
+      }
+      $selectParts = explode('.', $select, 2);
+      if ("$joinName" === $selectParts[0]) {
+        $mungedSelect = $keepJoinName ? $select : $selectParts[1];
+        $record[$mungedSelect] = $this->$camelName->get();
+      } elseif (empty($joinName) && count($selectParts) === 1) {
+        $record[$select] = $this->$camelName->get();
+      }
+    }
+    return $record;
   }
 
 }
