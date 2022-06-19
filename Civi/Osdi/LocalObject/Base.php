@@ -64,7 +64,9 @@ abstract class Base implements LocalObjectInterface {
     if (!$this->isTouched) {
       return FALSE;
     }
-    $this->loadOnce();
+    if ($this->getId()) {
+      $this->loadOnce();
+    }
     foreach (static::FIELDS as $fieldName => $x) {
       if ($this->$fieldName->isAltered()) {
         return TRUE;

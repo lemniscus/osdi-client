@@ -42,7 +42,11 @@ abstract class Base implements RemoteObjectInterface {
     if (!$this->_isTouched) {
       return FALSE;
     }
-    $this->loadOnce();
+    try {
+      $this->loadOnce();
+    }
+    catch (EmptyResultException $e) {
+    }
     foreach (static::FIELDS as $fieldName => $x) {
       if ($this->$fieldName->isAltered()) {
         return TRUE;
@@ -173,7 +177,7 @@ abstract class Base implements RemoteObjectInterface {
       catch (\Throwable $e) {
         throw new EmptyResultException(
           'Could not find or create url for "%s" with type "%s" and id "%s"',
-          __CLASS__, $this->getType(), $this->getId());
+          get_called_class(), $this->getType(), $this->getId());
       }
     }
     return NULL;
