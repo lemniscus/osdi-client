@@ -11,11 +11,13 @@ use CRM_Osdi_ExtensionUtil as E;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\SaveResult;
+use GuzzleHttp\Client;
 use Jsor\HalClient\Exception\BadResponseException;
 use Jsor\HalClient\HalClient;
 use Jsor\HalClient\HalClientInterface;
 use Jsor\HalClient\HalLink;
 use Jsor\HalClient\HalResource;
+use Jsor\HalClient\HttpClient\Guzzle6HttpClient;
 
 class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
@@ -249,8 +251,10 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
   public function getClient(): HalClientInterface {
     if (empty($this->client)) {
+      $httpClient = new Guzzle6HttpClient(new Client(['timeout' => 10]));
+
       $entryPoint = $this->systemProfile ? $this->systemProfile->entry_point : '';
-      $this->client = new HalClient($entryPoint);
+      $this->client = new HalClient($entryPoint, $httpClient);
     }
     if (empty($this->client->getHeader('OSDI-API-Token'))) {
       $apiToken = $this->systemProfile ? $this->systemProfile->api_token : '';
