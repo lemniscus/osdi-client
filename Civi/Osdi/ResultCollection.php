@@ -2,11 +2,12 @@
 
 namespace Civi\Osdi;
 
-use Civi\Osdi\ActionNetwork\Object\Person;
 use Civi\Osdi\Exception\EmptyResultException;
+use Civi\Osdi\Exception\InvalidArgumentException;
+use Jsor\HalClient\HalLink;
 use Jsor\HalClient\HalResource;
 
-class ResultCollection {
+class ResultCollection implements \Iterator {
   /**
    * @var string
    */
@@ -18,24 +19,83 @@ class ResultCollection {
   protected $pages = [];
 
   /**
-   * @var int
+   * @var \Jsor\HalClient\HalResource[]
    */
-  protected $resultCountRaw;
+  protected $currentPageContents = [];
+
+  protected int $currentPageIndex = 1;
+
+  protected int $currentItemIndex = 0;
 
   /**
    * @var int
    */
-  protected $resultCountFiltered;
+  protected $resultCountRaw = 0;
+
+  /**
+   * @var int
+   */
+  protected $resultCountFiltered = 0;
 
   /**
    * @var RemoteSystemInterface
    */
   protected $system;
 
-  public function __construct(RemoteSystemInterface $system, string $type, HalResource $resource) {
+  public function __construct(RemoteSystemInterface $system, string $type, HalLink $queryLink) {
     $this->system = $system;
     $this->type = $type;
+    $resource = $queryLink->get();
     $this->addPage($resource);
+  }
+
+  public function current() {
+    $halResource = $this->currentPageContents[$this->currentItemIndex];
+    return $this->system->makeOsdiObject($this->type, $halResource);
+  }
+
+  public function next() {
+    $this->currentItemIndex++;
+
+    if ($this->valid()) {
+      return;
+    }
+
+    if (array_key_exists($this->currentPageIndex + 1, $this->pages)
+      || $this->loadNextPage()) {
+      $this->currentPageIndex++;
+      $this->currentItemIndex = 0;
+      $this->loadCurrentPageContents();
+    }
+  }
+
+  public function key() {
+    return [$this->currentPageIndex, $this->currentItemIndex];
+  }
+
+  public function valid() {
+    return array_key_exists($this->currentItemIndex, $this->currentPageContents);
+  }
+
+  public function rewind() {
+    $this->currentPageIndex = 1;
+    $this->currentItemIndex = 0;
+    $this->loadCurrentPageContents();
+  }
+
+  protected function addPage(HalResource $pageResource): int {
+    if (!is_numeric($pageNum = $pageResource->getProperty('page'))) {
+      throw new InvalidArgumentException();
+    }
+    $this->pages[$pageNum] = $pageResource;
+    ksort($this->pages, SORT_NUMERIC);
+    try {
+      $this->resultCountRaw += count($pageResource->getResource($this->type));
+      $this->resultCountFiltered += $this->filteredCount($pageResource->getResource($this->type));
+    }
+    catch (\Throwable $e) {
+    }
+    return $pageNum;
   }
 
   /**
@@ -62,7 +122,6 @@ class ResultCollection {
     if (empty($this->pages)) {
       throw new EmptyResultException();
     }
-    ksort($this->pages, SORT_NUMERIC);
     $firstPage = reset($this->pages);
     $firstResource = $firstPage->getFirstResource($this->type);
     if ($firstResource === NULL) {
@@ -83,21 +142,46 @@ class ResultCollection {
     return $result;
   }
 
-  protected function addPage(HalResource $pageResource) {
-    if (!is_numeric($pageNum = $pageResource->getProperty('page'))) {
-      return;
-    }
-    $this->pages[$pageNum] = $pageResource;
+  protected function filteredCount(array $resources): int {
+    return count($resources);
+  }
+
+  protected function loadNextPage(): bool {
     try {
-      $this->resultCountRaw += count($pageResource->getResource($this->type));
-      $this->resultCountFiltered += $this->filteredCount($pageResource->getResource($this->type));
+      $nextLink = $this->pages[$this->currentPageIndex]->getFirstLink('next');
+    }
+    catch (\Jsor\HalClient\Exception\InvalidArgumentException $e) {
+      return FALSE;
+    }
+
+    $pageNum = $this->addPage($nextLink->get());
+    if ($pageNum !== $this->currentPageIndex + 1) {
+      throw new \Exception('Error loading results from Action Network');
+    }
+
+    return TRUE;
+  }
+
+  protected function loadCurrentPageContents(): void {
+    try {
+      $this->currentPageContents = $this->pages[$this->currentPageIndex]->getResource($this->type);
     }
     catch (\Throwable $e) {
+      $this->currentPageContents = [];
     }
   }
 
-  protected function filteredCount(array $resources): int {
-    return count($resources);
+  public function loadAll() {
+    $savedPageIndex = $this->currentPageIndex;
+    $oldItemCount = NULL;
+
+    while ($oldItemCount !== $this->rawCurrentCount()) {
+      $oldItemCount = $this->rawCurrentCount();
+      $this->loadNextPage();
+      $this->currentPageIndex++;
+    }
+
+    $this->currentPageIndex = $savedPageIndex;
   }
 
 }

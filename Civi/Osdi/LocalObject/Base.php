@@ -22,13 +22,7 @@ abstract class Base implements LocalObjectInterface {
   protected bool $isLoaded = FALSE;
 
   public function __construct(int $idValue = NULL) {
-    foreach (static::FIELDS as $name => $metadata) {
-      $options = array_merge($metadata, ['bundle' => $this]);
-      $this->$name = new Field($name, $options);
-    }
-    if ($idValue) {
-      $this->id->load($idValue);
-    }
+    $this->initializeFields($idValue);
   }
 
   public function __clone() {
@@ -86,6 +80,9 @@ abstract class Base implements LocalObjectInterface {
       throw new InvalidArgumentException('%s::%s requires the %s to have an id',
         static::class, __FUNCTION__, static::class);
     }
+
+    $this->initializeFields($id);
+    $this->isTouched = FALSE;
 
     foreach (static::FIELDS as $camelName => $fieldMetaData) {
       if (array_key_exists('select', $fieldMetaData)) {
@@ -160,6 +157,17 @@ abstract class Base implements LocalObjectInterface {
   private function makeApi4Action(string $action, bool $checkPermissions = FALSE): AbstractAction {
     $api4Class = '\\Civi\\Api4\\' . static::CIVI_ENTITY;
     return call_user_func([$api4Class, $action], $checkPermissions);
+  }
+
+  private function initializeFields($idValue = NULL): void {
+    foreach (static::FIELDS as $name => $metadata) {
+      $options = array_merge($metadata, ['bundle' => $this]);
+      $this->$name = new Field($name, $options);
+    }
+
+    if ($idValue) {
+      $this->id->load($idValue);
+    }
   }
 
 }

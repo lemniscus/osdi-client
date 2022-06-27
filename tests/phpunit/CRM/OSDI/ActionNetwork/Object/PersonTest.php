@@ -338,7 +338,9 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
     $unsavedNewPerson->familyName->set('FindableBar');
     $this->createdPeople[] = $savedPerson = $unsavedNewPerson->save();
     $savedPersonId = $savedPerson->getId();
-    
+
+    sleep(2);
+
     // FIND
     $searchResults = $system->find('osdi:people',
       [
@@ -367,14 +369,14 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
 
     $savedPerson1 = $unsavedNewPerson1->save();
     $savedPerson1ModTime = $savedPerson1->modifiedDate->get();
-    if (time() - strtotime($savedPerson1ModTime) < 2) {
-      sleep(1);
+    if (time() - strtotime($savedPerson1ModTime) < 3) {
+      sleep(2);
     }
 
     $savedPerson2 = $unsavedNewPerson2->save();
     $savedPerson2ModTime = $savedPerson2->modifiedDate->get();
-    if (time() - strtotime($savedPerson2ModTime < 2)) {
-      sleep(1);
+    if (time() - strtotime($savedPerson2ModTime < 3)) {
+      sleep(2);
     }
 
     $savedPerson3 = $unsavedNewPerson3->save();
@@ -389,7 +391,7 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
       ],
     ]);
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $foundPerson */
-    foreach ($searchResults->toArray() as $foundPerson) {
+    foreach ($searchResults as $foundPerson) {
       $this->assertLessThan(
         strtotime($savedPerson2ModTime),
         strtotime($foundPerson->modifiedDate->get()));

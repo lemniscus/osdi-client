@@ -98,7 +98,7 @@ class CRM_OSDI_ActionNetwork_TaggingSyncerTest extends PHPUnit\Framework\TestCas
     $result = self::$syncer->oneWaySync(TaggingSyncer::inputTypeActionNetworkTaggingObject, $remoteTagging);
 
     self::assertEquals(\Civi\Osdi\SyncResult::class, get_class($result));
-    self::assertEquals(\Civi\Osdi\SyncResult::SUCCESS, $result->getStatus());
+    self::assertEquals(\Civi\Osdi\SyncResult::SUCCESS, $result->getStatusCode());
 
     $localEntityTag = $result->getLocalObject();
     $this->createdLocalObjectIds['EntityTag'][] = $localEntityTag['id'];
@@ -148,7 +148,7 @@ class CRM_OSDI_ActionNetwork_TaggingSyncerTest extends PHPUnit\Framework\TestCas
     $result = self::$syncer->oneWaySync(TaggingSyncer::inputTypeLocalEntityTagId, $localEntityTag['id']);
 
     self::assertEquals(\Civi\Osdi\SyncResult::class, get_class($result));
-    self::assertEquals(\Civi\Osdi\SyncResult::SUCCESS, $result->getStatus());
+    self::assertEquals(\Civi\Osdi\SyncResult::SUCCESS, $result->getStatusCode());
 
     $remoteEntityTag = $result->getRemoteObject();
 
@@ -170,7 +170,7 @@ class CRM_OSDI_ActionNetwork_TaggingSyncerTest extends PHPUnit\Framework\TestCas
     $result = self::$syncer->oneWaySync(TaggingSyncer::inputTypeLocalEntityTagId, -99);
 
     self::assertEquals(\Civi\Osdi\SyncResult::class, get_class($result));
-    self::assertEquals(\Civi\Osdi\SyncResult::ERROR, $result->getStatus());
+    self::assertEquals(\Civi\Osdi\SyncResult::ERROR, $result->getStatusCode());
   }
 
 }

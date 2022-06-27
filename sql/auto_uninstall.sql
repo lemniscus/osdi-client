@@ -15,7 +15,7 @@
 
 SET FOREIGN_KEY_CHECKS=0;
 
+DROP TABLE IF EXISTS `civicrm_osdi_person_sync_state`;
 DROP TABLE IF EXISTS `civicrm_osdi_sync_profile`;
-DROP TABLE IF EXISTS `civicrm_osdi_match`;
 
 SET FOREIGN_KEY_CHECKS=1;

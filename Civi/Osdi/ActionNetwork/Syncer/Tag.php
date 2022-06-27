@@ -110,7 +110,7 @@ class Tag {
         ->execute()->single();
       return new SyncResult($localTagArray, NULL,
         SyncResult::SUCCESS,
-        'saved match',
+        'saved match', NULL,
         $savedMatch);
     }
     return $this->oneWaySyncRemoteObject($tag);
@@ -123,7 +123,7 @@ class Tag {
       $remoteObject = $this->getRemoteSystem()->fetchById('osdi:tags', $id);
       return new SyncResult([], $remoteObject,
         SyncResult::SUCCESS,
-        'saved match',
+        'saved match', NULL,
         $savedMatch);
     }
     return $this->oneWaySyncLocalById($id);
@@ -177,7 +177,7 @@ class Tag {
           $localTag,
           $remoteObject,
           SyncResult::ERROR,
-          $saveResult->getMessage(),
+          $saveResult->getMessage(), NULL,
           $saveResult->getContext()
         );
       }
@@ -187,7 +187,7 @@ class Tag {
       return new SyncResult(
         $localTag,
         $remoteObject,
-        SyncResult::SUCCESS,
+        SyncResult::SUCCESS, NULL, NULL,
       );
     }
 
@@ -196,7 +196,7 @@ class Tag {
         NULL,
         NULL,
         SyncResult::ERROR,
-        "Failed to retrieve local tag id '$id'",
+        "Failed to retrieve local tag id '$id'", NULL,
         $exception
       );
     }
@@ -234,7 +234,7 @@ class Tag {
     return new SyncResult(
       $localTag,
       $remoteObject,
-      SyncResult::SUCCESS
+      SyncResult::SUCCESS, NULL, NULL
     );
   }
 

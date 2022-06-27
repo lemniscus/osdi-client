@@ -6,8 +6,8 @@
  * The ExtensionUtil class provides small stubs for accessing resources of this
  * extension.
  */
-class CRM_Osdi_ExtensionUtil {
-  const SHORT_NAME = 'osdi-client';
+class CRM_OSDI_ExtensionUtil {
+  const SHORT_NAME = 'osdi_client';
   const LONG_NAME = 'osdi-client';
   const CLASS_PREFIX = 'CRM_OSDI';
 
@@ -77,7 +77,7 @@ class CRM_Osdi_ExtensionUtil {
 
 }
 
-use CRM_Osdi_ExtensionUtil as E;
+use CRM_OSDI_ExtensionUtil as E;
 
 /**
  * (Delegated) Implements hook_civicrm_config().
@@ -91,9 +91,9 @@ function _osdi_client_civix_civicrm_config(&$config = NULL) {
   }
   $configured = TRUE;
 
-  $template =& CRM_Core_Smarty::singleton();
+  $template = CRM_Core_Smarty::singleton();
 
-  $extRoot = dirname(__FILE__) . DIRECTORY_SEPARATOR;
+  $extRoot = __DIR__ . DIRECTORY_SEPARATOR;
   $extDir = $extRoot . 'templates';
 
   if (is_array($template->template_dir)) {
@@ -206,14 +206,14 @@ function _osdi_client_civix_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) 
 }
 
 /**
- * @return CRM_Osdi_Upgrader
+ * @return CRM_OSDI_Upgrader
  */
 function _osdi_client_civix_upgrader() {
-  if (!file_exists(__DIR__ . '/CRM/Osdi/Upgrader.php')) {
+  if (!file_exists(__DIR__ . '/CRM/OSDI/Upgrader.php')) {
     return NULL;
   }
   else {
-    return CRM_Osdi_Upgrader_Base::instance();
+    return CRM_OSDI_Upgrader_Base::instance();
   }
 }
 
@@ -450,10 +450,10 @@ function _osdi_client_civix_civicrm_alterSettingsFolders(&$metaDataFolders = NUL
  */
 function _osdi_client_civix_civicrm_entityTypes(&$entityTypes) {
   $entityTypes = array_merge($entityTypes, [
-    'CRM_OSDI_DAO_OSDIMatch' => [
-      'name' => 'OsdiMatch',
-      'class' => 'CRM_OSDI_DAO_OSDIMatch',
-      'table' => 'civicrm_osdi_match',
+    'CRM_OSDI_DAO_PersonSyncState' => [
+      'name' => 'OsdiPersonSyncState',
+      'class' => 'CRM_OSDI_DAO_PersonSyncState',
+      'table' => 'civicrm_osdi_person_sync_state',
     ],
     'CRM_OSDI_DAO_SyncProfile' => [
       'name' => 'OsdiSyncProfile',

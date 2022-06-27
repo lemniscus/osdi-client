@@ -3,20 +3,22 @@
 namespace Civi\Osdi\ActionNetwork\Syncer;
 
 use Civi\Osdi\ActionNetwork\Mapper\Person as PersonMapper;
+use Civi\Osdi\ActionNetwork\Object\Person as RemotePerson;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\LocalObject\Person as LocalPerson;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MatchResult;
+use Civi\Osdi\PersonSyncerInterface;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\SaveResult;
 use Civi\Osdi\SyncResult;
 use CRM_Osdi_ExtensionUtil as E;
-use Civi\Api4\OsdiMatch;
+use Civi\Api4\OsdiPersonSyncState;
 use Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail;
 
-class Person {
+class Person implements PersonSyncerInterface {
 
   private array $syncProfile;
 
@@ -117,7 +119,7 @@ class Person {
         $remoteObject = $this->getRemoteSystem()->fetchPersonById($savedMatch['remote_person_id']);
       }
       catch (InvalidArgumentException | EmptyResultException $e) {
-        OsdiMatch::delete(FALSE)
+        OsdiPersonSyncState::delete(FALSE)
           ->addWhere('id', '=', $savedMatch['id'])
           ->execute();
         $savedMatch = NULL;
@@ -197,7 +199,7 @@ class Person {
         }
         catch (InvalidArgumentException $e) {
           $localPerson = NULL;
-          OsdiMatch::delete(FALSE)
+          OsdiPersonSyncState::delete(FALSE)
             ->addWhere('id', '=', $savedMatch['id'])
             ->execute();
         }
@@ -206,7 +208,7 @@ class Person {
             $localPerson,
             $remotePerson,
             SyncResult::SUCCESS,
-            'saved match',
+            'saved match', NULL,
             $savedMatch);
         }
       }
@@ -219,7 +221,7 @@ class Person {
         NULL,
         $remotePerson,
         SyncResult::ERROR,
-        'match error',
+        'match error', NULL,
         $match
       );
     }
@@ -239,7 +241,7 @@ class Person {
       $localPerson,
       $remotePerson,
       NULL,
-      'new match',
+      'new match', NULL,
       $match);
   }
 
@@ -253,8 +255,8 @@ class Person {
           $localPerson,
           $remotePerson,
           SyncResult::SUCCESS,
-          'saved match',
-        $savedMatch);
+          'saved match', NULL,
+          $savedMatch);
       }
     }
 
@@ -265,7 +267,7 @@ class Person {
         $localPerson,
         NULL,
         SyncResult::ERROR,
-        'match error',
+        'match error', NULL,
         $match
       );
     }
@@ -284,7 +286,7 @@ class Person {
       $match->getOriginObject(),
       $match->first(),
       NULL,
-      'new match',
+      'new match', NULL,
       $match);
   }
 
@@ -297,7 +299,7 @@ class Person {
   public function getSavedMatch(string $inputType, $input): array {
     self::validateInputType($inputType);
 
-    $osdiMatchGetAction = OsdiMatch::get(FALSE)
+    $osdiMatchGetAction = OsdiPersonSyncState::get(FALSE)
       ->addWhere('sync_profile_id', '=', $this->syncProfile['id']);
 
     if (self::inputTypeActionNetworkPersonObject === $inputType) {
@@ -368,7 +370,7 @@ class Person {
     $saveResult = $this->getRemoteSystem()->trySave($changedActNetPerson);
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $remotePerson */
     $remotePerson = $saveResult->getReturnedObject();
-    OsdiMatch::save(FALSE)
+    OsdiPersonSyncState::save(FALSE)
       ->setRecords([
         [
           'id' => $savedMatch['id'] ?? NULL,
@@ -376,7 +378,7 @@ class Person {
           'remote_person_id' => $remotePerson ? $remotePerson->getId() : NULL,
           'sync_profile_id' => $this->syncProfile['id'],
           'sync_status' => $saveResult->getStatus(),
-          'sync_origin' => OsdiMatch::syncOriginLocal,
+          'sync_origin' => OsdiPersonSyncState::syncOriginLocal,
           'sync_origin_modified_time' => $localPerson->modifiedDate->get(),
           'sync_target_modified_time' => $remotePerson ? $remotePerson->modifiedDate->get() : NULL,
         ],
@@ -399,7 +401,7 @@ class Person {
         $localPerson,
         $remotePerson,
         SyncResult::ERROR,
-        $saveResult->getMessage(),
+        $saveResult->getMessage(), NULL,
         $saveResult->getContext()
       );
     }
@@ -407,7 +409,7 @@ class Person {
     return new SyncResult(
       $localPerson,
       $remotePerson,
-      SyncResult::SUCCESS,
+      SyncResult::SUCCESS, NULL, NULL,
     );
   }
 
@@ -442,7 +444,7 @@ class Person {
       $status = SaveResult::ERROR;
     }
 
-    OsdiMatch::save(FALSE)
+    OsdiPersonSyncState::save(FALSE)
       ->setRecords([
         [
           'id' => $savedMatch['id'] ?? NULL,
@@ -450,7 +452,7 @@ class Person {
           'remote_person_id' => $remotePerson->getId(),
           'sync_profile_id' => $this->syncProfile['id'],
           'sync_status' => $status,
-          'sync_origin' => OsdiMatch::syncOriginRemote,
+          'sync_origin' => OsdiPersonSyncState::syncOriginRemote,
           'sync_origin_modified_time' => NULL,
           'sync_target_modified_time' => $localPerson->modifiedDate->get(),
         ],
@@ -468,14 +470,14 @@ class Person {
       return new SyncResult(
         $localPerson,
         $remotePerson,
-        $status
+        $status, NULL, NULL
       );
     }
 
     return new SyncResult(
       new LocalPerson($contactId),
       $remotePerson,
-      SyncResult::SUCCESS,
+      SyncResult::SUCCESS, NULL, NULL,
     );
   }
 
@@ -500,7 +502,7 @@ class Person {
 
     $localPerson->loadOnce();
 
-    return OsdiMatch::save(FALSE)
+    return OsdiPersonSyncState::save(FALSE)
       ->setRecords([
         [
           'id' => $matchId,
@@ -512,6 +514,14 @@ class Person {
           'sync_target_modified_time' => $localPerson->modifiedDate->get(),
         ],
       ])->execute()->single();
+  }
+
+  public function syncFromRemoteIfNeeded(RemotePerson $remotePerson): SyncResult {
+    // TODO: Implement syncFromRemoteIfNeeded() method.
+  }
+
+  public function getOrCreateLocalRemotePairFromRemote(RemotePerson $remotePerson): LocalRemotePair {
+    // TODO: Implement getOrCreateLocalRemotePairFromRemote() method.
   }
 
 }

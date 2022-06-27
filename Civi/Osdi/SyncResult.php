@@ -10,6 +10,8 @@ class SyncResult {
 
   const ERROR = 'error';
 
+  const NO_SYNC_NEEDED = 'no sync needed';
+
   protected ?\Civi\Osdi\RemoteObjectInterface $remoteObject;
 
   protected ?\Civi\Osdi\LocalObject\LocalObjectInterface $localObject;
@@ -18,17 +20,24 @@ class SyncResult {
 
   protected ?string $message;
 
+  protected ?PersonSyncState $state;
+
   protected $context;
 
-  public function __construct(LocalObjectInterface $localObject = NULL,
-                              RemoteObjectInterface $remoteObject = NULL,
-                              $statusCode = NULL,
-                              $statusMessage = NULL,
-                              $context = NULL) {
+  public function __construct
+  (
+    LocalObjectInterface $localObject = NULL,
+    RemoteObjectInterface $remoteObject = NULL,
+    $statusCode = NULL,
+    $statusMessage = NULL,
+    PersonSyncState $state = NULL,
+    $context = NULL
+  ) {
     $this->localObject = $localObject;
     $this->remoteObject = $remoteObject;
     $this->statusCode = $statusCode;
     $this->message = $statusMessage;
+    $this->state = $state;
     $this->context = $context;
   }
 
@@ -49,7 +58,7 @@ class SyncResult {
     return $this->remoteObject;
   }
 
-  public function getStatus(): ?string {
+  public function getStatusCode(): ?string {
     return $this->statusCode;
   }
 
@@ -59,6 +68,10 @@ class SyncResult {
 
   public function getMessage() {
     return $this->message;
+  }
+
+  public function getState(): ?PersonSyncState {
+    return $this->state;
   }
 
 }

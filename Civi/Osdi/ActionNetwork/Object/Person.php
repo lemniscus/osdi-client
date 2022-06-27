@@ -70,7 +70,6 @@ class Person extends Base implements \Civi\Osdi\RemoteObjectInterface {
       $this->phoneStatus->set('subscribed');
     }
 
-
     return ['person' => parent::getArrayForCreate()];
   }
 

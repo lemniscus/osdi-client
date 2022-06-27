@@ -2,27 +2,28 @@
 
 namespace Civi\Osdi\ActionNetwork\Matcher;
 
-use Civi\Osdi\ActionNetwork\Object\Person as RemotePerson;
 use Civi\Osdi\Exception\AmbiguousResultException;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\LocalObject\Person as LocalPerson;
+use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\MatchResult;
+use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\ResultCollection;
 
-class OneToOneEmailOrFirstLastEmail {
+class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
 
   protected RemoteSystemInterface $system;
 
-  protected \Civi\Osdi\ActionNetwork\Syncer\Person $syncer;
+  protected string $localPersonClass;
 
-  /**
-   * OneToOneEmailOrFirstLastEmail constructor.
-   */
-  public function __construct(\Civi\Osdi\ActionNetwork\Syncer\Person $syncer) {
-    $this->syncer = $syncer;
+  public function __construct(
+    \Civi\Osdi\PersonSyncerInterface $syncer,
+    string $localPersonClass = NULL
+  ) {
     $this->system = $syncer->getRemoteSystem();
+    $this->localPersonClass = $localPersonClass ?? LocalPerson::class;
   }
 
   public function tryToFindMatchForLocalContact(LocalPerson $localPerson): MatchResult {
@@ -111,7 +112,7 @@ class OneToOneEmailOrFirstLastEmail {
     );
   }
 
-  public function tryToFindMatchForRemotePerson(RemotePerson $remotePerson): MatchResult {
+  public function tryToFindMatchForRemotePerson(RemoteObjectInterface $remotePerson): MatchResult {
     if (empty($email = $remotePerson->emailAddress->get())) {
       return new MatchResult(
         MatchResult::ORIGIN_REMOTE,
@@ -126,7 +127,7 @@ class OneToOneEmailOrFirstLastEmail {
     if ($civiContactsWithEmail->count() === 1) {
       return new MatchResult(
         MatchResult::ORIGIN_REMOTE,
-        new LocalPerson($civiContactsWithEmail->first()['id']),
+        new $this->localPersonClass($civiContactsWithEmail->first()['id']),
         $remotePerson,
         NULL,
         'Matched by unique email address'
@@ -146,11 +147,11 @@ class OneToOneEmailOrFirstLastEmail {
     return $this->findLocalMatchByEmailAndName($remotePerson);
   }
 
-  private function findLocalMatchByEmailAndName(RemotePerson $remotePerson): MatchResult {
+  private function findLocalMatchByEmailAndName(RemoteObjectInterface $remotePerson): MatchResult {
     $civiApi4Result = $this->getCiviContactsBy(
       $remotePerson->emailAddress->get(),
-      $remotePerson->givenName->getOriginal(),
-      $remotePerson->familyName->getOriginal()
+      $remotePerson->givenName->get(),
+      $remotePerson->familyName->get()
     );
     $countOfCiviContactsWithSameEmailFirstLast = $civiApi4Result->count();
 
@@ -176,7 +177,7 @@ class OneToOneEmailOrFirstLastEmail {
 
     return new MatchResult(
       MatchResult::ORIGIN_REMOTE,
-      new LocalPerson($civiApi4Result->first()['id']),
+      new $this->localPersonClass($civiApi4Result->first()['id']),
       $remotePerson,
       NULL,
       'Matched on email, first name and last name'
@@ -198,10 +199,10 @@ class OneToOneEmailOrFirstLastEmail {
         ['is_deleted', '=', 0],
     ];
     if ($firstName !== NULL) {
-      $apiParams['where'][] = ['first_name', '=', $firstName];
+      $apiParams['where'][] = ['first_name', '=', trim($firstName)];
     }
     if ($lastName !== NULL) {
-      $apiParams['where'][] = ['last_name', '=', $lastName];
+      $apiParams['where'][] = ['last_name', '=', trim($lastName)];
     }
     return civicrm_api4('Contact', 'get', $apiParams);
   }

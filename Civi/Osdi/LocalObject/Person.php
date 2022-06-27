@@ -103,6 +103,9 @@ class Person extends Base implements LocalObjectInterface {
     $this->saveEmail($cid);
     $this->savePhone($cid);
     $this->saveAddress($cid);
+
+    $this->load();
+
     return $this;
   }
 
@@ -111,8 +114,9 @@ class Person extends Base implements LocalObjectInterface {
     $record['contact_type'] = 'Individual';
     $record['id'] = $this->getId();
 
-    return Contact::save(FALSE)
-      ->addRecord($record)->execute()->first()['id'];
+    $postSaveContactArray = Contact::save(FALSE)
+      ->addRecord($record)->execute()->first();
+    return $postSaveContactArray['id'];
   }
 
   protected function saveEmail($cid): void {

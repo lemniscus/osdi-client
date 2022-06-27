@@ -10,7 +10,7 @@ class LocalRemotePair {
   private ?RemoteObjectInterface $remoteObject;
   private bool $isError;
   private ?string $message;
-  private ?array $savedMatch;
+  private ?PersonSyncState $personSyncState;
   private ?MatchResult $matchResult;
   private ?SyncResult $syncResult;
 
@@ -19,14 +19,14 @@ class LocalRemotePair {
       RemoteObjectInterface $remoteObject = NULL,
       bool $isError = FALSE,
       string $message = NULL,
-      array $savedMatch = NULL,
+      $personSyncState = NULL,
       MatchResult $matchResult = NULL,
       SyncResult $syncResult = NULL) {
     $this->localObject = $localObject;
     $this->remoteObject = $remoteObject;
     $this->isError = $isError;
     $this->message = $message;
-    $this->savedMatch = $savedMatch;
+    $this->personSyncState = $personSyncState;
     $this->matchResult = $matchResult;
     $this->syncResult = $syncResult;
   }
@@ -47,8 +47,8 @@ class LocalRemotePair {
     return $this->message;
   }
 
-  public function getSavedMatch(): ?array {
-    return $this->savedMatch;
+  public function getPersonSyncState(): ?PersonSyncState {
+    return $this->personSyncState;
   }
 
   public function getMatchResult(): ? MatchResult {

@@ -27,9 +27,7 @@ abstract class Base implements RemoteObjectInterface {
       $this->load($resource);
     }
 
-    foreach (static::FIELDS as $name => $metadata) {
-      $this->$name = new Field($name, $this, $metadata);
-    }
+    $this->initializeFields();
   }
 
   public function __clone() {
@@ -114,6 +112,9 @@ abstract class Base implements RemoteObjectInterface {
   }
 
   public function load(HalResource $resource = NULL): self {
+    $this->initializeFields();
+    $this->_isTouched = FALSE;
+
     if (is_null($resource)) {
       $resource = $this->_system->fetch($this);
     }
@@ -124,6 +125,12 @@ abstract class Base implements RemoteObjectInterface {
     }
 
     return $this;
+  }
+
+  public static function loadFromId(string $id, RemoteSystemInterface $system) {
+    $object = new static($system);
+    $object->setId($id);
+    return $object->load();
   }
 
   public function loadFromArray(array $flatFields): self {
@@ -251,6 +258,12 @@ abstract class Base implements RemoteObjectInterface {
       }
     }
     return NULL;
+  }
+
+  private function initializeFields(): void {
+    foreach (static::FIELDS as $name => $metadata) {
+      $this->$name = new Field($name, $this, $metadata);
+    }
   }
 
 }

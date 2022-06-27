@@ -2,8 +2,8 @@
 
 <table>
   <base>CRM/OSDI</base>
-  <class>OSDIMatch</class>
-  <name>civicrm_osdi_match</name>
+  <class>PersonSyncState</class>
+  <name>civicrm_osdi_person_sync_state</name>
   <comment>Linkages between CiviCRM contacts and their counterparts on remote OSDI systems</comment>
   <log>true</log>
 
@@ -12,7 +12,7 @@
     <title>ID</title>
     <type>int unsigned</type>
     <required>true</required>
-    <comment>Unique OsdiMatch ID</comment>
+    <comment>Unique OsdiSyncState ID</comment>
     <import>true</import>
     <export>true</export>
   </field>
@@ -75,31 +75,73 @@
   </index>
 
   <field>
-    <name>sync_origin_modified_time</name>
-    <title>Origin Last Synced Modification Time</title>
-    <type>datetime</type>
+    <name>remote_pre_sync_modified_time</name>
+    <title>Remote Pre-Sync Mod Time</title>
+    <type>int unsigned</type>
     <default>NULL</default>
-    <comment>Modification date and time of the origin record as of the last sync, in UTC</comment>
+    <comment>Modification date and time of the remote person record as of the beginning of the last sync, in unix timestamp format</comment>
     <import>true</import>
     <export>true</export>
   </field>
   <index>
-    <name>index_sync_origin_modified_time</name>
-    <fieldName>sync_origin_modified_time</fieldName>
+    <name>index_remote_pre_sync_modified_time</name>
+    <fieldName>remote_pre_sync_modified_time</fieldName>
   </index>
 
   <field>
-    <name>sync_target_modified_time</name>
-    <title>Target Last Synced Modification Time</title>
-    <type>datetime</type>
+    <name>remote_post_sync_modified_time</name>
+    <title>Remote Post-Sync Mod Time</title>
+    <type>int unsigned</type>
     <default>NULL</default>
-    <comment>Modification date and time of the target record as of the last sync, in UTC</comment>
+    <comment>Modification date and time of the remote person record at the end of the last sync, in unix timestamp format</comment>
     <import>true</import>
     <export>true</export>
   </field>
   <index>
-    <name>index_sync_target_modified_time</name>
-    <fieldName>sync_target_modified_time</fieldName>
+    <name>index_remote_post_sync_modified_time</name>
+    <fieldName>remote_post_sync_modified_time</fieldName>
+  </index>
+
+  <field>
+    <name>local_pre_sync_modified_time</name>
+    <title>Local Pre-Sync Mod Time</title>
+    <type>int unsigned</type>
+    <default>NULL</default>
+    <comment>Modification date and time of the local contact record as of the beginning of the last sync, in unix timestamp format</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+  <index>
+    <name>index_local_pre_sync_modified_time</name>
+    <fieldName>local_pre_sync_modified_time</fieldName>
+  </index>
+
+  <field>
+    <name>local_post_sync_modified_time</name>
+    <title>Local Post-Sync Mod Time</title>
+    <type>int unsigned</type>
+    <default>NULL</default>
+    <comment>Modification date and time of the local contact record at the end of the last sync, in unix timestamp format</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+  <index>
+    <name>index_local_post_sync_modified_time</name>
+    <fieldName>local_post_sync_modified_time</fieldName>
+  </index>
+
+  <field>
+    <name>sync_time</name>
+    <title>Sync Time</title>
+    <type>int unsigned</type>
+    <default>NULL</default>
+    <comment>Date and time of the last sync, in unix timestamp format</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+  <index>
+    <name>index_sync_time</name>
+    <fieldName>sync_time</fieldName>
   </index>
 
   <field>
@@ -108,7 +150,8 @@
     <type>boolean</type>
     <default>NULL</default>
     <pseudoconstant>
-      <callback>CRM_OSDI_BAO_OSDIMatch::syncOriginPseudoConstant</callback>
+      <callback>\Civi\Osdi\PersonSyncState::syncOriginPseudoConstant</callback>
+      <prefetch>true</prefetch>
     </pseudoconstant>
     <comment>0 if local CiviCRM was the origin of the last sync, 1 if remote system was the origin</comment>
     <import>true</import>

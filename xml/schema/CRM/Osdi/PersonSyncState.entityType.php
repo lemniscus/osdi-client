@@ -3,8 +3,8 @@
 // https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_entityTypes
 return [
   [
-    'name' => 'OsdiMatch',
-    'class' => 'CRM_OSDI_DAO_OSDIMatch',
-    'table' => 'civicrm_osdi_match',
+    'name' => 'PersonSyncState',
+    'class' => 'CRM_OSDI_DAO_PersonSyncState',
+    'table' => 'civicrm_osdi_person_sync_state',
   ],
 ];

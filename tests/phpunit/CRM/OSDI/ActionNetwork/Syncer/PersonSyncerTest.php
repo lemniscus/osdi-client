@@ -37,7 +37,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
 
     self::$syncer->setSyncProfile(self::$syncProfile);
 
-    \Civi\Api4\OsdiMatch::delete(FALSE)
+    \Civi\Api4\OsdiPersonSyncState::delete(FALSE)
       ->addWhere('id', '>', 0)
       ->execute();
   }
@@ -101,7 +101,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
 
     // PRE-ASSERTS
 
-    $existingMatchHistory = \Civi\Api4\OsdiMatch::get(FALSE)
+    $existingMatchHistory = \Civi\Api4\OsdiPersonSyncState::get(FALSE)
       ->addWhere('remote_person_id', '=', $remotePerson->getId())
       ->execute();
 
@@ -135,11 +135,11 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
     self::assertEquals('fetched saved match', $pair->getMessage());
     self::assertEquals($createdLocalObject->getId(), $pair->getLocalObject()->getId());
 
-    $savedMatch = $pair->getSavedMatch();
+    $savedMatch = $pair->getPersonSyncState();
 
     self::assertArrayHasKey('id', $savedMatch);
 
-    \Civi\Api4\OsdiMatch::delete(FALSE)
+    \Civi\Api4\OsdiPersonSyncState::delete(FALSE)
       ->addWhere('id', '=', $savedMatch['id'])
       ->execute();
 
@@ -168,7 +168,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
 
     // PRE-ASSERTS
 
-    $existingMatchHistory = \Civi\Api4\OsdiMatch::get(FALSE)
+    $existingMatchHistory = \Civi\Api4\OsdiPersonSyncState::get(FALSE)
       ->addWhere('contact_id', '=', $contact['id'])
       ->execute();
 
@@ -207,11 +207,11 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
     self::assertEquals('fetched saved match', $pair->getMessage());
     self::assertEquals($createdRemoteObject->getAll(), $pair->getRemoteObject()->getAll());
 
-    $savedMatch = $pair->getSavedMatch();
+    $savedMatch = $pair->getPersonSyncState();
 
     self::assertArrayHasKey('id', $savedMatch);
 
-    \Civi\Api4\OsdiMatch::delete(FALSE)
+    \Civi\Api4\OsdiPersonSyncState::delete(FALSE)
       ->addWhere('id', '=', $savedMatch['id'])
       ->execute();
 
@@ -279,7 +279,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
 
     // PRE-ASSERTS
 
-    $existingMatchHistory = \Civi\Api4\OsdiMatch::get(FALSE)
+    $existingMatchHistory = \Civi\Api4\OsdiPersonSyncState::get(FALSE)
       ->addWhere('remote_person_id', '=', $person->getId())
       ->execute();
 
@@ -320,7 +320,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
 
     // PRE-ASSERTS
 
-    $existingMatchHistory = \Civi\Api4\OsdiMatch::get(FALSE)
+    $existingMatchHistory = \Civi\Api4\OsdiPersonSyncState::get(FALSE)
       ->addWhere('contact_id', '=', $contact['id'])
       ->execute();
 
@@ -344,7 +344,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
     $result = self::$syncer->oneWaySync(\Civi\Osdi\ActionNetwork\Syncer\Person::inputTypeLocalContactId, $contact['id']);
 
     self::assertEquals(\Civi\Osdi\SyncResult::class, get_class($result));
-    self::assertEquals(\Civi\Osdi\SyncResult::SUCCESS, $result->getStatus());
+    self::assertEquals(\Civi\Osdi\SyncResult::SUCCESS, $result->getStatusCode());
 
 
     $remotePeopleWithTheEmail = self::$remoteSystem->find(
@@ -541,7 +541,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
       ->single();
     $this->createdContacts[] = $contact['id'];
 
-    $existingMatchHistory = \Civi\Api4\OsdiMatch::get(FALSE)
+    $existingMatchHistory = \Civi\Api4\OsdiPersonSyncState::get(FALSE)
       ->addWhere('contact_id', '=', $contact['id'])
       ->execute();
 
@@ -620,7 +620,7 @@ class CRM_OSDI_ActionNetwork_PersonSyncerTest extends PHPUnit\Framework\TestCase
       ->single();
     $this->createdContacts[] = $contact['id'];
 
-    $existingMatchHistory = \Civi\Api4\OsdiMatch::get(FALSE)
+    $existingMatchHistory = \Civi\Api4\OsdiPersonSyncState::get(FALSE)
       ->addWhere('contact_id', '=', $contact['id'])
       ->execute();
 

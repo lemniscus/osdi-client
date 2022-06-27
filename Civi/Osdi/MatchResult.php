@@ -7,7 +7,7 @@ use Civi\Osdi\LocalObject\LocalObjectInterface;
 
 class MatchResult {
 
-  const ERROR_INDETERMINATE = 'provided criteria do not uniquely identify the source contact';
+  const ERROR_INDETERMINATE = 'provided criteria do not uniquely identify a record';
 
   const ERROR_INVALID_ID = 'invalid contact id';
 
@@ -85,6 +85,10 @@ class MatchResult {
 
   public function getStatus(): ?string {
     return $this->statusCode;
+  }
+
+  public function getMessage(): ?string {
+    return $this->message;
   }
 
   public function getContext() {

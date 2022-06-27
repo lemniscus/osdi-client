@@ -52,7 +52,7 @@ class CRM_OSDI_PersonMatchingTest extends \PHPUnit\Framework\TestCase implements
       ->execute()
       ->first()['id'];
 
-    \Civi\Api4\OsdiMatch::create()
+    \Civi\Api4\OsdiPersonSyncState::create()
       ->addValue('contact_id', $contactId)
       ->addValue(
         'remote_person_id',
@@ -63,7 +63,7 @@ class CRM_OSDI_PersonMatchingTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public function testForOsdiMatchDataStructure() {
-    $fieldNames = \Civi\Api4\OsdiMatch::getFields()->execute()->column('name');
+    $fieldNames = \Civi\Api4\OsdiPersonSyncState::getFields()->execute()->column('name');
     $this->assertContains('contact_id', $fieldNames);
     $this->assertContains('remote_person_id', $fieldNames);
     $this->assertContains('sync_profile_id', $fieldNames);
@@ -73,12 +73,12 @@ class CRM_OSDI_PersonMatchingTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public function testCheckForExistingLinkFromRemotePersonToCiviContact() {
-    $apiMatchResults1 = \Civi\Api4\OsdiMatch::get()->setWhere(
+    $apiMatchResults1 = \Civi\Api4\OsdiPersonSyncState::get()->setWhere(
       [['remote_person_id', '=', 'shangelaIdOnRemoteSystem']]
     )->execute();
     $this->assertEquals(1, $apiMatchResults1->count());
 
-    $apiMatchResults2 = \Civi\Api4\OsdiMatch::get()->setWhere(
+    $apiMatchResults2 = \Civi\Api4\OsdiPersonSyncState::get()->setWhere(
       [['remote_person_id', '=', 'nonexistentIdOnRemoteSystem']]
     )->execute();
     $this->assertEquals(0, $apiMatchResults2->count());

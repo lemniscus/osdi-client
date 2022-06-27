@@ -42,7 +42,7 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
   ): \Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail {
     $syncer = new \Civi\Osdi\ActionNetwork\Syncer\Person($system);
     $syncer->setSyncProfile(['mapper' => Civi\Osdi\ActionNetwork\Mapper\Person::class]);
-    return new Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail($syncer);
+    return new Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail($syncer, NULL);
   }
 
   private function assertMatchResultIsNotError_NoMatch_ZeroCount(\Civi\Osdi\MatchResult $matchResult): void {

@@ -117,7 +117,7 @@ class Tagging {
         NULL,
         NULL,
         SyncResult::ERROR,
-        "Failed to retrieve local tag id '$id'",
+        "Failed to retrieve local tag id '$id'", NULL,
         $exception
       );
     }
@@ -156,7 +156,7 @@ class Tagging {
         $localObject,
         $remoteObject,
         SyncResult::ERROR,
-        $saveResult->getMessage(),
+        $saveResult->getMessage(), NULL,
         $saveResult->getContext()
       );
     }
@@ -166,7 +166,7 @@ class Tagging {
     return new SyncResult(
       $localObject,
       $remoteObject,
-      SyncResult::SUCCESS,
+      SyncResult::SUCCESS, NULL, NULL,
     );
   }
 
@@ -211,7 +211,7 @@ class Tagging {
     return new SyncResult(
       $localObject,
       $remoteObject,
-      SyncResult::SUCCESS,
+      SyncResult::SUCCESS, NULL, NULL,
     );
   }
 

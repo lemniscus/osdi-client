@@ -17,8 +17,8 @@
 
 SET FOREIGN_KEY_CHECKS=0;
 
+DROP TABLE IF EXISTS `civicrm_osdi_person_sync_state`;
 DROP TABLE IF EXISTS `civicrm_osdi_sync_profile`;
-DROP TABLE IF EXISTS `civicrm_osdi_match`;
 
 -- /*******************************************************
 -- *
@@ -28,31 +28,38 @@ DROP TABLE IF EXISTS `civicrm_osdi_match`;
 
 -- /*******************************************************
 -- *
--- * civicrm_osdi_match
+-- * civicrm_osdi_person_sync_state
 -- *
 -- * Linkages between CiviCRM contacts and their counterparts on remote OSDI systems
 -- *
 -- *******************************************************/
-CREATE TABLE `civicrm_osdi_match` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiMatch ID',
+CREATE TABLE `civicrm_osdi_person_sync_state` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiSyncState ID',
   `contact_id` int unsigned COMMENT 'FK to Contact',
   `sync_profile_id` int unsigned COMMENT 'FK to OSDI Sync Profile',
   `remote_person_id` varchar(255) DEFAULT NULL COMMENT 'FK to identifier field on remote system',
-  `sync_origin_modified_time` datetime DEFAULT NULL COMMENT 'Modification date and time of the origin record as of the last sync, in UTC',
-  `sync_target_modified_time` datetime DEFAULT NULL COMMENT 'Modification date and time of the target record as of the last sync, in UTC',
+  `remote_pre_sync_modified_time` int unsigned DEFAULT NULL COMMENT 'Modification date and time of the remote person record as of the beginning of the last sync, in unix timestamp format',
+  `remote_post_sync_modified_time` int unsigned DEFAULT NULL COMMENT 'Modification date and time of the remote person record at the end of the last sync, in unix timestamp format',
+  `local_pre_sync_modified_time` int unsigned DEFAULT NULL COMMENT 'Modification date and time of the local contact record as of the beginning of the last sync, in unix timestamp format',
+  `local_post_sync_modified_time` int unsigned DEFAULT NULL COMMENT 'Modification date and time of the local contact record at the end of the last sync, in unix timestamp format',
+  `sync_time` int unsigned DEFAULT NULL COMMENT 'Date and time of the last sync, in unix timestamp format',
   `sync_origin` tinyint DEFAULT NULL COMMENT '0 if local CiviCRM was the origin of the last sync, 1 if remote system was the origin',
   `sync_status` varchar(255) DEFAULT NULL COMMENT 'Status of the last sync',
   PRIMARY KEY (`id`),
   INDEX `index_contact_id`(contact_id),
   INDEX `index_sync_profile_id`(sync_profile_id),
   INDEX `index_remote_person_id`(remote_person_id),
-  INDEX `index_sync_origin_modified_time`(sync_origin_modified_time),
-  INDEX `index_sync_target_modified_time`(sync_target_modified_time),
+  INDEX `index_remote_pre_sync_modified_time`(remote_pre_sync_modified_time),
+  INDEX `index_remote_post_sync_modified_time`(remote_post_sync_modified_time),
+  INDEX `index_local_pre_sync_modified_time`(local_pre_sync_modified_time),
+  INDEX `index_local_post_sync_modified_time`(local_post_sync_modified_time),
+  INDEX `index_sync_time`(sync_time),
   INDEX `index_sync_status`(sync_status),
-  CONSTRAINT FK_civicrm_osdi_match_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE CASCADE,
-  CONSTRAINT FK_civicrm_osdi_match_sync_profile_id FOREIGN KEY (`sync_profile_id`) REFERENCES `civicrm_osdi_sync_profile`(`id`) ON DELETE CASCADE
+  CONSTRAINT FK_civicrm_osdi_person_sync_state_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE CASCADE,
+  CONSTRAINT FK_civicrm_osdi_person_sync_state_sync_profile_id FOREIGN KEY (`sync_profile_id`) REFERENCES `civicrm_osdi_sync_profile`(`id`) ON DELETE CASCADE
 )
 ENGINE=InnoDB;
+
 
 -- /*******************************************************
 -- *

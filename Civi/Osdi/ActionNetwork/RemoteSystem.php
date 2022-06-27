@@ -143,14 +143,10 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       }
     }
     $endpoint = $this->getEndpointFor($objectType);
-    $resultResource = $this->filter($endpoint, implode(' and ', $filterClauses));
-    return new ResultCollection($this, $objectType, $resultResource);
-  }
-
-  private function filter(?HalLink $endpoint, string $query) {
+    $query = implode(' and ', $filterClauses);
     $href = $endpoint->getHref() . "?filter=$query";
     $endPointWithQuery = $this->linkify($href);
-    return $endPointWithQuery->get();
+    return new ResultCollection($this, $objectType, $endPointWithQuery);
   }
 
   public function save(RemoteObjectInterface $osdiObject): HalResource {
@@ -301,6 +297,10 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
   private function linkify(string $url): HalLink {
     return new HalLink($this->getClient(), $url);
+  }
+
+  public static function formatDateTime(int $unixTimeStamp) {
+    return date('Y-m-d\TH:i:s\Z', $unixTimeStamp);
   }
 
 }
