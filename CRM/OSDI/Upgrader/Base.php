@@ -6,10 +6,10 @@ use CRM_OSDI_ExtensionUtil as E;
 /**
  * Base class which provides helpers to execute upgrade logic
  */
-class CRM_Osdi_Upgrader_Base {
+class CRM_OSDI_Upgrader_Base {
 
   /**
-   * @var CRM_Osdi_Upgrader_Base
+   * @var CRM_OSDI_Upgrader_Base
    */
   public static $instance;
 
@@ -47,7 +47,7 @@ class CRM_Osdi_Upgrader_Base {
    */
   public static function instance() {
     if (!self::$instance) {
-      self::$instance = new CRM_Osdi_Upgrader(
+      self::$instance = new CRM_OSDI_Upgrader(
         'osdi-client',
         E::path()
       );
@@ -62,7 +62,7 @@ class CRM_Osdi_Upgrader_Base {
    * task-context; otherwise, this will be non-reentrant.
    *
    * ```
-   * CRM_Osdi_Upgrader_Base::_queueAdapter($ctx, 'methodName', 'arg1', 'arg2');
+   * CRM_OSDI_Upgrader_Base::_queueAdapter($ctx, 'methodName', 'arg1', 'arg2');
    * ```
    */
   public static function _queueAdapter() {
@@ -75,7 +75,7 @@ class CRM_Osdi_Upgrader_Base {
   }
 
   /**
-   * CRM_Osdi_Upgrader_Base constructor.
+   * CRM_OSDI_Upgrader_Base constructor.
    *
    * @param $extensionName
    * @param $extensionDir

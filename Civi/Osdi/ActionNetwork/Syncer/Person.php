@@ -14,7 +14,7 @@ use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\SaveResult;
 use Civi\Osdi\SyncResult;
-use CRM_Osdi_ExtensionUtil as E;
+use CRM_OSDI_ExtensionUtil as E;
 use Civi\Api4\OsdiPersonSyncState;
 use Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail;
 
