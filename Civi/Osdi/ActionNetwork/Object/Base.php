@@ -112,9 +112,6 @@ abstract class Base implements RemoteObjectInterface {
   }
 
   public function load(HalResource $resource = NULL): self {
-    $this->initializeFields();
-    $this->_isTouched = FALSE;
-
     if (is_null($resource)) {
       $resource = $this->_system->fetch($this);
     }
@@ -160,6 +157,7 @@ abstract class Base implements RemoteObjectInterface {
 
   public function save(): self {
     $this->load($this->_system->save($this));
+    $this->initializeFields();
     return $this;
   }
 
@@ -264,6 +262,7 @@ abstract class Base implements RemoteObjectInterface {
     foreach (static::FIELDS as $name => $metadata) {
       $this->$name = new Field($name, $this, $metadata);
     }
+    $this->_isTouched = FALSE;
   }
 
 }
