@@ -300,7 +300,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
   }
 
   public static function formatDateTime(int $unixTimeStamp) {
-    return date('Y-m-d\TH:i:s\Z', $unixTimeStamp);
+    return gmdate('Y-m-d\TH:i:s\Z', $unixTimeStamp);
   }
 
 }
