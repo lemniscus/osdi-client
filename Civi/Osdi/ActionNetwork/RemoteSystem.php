@@ -170,7 +170,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
   }
 
   public function trySave(RemoteObjectInterface $objectToSave): SaveResult {
-    $savedObject = $statusCode = $statusMessage = $context = NULL;
+    $statusCode = $statusMessage = $context = NULL;
 
     if ('osdi:people' === $objectToSave->getType()) {
       /** @var \Civi\Osdi\ActionNetwork\Object\Person $objectToSave */
@@ -179,6 +179,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
     if ($statusCode !== SaveResult::ERROR) {
       try {
+        $objectBeforeSaving = clone $objectToSave;
         $savedObject = $objectToSave->save();
         $statusCode = SaveResult::SUCCESS;
       }
@@ -187,25 +188,25 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
         $statusCode = SaveResult::ERROR;
         $statusMessage = $e->getMessage();
         $context = [
-          'object' => $objectToSave,
+          'object' => $objectBeforeSaving,
           'exception' => $e,
         ];
       }
     }
 
-    if ($savedObject && !$savedObject->isSupersetOf($objectToSave, TRUE, TRUE)) {
+    if (!empty($savedObject) && !$savedObject->isSupersetOf($objectBeforeSaving, TRUE, TRUE)) {
       $statusCode = SaveResult::ERROR;
       $statusMessage = E::ts(
         'Some or all of the %1 object could not be saved.',
-        [1 => $objectToSave->getType()],
+        [1 => $objectBeforeSaving->getType()],
       );
       $context = [
-        'sent' => $objectToSave->getAll(),
+        'sent' => $objectBeforeSaving->getAll(),
         'response' => $savedObject->getAllOriginal(),
       ];
     }
 
-    return new SaveResult($savedObject, $statusCode, $statusMessage, $context);
+    return new SaveResult($objectToSave, $statusCode, $statusMessage, $context);
   }
 
   /**
