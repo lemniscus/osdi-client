@@ -130,4 +130,18 @@ class Person extends Base implements \Civi\Osdi\RemoteObjectInterface {
     return [$statusCode, $statusMessage, $context];
   }
 
+  protected function getFieldValueForCompare(string $fieldName) {
+    if ('phoneNumber' !== $fieldName) {
+      return $this->$fieldName->get();
+    }
+    return self::normalizePhoneNumber($this->phoneNumber->get());
+  }
+
+  public static function normalizePhoneNumber(?string $phoneNumber = ''): string {
+    $phoneNumber = preg_replace('/[^0-9]/', '', $phoneNumber);
+    $phoneNumber = preg_replace('/^1(\d{10})$/', '$1', $phoneNumber);
+    $phoneNumber = preg_replace('/^(\d{3})(\d{3})(\d{4})$/', '($1) $2-$3', $phoneNumber);
+    return $phoneNumber;
+  }
+
 }

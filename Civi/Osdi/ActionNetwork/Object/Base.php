@@ -196,9 +196,53 @@ abstract class Base implements RemoteObjectInterface {
     return $this->getUrlForRead();
   }
 
+  public static function diff(self $left, self $right): DiffResult {
+    $different = $leftOnly = $rightOnly = [];
+
+    foreach (static::FIELDS as $fieldName => $metadata) {
+      $leftVal = $left->getFieldValueForCompare($fieldName);
+      $rightVal = $right->getFieldValueForCompare($fieldName);
+      $leftIsEmpty = in_array($leftVal, [NULL, '', []]);
+      $rightIsEmpty = in_array($rightVal, [NULL, '', []]);
+
+      if ($leftIsEmpty && !$rightIsEmpty) {
+        $rightOnly[] = $fieldName;
+        continue;
+      }
+      if ($rightIsEmpty && !$leftIsEmpty) {
+        $leftOnly[] = $fieldName;
+        continue;
+      }
+      if ($leftVal !== $rightVal) {
+        $different[] = $fieldName;
+      }
+    }
+
+    return new DiffResult($different, $leftOnly, $rightOnly);
+  }
+
+  public function equals(self $comparee, array $ignoring = []): bool {
+    foreach (static::FIELDS as $fieldName => $metadata) {
+      if ($this->$fieldName->get() !== $comparee->$fieldName->get()) {
+        if (!in_array($fieldName, $ignoring)) {
+          return FALSE;
+        }
+      }
+    }
+    return TRUE;
+  }
+
   public function isSupersetOf(RemoteObjectInterface $otherObject,
                                bool $emptyValuesAreOk = FALSE,
                                bool $ignoreModifiedDate = FALSE): bool {
+
+    $diffResult = self::diff($this, $otherObject);
+    if (count($diffResult->getRightOnlyFields())
+      || count($diffResult->getDifferentFields())) {
+      return FALSE;
+    }
+    return TRUE;
+
     $recursiveCompare =
       function ($smallSet, $bigSet)
            use (&$recursiveCompare, $emptyValuesAreOk, $ignoreModifiedDate) {
@@ -263,6 +307,10 @@ abstract class Base implements RemoteObjectInterface {
       $this->$name = new Field($name, $this, $metadata);
     }
     $this->_isTouched = FALSE;
+  }
+
+  protected function getFieldValueForCompare(string $fieldName) {
+    return $this->$fieldName->get();
   }
 
 }
