@@ -39,7 +39,7 @@ interface RemoteObjectInterface {
 
   public function isTouched(): bool;
 
-  public function isSupersetOf(RemoteObjectInterface $otherObject, bool $emptyValuesAreOk = FALSE, bool $ignoreModifiedDate = FALSE): bool;
+  public function isSupersetOf($otherObject, array $ignoring): bool;
 
   public function delete();
 

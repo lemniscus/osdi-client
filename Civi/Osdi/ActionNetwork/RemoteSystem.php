@@ -194,7 +194,14 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       }
     }
 
-    if (!empty($savedObject) && !$savedObject->isSupersetOf($objectBeforeSaving, TRUE, TRUE)) {
+    if (empty($savedObject)) {
+      return new SaveResult($objectToSave, $statusCode, $statusMessage, $context);
+    }
+
+    if (!$savedObject->isSupersetOf(
+      $objectBeforeSaving,
+      ['identifiers', 'createdDate', 'modifiedDate']
+    )) {
       $statusCode = SaveResult::ERROR;
       $statusMessage = E::ts(
         'Some or all of the %1 object could not be saved.',
@@ -203,6 +210,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       $context = [
         'sent' => $objectBeforeSaving->getAll(),
         'response' => $savedObject->getAllOriginal(),
+        'diff' => $objectBeforeSaving::diff($objectBeforeSaving, $savedObject),
       ];
     }
 

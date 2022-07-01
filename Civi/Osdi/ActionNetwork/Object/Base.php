@@ -3,6 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\Object;
 
 use Civi\Osdi\Exception\EmptyResultException;
+use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
@@ -232,41 +233,30 @@ abstract class Base implements RemoteObjectInterface {
     return TRUE;
   }
 
-  public function isSupersetOf(RemoteObjectInterface $otherObject,
-                               bool $emptyValuesAreOk = FALSE,
-                               bool $ignoreModifiedDate = FALSE): bool {
+  public function isSupersetOf($otherObject, array $ignoring): bool {
+    if (get_class($this) !== get_class($otherObject)) {
+      throw new InvalidArgumentException('Object passed to ' . __FUNCTION__
+        . ' must be of the same class');
+    }
 
-    $diffResult = self::diff($this, $otherObject);
-    if (count($diffResult->getRightOnlyFields())
-      || count($diffResult->getDifferentFields())) {
+    $diffResult = static::diff($this, $otherObject);
+    if (array_diff($diffResult->getRightOnlyFields(), $ignoring)) {
       return FALSE;
     }
+
+    $different = array_diff($diffResult->getDifferentFields(), $ignoring);
+    foreach ($different as $fieldName) {
+      if (!is_array($thisValue = $this->$fieldName->get())) {
+        return FALSE;
+      }
+      if (!is_array($otherValue = $otherObject->$fieldName->get())) {
+        return FALSE;
+      }
+      if (array_diff($thisValue, $otherValue)) {
+        return FALSE;
+      }
+    }
     return TRUE;
-
-    $recursiveCompare =
-      function ($smallSet, $bigSet)
-           use (&$recursiveCompare, $emptyValuesAreOk, $ignoreModifiedDate) {
-        if (!is_array($smallSet) && !is_array($bigSet)) {
-          if ($emptyValuesAreOk && empty($smallSet)) {
-            return TRUE;
-          }
-          return $smallSet === $bigSet;
-        }
-        if (!is_array($smallSet) || !is_array($bigSet)) {
-          return FALSE;
-        }
-        foreach ($smallSet as $key => $value) {
-          if ($ignoreModifiedDate && 'modified_date' === $key) {
-            continue;
-          }
-          if (!$recursiveCompare($smallSet[$key], $bigSet[$key] ?? NULL)) {
-            return FALSE;
-          }
-        }
-        return TRUE;
-      };
-
-    return $recursiveCompare($otherObject->getAll(), $this->getAll());
   }
 
   protected function constructOwnUrl(): string {
