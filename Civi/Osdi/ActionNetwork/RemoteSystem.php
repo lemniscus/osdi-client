@@ -182,6 +182,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
         $objectBeforeSaving = clone $objectToSave;
         $savedObject = $objectToSave->save();
         $statusCode = SaveResult::SUCCESS;
+        $context = ['diff' => $objectBeforeSaving::diff($objectBeforeSaving, $savedObject)->toArray()];
       }
 
       catch (\Throwable $e) {
@@ -208,9 +209,9 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
         [1 => $objectBeforeSaving->getType()],
       );
       $context = [
-        'sent' => $objectBeforeSaving->getAll(),
-        'response' => $savedObject->getAllOriginal(),
-        'diff' => $objectBeforeSaving::diff($objectBeforeSaving, $savedObject),
+        'sent' => $objectBeforeSaving->getArrayForCreate(),
+        'response' => $savedObject->getArrayForCreate(),
+        'diff' => $objectBeforeSaving::diff($objectBeforeSaving, $savedObject)->toArray(),
       ];
     }
 

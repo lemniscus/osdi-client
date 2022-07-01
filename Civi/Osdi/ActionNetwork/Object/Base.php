@@ -219,7 +219,7 @@ abstract class Base implements RemoteObjectInterface {
       }
     }
 
-    return new DiffResult($different, $leftOnly, $rightOnly);
+    return new DiffResult($left, $right, $different, $leftOnly, $rightOnly);
   }
 
   public function equals(self $comparee, array $ignoring = []): bool {
