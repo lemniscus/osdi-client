@@ -169,37 +169,35 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     return $endpoint->delete();
   }
 
-  public function trySave(RemoteObjectInterface $objectToSave): SaveResult {
+  public function trySave(RemoteObjectInterface $objectBeingSaved): SaveResult {
     $statusCode = $statusMessage = $context = NULL;
 
-    if ('osdi:people' === $objectToSave->getType()) {
-      /** @var \Civi\Osdi\ActionNetwork\Object\Person $objectToSave */
-      [$statusCode, $statusMessage, $context] = $objectToSave->checkForEmailAddressConflict();
+    if ('osdi:people' === $objectBeingSaved->getType()) {
+      /** @var \Civi\Osdi\ActionNetwork\Object\Person $objectBeingSaved */
+      [$statusCode, $statusMessage, $context] = $objectBeingSaved->checkForEmailAddressConflict();
     }
 
     if ($statusCode !== SaveResult::ERROR) {
       try {
-        $objectBeforeSaving = clone $objectToSave;
-        $savedObject = $objectToSave->save();
+        $objectBeforeSaving = clone $objectBeingSaved;
+        $changesBeingSaved = $objectBeingSaved->diffChanges()->toArray();
+        $objectBeingSaved->save();
         $statusCode = SaveResult::SUCCESS;
-        $context = ['diff' => $objectBeforeSaving::diff($objectBeforeSaving, $savedObject)->toArray()];
+        $context = ['diff' => $changesBeingSaved];
       }
 
       catch (\Throwable $e) {
         $statusCode = SaveResult::ERROR;
         $statusMessage = $e->getMessage();
         $context = [
-          'object' => $objectBeforeSaving,
+          'object' => $objectBeingSaved,
           'exception' => $e,
         ];
+        return new SaveResult(NULL, $statusCode, $statusMessage, $context);
       }
     }
 
-    if (empty($savedObject)) {
-      return new SaveResult($objectToSave, $statusCode, $statusMessage, $context);
-    }
-
-    if (!$savedObject->isSupersetOf(
+    if (!$objectBeingSaved->isSupersetOf(
       $objectBeforeSaving,
       ['identifiers', 'createdDate', 'modifiedDate']
     )) {
@@ -209,13 +207,14 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
         [1 => $objectBeforeSaving->getType()],
       );
       $context = [
+        'intended changes' => $changesBeingSaved,
         'sent' => $objectBeforeSaving->getArrayForCreate(),
-        'response' => $savedObject->getArrayForCreate(),
-        'diff' => $objectBeforeSaving::diff($objectBeforeSaving, $savedObject)->toArray(),
+        'response' => $objectBeingSaved->getArrayForCreate(),
+        'diff with left=sent, righ=response' => $objectBeforeSaving::diff($objectBeforeSaving, $objectBeingSaved)->toArray(),
       ];
     }
 
-    return new SaveResult($objectToSave, $statusCode, $statusMessage, $context);
+    return new SaveResult($objectBeingSaved, $statusCode, $statusMessage, $context);
   }
 
   /**

@@ -222,6 +222,11 @@ abstract class Base implements RemoteObjectInterface {
     return new DiffResult($left, $right, $different, $leftOnly, $rightOnly);
   }
 
+  public function diffChanges(): DiffResult {
+    $originalThis = new static($this->_system, $this->_resource);
+    return static::diff($originalThis, $this);
+  }
+
   public function equals(self $comparee, array $ignoring = []): bool {
     foreach (static::FIELDS as $fieldName => $metadata) {
       if ($this->$fieldName->get() !== $comparee->$fieldName->get()) {

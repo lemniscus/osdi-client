@@ -24,6 +24,6 @@ interface RemoteSystemInterface {
 
   public function save(RemoteObjectInterface $osdiObject): HalResource;
 
-  public function trySave(RemoteObjectInterface $objectToSave): SaveResult;
+  public function trySave(RemoteObjectInterface $objectBeingSaved): SaveResult;
 
 }

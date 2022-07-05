@@ -63,8 +63,8 @@ class DiffResult {
       + $this->getRightOnlyFields();
     foreach ($fieldNames as $fieldName) {
       $return[$fieldName] = [
-        $this->left->$fieldName->get(),
-        $this->right->$fieldName->get(),
+        'L' => $this->left->$fieldName->get(),
+        'R' => $this->right->$fieldName->get(),
       ];
     }
     return $return;
