@@ -520,4 +520,15 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
     self::assertEquals(5, $result->getTotalDifferenceCount());
   }
 
+  public function testDiffIgnoresCaseInEmail() {
+    $personA = $this->makeUnsavedPersonWithAllFields();
+    $personB = $this->makeUnsavedPersonWithAllFields();
+    $personB->emailAddress->set(strtoupper($personA->emailAddress->get()));
+
+    self::assertNotEquals($personA->emailAddress->get(), $personB->emailAddress->get());
+
+    $result = \Civi\Osdi\ActionNetwork\Object\Person::diff($personA, $personB);
+    self::assertEquals(0, $result->getTotalDifferenceCount());
+  }
+
 }

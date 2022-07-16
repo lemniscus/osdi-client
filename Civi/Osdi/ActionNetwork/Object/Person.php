@@ -131,10 +131,14 @@ class Person extends Base implements \Civi\Osdi\RemoteObjectInterface {
   }
 
   protected function getFieldValueForCompare(string $fieldName) {
-    if ('phoneNumber' !== $fieldName) {
-      return $this->$fieldName->get();
+    switch ($fieldName) {
+      case 'phoneNumber':
+        return self::normalizePhoneNumber($this->phoneNumber->get());
+
+      case 'emailAddress':
+        return strtolower($this->emailAddress->get());
     }
-    return self::normalizePhoneNumber($this->phoneNumber->get());
+    return $this->$fieldName->get();
   }
 
   public static function normalizePhoneNumber(?string $phoneNumber = ''): string {
