@@ -177,24 +177,27 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       [$statusCode, $statusMessage, $context] = $objectBeingSaved->checkForEmailAddressConflict();
     }
 
-    if ($statusCode !== SaveResult::ERROR) {
-      try {
-        $objectBeforeSaving = clone $objectBeingSaved;
-        $changesBeingSaved = $objectBeingSaved->diffChanges()->toArray();
-        $objectBeingSaved->save();
-        $statusCode = SaveResult::SUCCESS;
-        $context = ['diff' => $changesBeingSaved];
-      }
+    if ($statusCode === SaveResult::ERROR) {
+      return new SaveResult($objectBeingSaved, $statusCode, $statusMessage, $context);
+    }
 
-      catch (\Throwable $e) {
-        $statusCode = SaveResult::ERROR;
-        $statusMessage = $e->getMessage();
-        $context = [
-          'object' => $objectBeingSaved,
-          'exception' => $e,
-        ];
-        return new SaveResult(NULL, $statusCode, $statusMessage, $context);
-      }
+    $objectBeforeSaving = clone $objectBeingSaved;
+    $changesBeingSaved = $objectBeingSaved->diffChanges()->toArray();
+
+    try {
+      $objectBeingSaved->save();
+      $statusCode = SaveResult::SUCCESS;
+      $context = ['diff' => $changesBeingSaved];
+    }
+
+    catch (\Throwable $e) {
+      $statusCode = SaveResult::ERROR;
+      $statusMessage = $e->getMessage();
+      $context = [
+        'object' => $objectBeingSaved,
+        'exception' => $e,
+      ];
+      return new SaveResult(NULL, $statusCode, $statusMessage, $context);
     }
 
     if (!$objectBeingSaved->isSupersetOf(
