@@ -6,7 +6,7 @@ class OsdiSyncer extends Generic\AbstractEntity {
 
   public static function getFields($checkPermissions = TRUE) {
     $action = new Generic\BasicGetFieldsAction(
-      'OAuthProvider',
+      'Contact',
       __FUNCTION__,
       function () {
         return [];
