@@ -136,6 +136,28 @@ class CRM_OSDI_ActionNetwork_MatcherTest extends \PHPUnit\Framework\TestCase imp
     $this->assertEquals($emailAddress, $matchResult->getLocalObject()->loadOnce()->emailEmail->get());
   }
 
+  public function testLocalMatch_OrganizationWithEmailIsIgnored() {
+    [$emailAddress, $remotePerson, $contactId] =
+      F::setUpExactlyOneMatchByEmail_DifferentNames($this->system);
+
+    \Civi\Api4\Contact::create(FALSE)
+      ->addValue('contact_type', 'Organization')
+      ->addValue('organization_name', 'foo')
+      ->addChain('email', \Civi\Api4\Email::create(FALSE)
+        ->addValue('contact_id', '$id')
+        ->addValue('email', $emailAddress))
+      ->execute();
+    $emailCount = \Civi\Api4\Email::get(FALSE)
+      ->addWhere('email', '=', $emailAddress)
+      ->execute()->count();
+
+    self::assertGreaterThan(1, $emailCount);
+
+    $matchResult = $this->matcher->tryToFindMatchForRemotePerson($remotePerson);
+    $this->assertTrue($matchResult->gotMatch());
+    $this->assertEquals($emailAddress, $matchResult->getLocalObject()->loadOnce()->emailEmail->get());
+  }
+
   public function testLocalMatch_NoMatchingEmail() {
     [$contactId, $remotePerson] =
       F::setUpLocalAndRemotePeople_SameName_DifferentEmail($this->system);

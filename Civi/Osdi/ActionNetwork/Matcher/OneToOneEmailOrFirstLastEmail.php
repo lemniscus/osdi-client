@@ -195,8 +195,9 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
       'join' => LocalPerson::JOINS,
     ];
     $apiParams['where'] = [
-        ['email.email', '=', $email],
-        ['is_deleted', '=', 0],
+      ['email.email', '=', $email],
+      ['contact_type', '=', 'Individual'],
+      ['is_deleted', '=', 0],
     ];
     if ($firstName !== NULL) {
       $apiParams['where'][] = ['first_name', '=', trim($firstName)];
