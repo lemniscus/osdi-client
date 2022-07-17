@@ -161,7 +161,7 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
         NULL,
         $remotePerson,
         MatchResult::ERROR_INDETERMINATE,
-        'The email, first name and last name of the source CiviCRM contact are not unique in CiviCRM',
+        'The email, first name and last name of the source Action Network contact have more than one match in CiviCRM',
         $civiApi4Result);
     }
 
