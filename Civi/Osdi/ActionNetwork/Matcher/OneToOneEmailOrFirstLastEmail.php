@@ -161,7 +161,7 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
         NULL,
         $remotePerson,
         MatchResult::ERROR_INDETERMINATE,
-        'The email, first name and last name of the source Action Network contact have more than one match in CiviCRM',
+        'The email, first name and last name of the source Action Network person have more than one match in CiviCRM',
         $civiApi4Result);
     }
 
@@ -193,6 +193,7 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
       'checkPermissions' => FALSE,
       'select' => ['id'],
       'join' => LocalPerson::JOINS,
+      'groupBy' => ['id'],
     ];
     $apiParams['where'] = [
       ['email.email', '=', $email],
