@@ -121,11 +121,11 @@ class Person extends Base implements \Civi\Osdi\RemoteObjectInterface {
 
     $statusCode = SaveResult::ERROR;
     $statusMessage = 'The person cannot be saved because '
-      . 'there is a record on Action Network with a the same '
+      . 'there is a record on Action Network with the same '
       . 'email address and a different ID.';
     $context = [
-      'object' => $this,
-      'conflictingObject' => $peopleWithTheEmail->rawFirst(),
+      'object' => $this->getAll(),
+      'conflictingObject' => $peopleWithTheEmail->rawFirst()->getAll(),
     ];
     return [$statusCode, $statusMessage, $context];
   }
