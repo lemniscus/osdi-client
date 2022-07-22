@@ -136,7 +136,8 @@ class Person extends Base implements \Civi\Osdi\RemoteObjectInterface {
         return self::normalizePhoneNumber($this->phoneNumber->get());
 
       case 'emailAddress':
-        return strtolower($this->emailAddress->get());
+      case 'postalLocality':
+        return strtolower($this->$fieldName->get());
     }
     return $this->$fieldName->get();
   }
