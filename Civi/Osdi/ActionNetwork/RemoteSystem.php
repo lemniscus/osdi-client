@@ -210,10 +210,10 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
         [1 => $objectBeforeSaving->getType()],
       );
       $context = [
+        'diff with left=sent, right=response' => $objectBeforeSaving::diff($objectBeforeSaving, $objectBeingSaved)->toArray(),
         'intended changes' => $changesBeingSaved,
         'sent' => $objectBeforeSaving->getArrayForCreate(),
         'response' => $objectBeingSaved->getArrayForCreate(),
-        'diff with left=sent, right=response' => $objectBeforeSaving::diff($objectBeforeSaving, $objectBeingSaved)->toArray(),
       ];
     }
 
