@@ -64,11 +64,11 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
       'emailAddress' => 'testy@test.net',
       'emailStatus' => 'subscribed',
       'phoneNumber' => '12025551212',
-      'phoneStatus' => 'unsubscribed',
-      'postalStreet' => '1 Birch Ave',
-      'postalLocality' => 'Lisbon',
-      'postalCode' => '34455',
-      'postalRegion' => 'Delaware',
+      'phoneStatus' => 'subscribed',
+      'postalStreet' => '110 Flat St',
+      'postalLocality' => 'Accident',
+      'postalCode' => '21520',
+      'postalRegion' => 'MD',
       'postalCountry' => 'US',
       'languageSpoken' => 'de',
       'customFields' => ['foo' => 'bar'],
@@ -257,10 +257,20 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
 
   public function testPersonCreate_PseudoDelete() {
     // CREATE
-    $unsavedPerson = $this->makeUnsavedPersonWithFirstLastEmailPhone();
+    $unsavedPerson = $this->makeUnsavedPersonWithAllFields();
     $savedPerson = $unsavedPerson->save();
     $savedPersonUrl = $savedPerson->getUrlForRead();
     $savedPersonEmail = $savedPerson->emailAddress->get();
+
+    self::assertNotEquals('unsubscribed', $savedPerson->emailStatus->get());
+    self::assertNotEquals('unsubscribed', $savedPerson->phoneStatus->get());
+    self::assertNotEquals(NULL, $savedPerson->givenName->get());
+    self::assertNotEquals(NULL, $savedPerson->familyName->get());
+    self::assertNotEquals('en', $savedPerson->languageSpoken->get());
+    self::assertNotEquals(NULL, $savedPerson->postalStreet->get());
+    self::assertNotEquals(NULL, $savedPerson->postalLocality->get());
+    self::assertNotEquals(NULL, $savedPerson->postalCode->get());
+    self::assertNotEquals('KS', $savedPerson->postalRegion->get());
 
     // DELETE
     $savedPerson->delete();
@@ -275,7 +285,7 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
     self::assertEquals(NULL, $fetchedPerson->postalStreet->get());
     self::assertEquals(NULL, $fetchedPerson->postalLocality->get());
     self::assertEquals(NULL, $fetchedPerson->postalCode->get());
-    self::assertEquals(NULL, $fetchedPerson->postalRegion->get());
+    self::assertEquals('KS', $fetchedPerson->postalRegion->get());
     self::assertEquals('US', $fetchedPerson->postalCountry->get());
 
     $remotePeopleWithTheEmail = self::$system->find(

@@ -94,6 +94,7 @@ class Person extends Base implements \Civi\Osdi\RemoteObjectInterface {
     $this->languageSpoken->set('en');
     $this->postalStreet->set(NULL);
     $this->postalCode->set(NULL);
+    $this->postalRegion->set(NULL);
     $this->postalCountry->set(NULL);
 
     $this->save();
@@ -113,6 +114,11 @@ class Person extends Base implements \Civi\Osdi\RemoteObjectInterface {
 
     if (0 == $peopleWithTheEmail->rawCurrentCount()) {
       return [NULL, NULL, NULL];
+    }
+
+    if ($this->emailAddress->get() !==
+      $peopleWithTheEmail->rawFirst()->emailAddress->get()) {
+      throw new \Exception('Unexpected response from Action Network');
     }
 
     if ($this->getId() === $peopleWithTheEmail->rawFirst()->getId()) {
