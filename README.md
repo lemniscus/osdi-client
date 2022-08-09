@@ -68,9 +68,9 @@ Some organizations may use both CiviCRM and Action Network, and may want to copy
 
 ### RemoteObjectInterface<a name="remote-object"></a>
 
-RemoteObject classes represent records on AN that have API endpoints, also known as *resources* in AN parlance, like [People](https://actionnetwork.org/docs/v2/people) (a.k.a. activists), [Tags](https://actionnetwork.org/docs/v2/tags) and [Petition Signatures](https://actionnetwork.org/docs/v2/signatures). These classes handle CRUD operations on AN records.
+RemoteObject classes represent records on Action Network that have API endpoints, also known as *resources* in Action Network parlance, like [People](https://actionnetwork.org/docs/v2/people) (a.k.a. activists), [Tags](https://actionnetwork.org/docs/v2/tags) and [Petition Signatures](https://actionnetwork.org/docs/v2/signatures). These classes handle CRUD operations on Action Network records.
 
-RemoteObjects contain collections of `Civi\Osdi\ActionNetwork\Object\Field` objects. They depend on a [`RemoteSystem`](#remote-system) object to perform operations on AN.
+RemoteObjects contain collections of `Civi\Osdi\ActionNetwork\Object\Field` objects. They depend on a [`RemoteSystem`](#remote-system) object to perform operations on Action Network.
 
 Namespace: `Civi\Osdi\ActionNetwork\Object`
 
@@ -88,11 +88,11 @@ Namespace: `Civi\Osdi\LocalObject`
 
 Mapper classes map ("translate") [RemoteObjects](#remote-object) into [LocalObjects](#local-object) and vice versa.
 
-Mappers are necessary because data is almost always named and/or structured differently in Civi and AN. For example, when the built-in `Person` Mapper maps a `Person` LocalObject to a `Person` RemoteObject, it puts the Civi `first_name` field into the AN `given_name` field. A few other fields, similarly, can be copied from Civi to AN without any modification except the field name. But for some fields, the `Person` Mapper must transform a field's data from the Civi format to the AN format, as in the case of the `preferred_language` field in Civi, which uses a 5-character code, and the `languages_spoken` field in AN, which uses a 2-character code.
+Mappers are necessary because data is almost always named and/or structured differently in Civi and Action Network. For example, when the built-in `Person` Mapper maps a `Person` LocalObject to a `Person` RemoteObject, it puts the Civi `first_name` field into the Action Network `given_name` field. A few other fields, similarly, can be copied from Civi to Action Network without any modification except the field name. But for some fields, the `Person` Mapper must transform a field's data from the Civi format to the Action Network format, as in the case of the `preferred_language` field in Civi, which uses a 5-character code, and the `languages_spoken` field in Action Network, which uses a 2-character code.
 
-Some field mappings even require a bit of business logic: for example, the `Person` Mapper considers *both* the Civi `is_opt_out` field *and* the `do_not_email` field to determine whether an AN Person should be "subscribed" or "unsubscribed" to the mailing list.
+Some field mappings even require a bit of business logic: for example, the `Person` Mapper considers *both* the Civi `is_opt_out` field *and* the `do_not_email` field to determine whether an Action Network Person should be "subscribed" or "unsubscribed" to the mailing list.
 
-Some AN entities don't have exact analogs in Civi, and vice versa. In these cases a Mapper class codifies how to represent an entity from one system on the other. For example, the built-in `Outreach` Mapper turns AN [Outreaches](https://actionnetwork.org/docs/v2/outreaches) into Civi Activities. It is also an example of a Mapper that only works in one direction.
+Some Action Network entities don't have exact analogs in Civi, and vice versa. In these cases a Mapper class codifies how to represent an entity from one system on the other. For example, the built-in `Outreach` Mapper turns Action Network [Outreaches](https://actionnetwork.org/docs/v2/outreaches) into Civi Activities. It is also an example of a Mapper that only works in one direction.
 
 Mappers normally **do not** persist any changes; they return changed but unsaved objects to the consumer (normally a [SingleSyncer](#single-syncer)).
 
@@ -100,7 +100,7 @@ Namespace: `Civi\Osdi\ActionNetwork\Mapper`
 
 ### MatcherInterface<a name="matcher"></a>
 
-The role of Matcher classes is to take an object on one system and find its corresponding object (its "twin"), if one exists, on the other system. Matchers are relevant for entities that can be updated on the AN side, most notably People. They may not be needed for lightweight entities, like [Taggings](https://actionnetwork.org/docs/v2/taggings), which link a Person to a Tag and don't have much identity of their own.
+The role of Matcher classes is to take an object on one system and find its corresponding object (its "twin"), if one exists, on the other system. Matchers are relevant for entities that can be updated on the Action Network side, most notably People. They may not be needed for lightweight entities, like [Taggings](https://actionnetwork.org/docs/v2/taggings), which link a Person to a Tag and don't have much identity of their own.
 
 Namespace: `Civi\Osdi\ActionNetwork\Matcher`
 
@@ -110,7 +110,7 @@ Single-Syncer classes are responsible for syncing a single object on either syst
 
 A Single-Syncer may use a [Matcher](#matcher) to find an existing twin, and may create a new twin if one doesn't exist. It will normally use a [Mapper](#mapper) to copy data between the twins, then ask the mapped objects to save themselves.
 
-A Single-Syncer may keep track of twins, and may track their recent history. For example, a `Person` Single-Syncer may use `PersonSyncState` records as a way to remember what it has done previously, and use this information in the future to determine whether and in which direction to sync AN People with their Civi twins.
+A Single-Syncer may keep track of twins, and may track their recent history. For example, a `Person` Single-Syncer may use `PersonSyncState` records as a way to remember what it has done previously, and use this information in the future to determine whether and in which direction to sync Action Network People with their Civi twins.
 
 Namespace: `Civi\Osdi\ActionNetwork\Syncer`
 
