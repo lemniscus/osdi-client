@@ -106,7 +106,7 @@ Namespace: `Civi\Osdi\ActionNetwork\Matcher`
 
 ### SingleSyncerInterface<a name="single-syncer"></a>
 
-Single-Syncer classes are responsible for syncing a single object on either system with its doppelganger on the other system.
+Single-Syncer classes are responsible for syncing a single object on either system with its doppelgänger on the other system.
 
 A Single-Syncer may use a [Matcher](#matcher) to find an existing twin, and may create a new twin if one doesn't exist. It will normally use a [Mapper](#mapper) to copy data between the twins, then ask the mapped objects to save themselves.
 
@@ -139,4 +139,4 @@ Some common things you might include in your custom extension:
 - A version of the `Person` LocalObject that includes custom fields specific to your organization.
 - A Mapper that works with your custom `Person` LocalObject.
 - A Matcher that works with your custom `Person` LocalObject.
-- A new RemoteOject, LocalObject, Matcher, Mapper and Syncer to sync an entity type that this extension doesn't yet handle; for example, Contributions/[Donations](https://actionnetwork.org/docs/v2/donations). Depending on the complexity of the entities, some of these new classes may be extended from existing base classes with very little new code.
+- A new RemoteObject, LocalObject, Matcher, Mapper and Syncer to sync an entity type that this extension doesn't yet handle; for example, Contributions/[Donations](https://actionnetwork.org/docs/v2/donations). Depending on the complexity of the entities, some of these new classes may be extended from existing base classes with very little new code.
