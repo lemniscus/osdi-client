@@ -18,12 +18,15 @@ class Tag extends Base implements LocalObjectInterface {
   ];
 
   public function save(): self {
-    $id = \Civi\Api4\Tag::save(FALSE)->addRecord([
+    $returnedRecord = \Civi\Api4\Tag::save(FALSE)->addRecord([
       'id' => $this->getId(),
       'name' => $this->name->get(),
-    ])->execute()->first()['id'];
+    ])->execute()->first();
 
-    $this->id->load($id);
+    $this->id->load($returnedRecord['id']);
+    $this->name->load($returnedRecord['name']);
+
+    $this->isLoaded = TRUE;
 
     return $this;
   }

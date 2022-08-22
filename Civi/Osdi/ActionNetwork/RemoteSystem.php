@@ -6,11 +6,11 @@ namespace Civi\Osdi\ActionNetwork;
 use Civi\Osdi\ActionNetwork\Object\Person;
 use Civi\Osdi\ActionNetwork\Object\Tag;
 use Civi\Osdi\ActionNetwork\Object\Tagging;
-use Civi\Osdi\RemoteObjectInterface;
-use CRM_OSDI_ExtensionUtil as E;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\SaveResult;
+use Civi\Osdi\RemoteObjectInterface;
+use Civi\Osdi\Result\Save;
+use CRM_OSDI_ExtensionUtil as E;
 use GuzzleHttp\Client;
 use Jsor\HalClient\Exception\BadResponseException;
 use Jsor\HalClient\HalClient;
@@ -21,15 +21,9 @@ use Jsor\HalClient\HttpClient\Guzzle6HttpClient;
 
 class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
-  /**
-   * @var \Jsor\HalClient\HalClientInterface
-   */
-  private $client;
+  private HalClientInterface $client;
 
-  /**
-   * @var \CRM_OSDI_BAO_SyncProfile
-   */
-  private $systemProfile;
+  private \CRM_OSDI_BAO_SyncProfile $systemProfile;
 
   public function __construct(?\CRM_OSDI_BAO_SyncProfile $systemProfile,
                               ?HalClientInterface $client = NULL) {
@@ -90,40 +84,12 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
   }
 
   /**
-   * @deprecated
-   */
-  public function fetchById(string $type, string $id): RemoteObjectInterface {
-    if (0 === strlen($id)) {
-      throw new InvalidArgumentException("No ID supplied to fetchById");
-    }
-    $endpoint = $this->getEndpointFor($type, $id);
-    try {
-      return $this->makeOsdiObject($type, $endpoint->get());
-    }
-    catch (BadResponseException $e) {
-      if (404 === $e->getCode()) {
-        throw new EmptyResultException('Nothing found at "%s"', $endpoint->getHref());
-      }
-      throw $e;
-    }
-  }
-
-  /**
-   * @deprecated
-   */
-  public function fetchPersonById(string $id): Person {
-    $person = new Person($this);
-    $person->setId($id);
-    return $person->load();
-  }
-
-  /**
    * @param string $objectType such as 'osdi:people'
    * @param array $criteria
    *   [[$key, $operator, $value], [$key, $operator, $value]...]
    *   where $operator is 'eq', 'lt', or 'gt'
    */
-  public function find(string $objectType, array $criteria): \Civi\Osdi\ResultCollection {
+  public function find(string $objectType, array $criteria): RemoteFindResult {
     $entitiesThatSupportOData = ['osdi:people', 'osdi:signatures', 'osdi:outreaches'];
     if (!in_array($objectType, $entitiesThatSupportOData)) {
       throw new InvalidArgumentException(
@@ -146,13 +112,13 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     $query = implode(' and ', $filterClauses);
     $href = $endpoint->getHref() . "?filter=$query";
     $endPointWithQuery = $this->linkify($href);
-    return new ResultCollection($this, $objectType, $endPointWithQuery);
+    return new RemoteFindResult($this, $objectType, $endPointWithQuery);
   }
 
   public function save(RemoteObjectInterface $osdiObject): HalResource {
-    if ($id = $osdiObject->getId()) {
+    if ($osdiObject->getId()) {
       try {
-        $result = $this->updateOnRemoteSystem($osdiObject, $id);
+        $result = $this->updateOnRemoteSystem($osdiObject);
       }
       catch (\Throwable $e) {
         $result = $this->createOnRemoteSystem($osdiObject);
@@ -169,7 +135,10 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     return $endpoint->delete();
   }
 
-  public function trySave(RemoteObjectInterface $objectBeingSaved): SaveResult {
+  /**
+   * @deprecated
+   */
+  public function trySave(RemoteObjectInterface $objectBeingSaved): Save {
     $statusCode = $statusMessage = $context = NULL;
 
     if ('osdi:people' === $objectBeingSaved->getType()) {
@@ -177,8 +146,8 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       [$statusCode, $statusMessage, $context] = $objectBeingSaved->checkForEmailAddressConflict();
     }
 
-    if ($statusCode === SaveResult::ERROR) {
-      return new SaveResult($objectBeingSaved, $statusCode, $statusMessage, $context);
+    if ($statusCode === Save::ERROR) {
+      return new Save($objectBeingSaved, $statusCode, $statusMessage, $context);
     }
 
     $objectBeforeSaving = clone $objectBeingSaved;
@@ -186,25 +155,25 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
     try {
       $objectBeingSaved->save();
-      $statusCode = SaveResult::SUCCESS;
+      $statusCode = Save::SUCCESS;
       $context = ['diff' => $changesBeingSaved];
     }
 
     catch (\Throwable $e) {
-      $statusCode = SaveResult::ERROR;
+      $statusCode = Save::ERROR;
       $statusMessage = $e->getMessage();
       $context = [
         'object' => $objectBeingSaved,
         'exception' => $e,
       ];
-      return new SaveResult(NULL, $statusCode, $statusMessage, $context);
+      return new Save(NULL, $statusCode, $statusMessage, $context);
     }
 
     if (!$objectBeingSaved->isSupersetOf(
       $objectBeforeSaving,
       ['identifiers', 'createdDate', 'modifiedDate']
     )) {
-      $statusCode = SaveResult::ERROR;
+      $statusCode = Save::ERROR;
       $statusMessage = E::ts(
         'Some or all of the %1 object could not be saved.',
         [1 => $objectBeforeSaving->getType()],
@@ -217,7 +186,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       ];
     }
 
-    return new SaveResult($objectBeingSaved, $statusCode, $statusMessage, $context);
+    return new Save($objectBeingSaved, $statusCode, $statusMessage, $context);
   }
 
   /**
@@ -229,20 +198,20 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
   /**
    * @param string $objectType
-   * @param string|null $id
+   *
    * @return \Jsor\HalClient\HalLink|null
    * @throws InvalidArgumentException
    */
-  private function getEndpointFor(string $objectType, string $id = NULL): ?HalLink {
+  private function getEndpointFor(string $objectType): ?HalLink {
     try {
-      return $this->linkify($this->constructUrlFor($objectType, $id));
+      return $this->linkify($this->constructUrlFor($objectType));
     }
     catch (\Throwable $e) {
       throw new InvalidArgumentException('Cannot get endpoint for "%s"', $objectType);
     }
   }
 
-  private function updateOnRemoteSystem(RemoteObjectInterface $osdiObject, string $id) {
+  private function updateOnRemoteSystem(RemoteObjectInterface $osdiObject) {
     $endpoint = $this->linkify($osdiObject->getUrlForUpdate());
     return $endpoint->put([], ['body' => $osdiObject->getArrayForUpdate()]);
   }
@@ -289,20 +258,19 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       'osdi:tags' => 'https://actionnetwork.org/api/v2/tags',
       'osdi:wrappers' => 'https://actionnetwork.org/api/v2/wrappers',
     ];
-    $url = $urlMap[$objectType] ?? NULL;
-    return $url;
+    return $urlMap[$objectType] ?? NULL;
   }
 
   /**
    * @param string $objectType
-   * @param string|null $id
+   *
    * @return string|null
    * @throws EmptyResultException
    */
-  private function constructUrlFor(string $objectType, string $id = NULL): ?string {
+  private function constructUrlFor(string $objectType): ?string {
     $url = $this->getEndPointHrefFor($objectType);
     if ($url) {
-      return $url . ($id ? "/$id" : '');
+      return $url;
     }
     throw new EmptyResultException('Could not find url for "%s"', $objectType);
   }

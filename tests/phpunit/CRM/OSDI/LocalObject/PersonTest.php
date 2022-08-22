@@ -119,8 +119,8 @@ class CRM_OSDI_LocalObject_PersonTest extends \PHPUnit\Framework\TestCase implem
     $id = \Civi\Api4\Contact::create(FALSE)
       ->addValue('first_name', 'Robyn')
       ->execute()->single()['id'];
-    $person = new \Civi\Osdi\LocalObject\Person($id);
-    self::assertFalse($person->isLoaded());
+    $person = Civi\Osdi\LocalObject\Person::fromId($id);
+    self::assertTrue($person->isLoaded());
     self::assertFalse($person->isTouched());
     $person->firstName->set('Robyn');
     self::assertTrue($person->isTouched());
@@ -130,7 +130,7 @@ class CRM_OSDI_LocalObject_PersonTest extends \PHPUnit\Framework\TestCase implem
     $id = \Civi\Api4\Contact::create(FALSE)
       ->addValue('first_name', 'Solange')
       ->execute()->single()['id'];
-    $person = new \Civi\Osdi\LocalObject\Person($id);
+    $person = \Civi\Osdi\LocalObject\Person::fromId($id);
     self::assertFalse($person->isAltered());
     $person->firstName->set('Beyonce');
     self::assertTrue($person->isAltered());
@@ -140,7 +140,7 @@ class CRM_OSDI_LocalObject_PersonTest extends \PHPUnit\Framework\TestCase implem
 
   public function testGetAllLoaded() {
     $contact = $this->createCookieCutterContact();
-    $person = new \Civi\Osdi\LocalObject\Person($contact['id']);
+    $person = Civi\Osdi\LocalObject\Person::fromId($contact['id']);
     $expected = [
       'id' => (string) $contact['id'],
       'createdDate' => $contact['created_date'],
@@ -174,7 +174,7 @@ class CRM_OSDI_LocalObject_PersonTest extends \PHPUnit\Framework\TestCase implem
 
   public function testGetAll() {
     $contact = $this->createCookieCutterContact();
-    $person = new \Civi\Osdi\LocalObject\Person($contact['id']);
+    $person = \Civi\Osdi\LocalObject\Person::fromId($contact['id']);
     $person->lastName->set('MONSTER');
     $person->addressStateProvinceId->set(1001);
 
@@ -186,21 +186,21 @@ class CRM_OSDI_LocalObject_PersonTest extends \PHPUnit\Framework\TestCase implem
         ->execute()->single()['modified_date'],
       'firstName' => 'Cookie',
       'lastName' => 'MONSTER',
-      'isOptOut' => '',
-      'doNotEmail' => '',
-      'doNotSms' => '',
+      'isOptOut' => FALSE,
+      'doNotEmail' => FALSE,
+      'doNotSms' => FALSE,
       'preferredLanguage' => 'es_MX',
       'preferredLanguageName' => 'es_MX',
-      'isDeleted' => '',
+      'isDeleted' => FALSE,
       'emailEmail' => 'cookie@yum.net',
       'phonePhone' => '12023334444',
       'phonePhoneNumeric' => '12023334444',
       'addressStreetAddress' => '123 Test St',
       'addressCity' => 'Licking',
-      'addressStateProvinceId' => '1001',
+      'addressStateProvinceId' => 1001,
       'addressStateProvinceIdAbbreviation' => 'AK',
       'addressPostalCode' => '65542',
-      'addressCountryId' => '1228',
+      'addressCountryId' => 1228,
       'addressCountryIdName' => 'US',
     ];
     $actual = $person->getAll();
@@ -219,7 +219,7 @@ class CRM_OSDI_LocalObject_PersonTest extends \PHPUnit\Framework\TestCase implem
 
     self::assertNotNull($p1->getId());
 
-    $p2 = new \Civi\Osdi\LocalObject\Person($p1->getId());
+    $p2 = Civi\Osdi\LocalObject\Person::fromId($p1->getid());
     $p2->load();
 
     self::assertEquals($p1->firstName->get(), $p2->firstName->get());
@@ -248,7 +248,7 @@ class CRM_OSDI_LocalObject_PersonTest extends \PHPUnit\Framework\TestCase implem
       ->addWhere('contact_id', '=', $cid)
       ->selectRowCount()->execute()->count());
 
-    $p1again = new \Civi\Osdi\LocalObject\Person($cid);
+    $p1again = Civi\Osdi\LocalObject\Person::fromId($cid);
     $p1again->emailEmail->set('cookie@yum.net');
     $p1again->phonePhone->set('12023334444');
     $p1again->addressStreetAddress->set('123 Test St');

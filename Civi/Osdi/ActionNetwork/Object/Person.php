@@ -3,7 +3,8 @@
 namespace Civi\Osdi\ActionNetwork\Object;
 
 use Civi\Osdi\Exception\InvalidOperationException;
-use Civi\Osdi\SaveResult;
+use Civi\Osdi\Result\Save;
+use Civi\Osdi\Result\Save as SaveResult;
 
 class Person extends Base implements \Civi\Osdi\RemoteObjectInterface {
 
@@ -125,7 +126,7 @@ class Person extends Base implements \Civi\Osdi\RemoteObjectInterface {
       return [NULL, NULL, NULL];
     }
 
-    $statusCode = SaveResult::ERROR;
+    $statusCode = Save::ERROR;
     $statusMessage = 'The person cannot be saved because '
       . 'there is a record on Action Network with the same '
       . 'email address and a different ID.';
@@ -153,6 +154,16 @@ class Person extends Base implements \Civi\Osdi\RemoteObjectInterface {
     $phoneNumber = preg_replace('/^1(\d{10})$/', '$1', $phoneNumber);
     $phoneNumber = preg_replace('/^(\d{3})(\d{3})(\d{4})$/', '($1) $2-$3', $phoneNumber);
     return $phoneNumber;
+  }
+
+  public function trySave(): Save {
+    [$statusCode, $statusMessage, $context] = $this->checkForEmailAddressConflict();
+
+    if ($statusCode === SaveResult::ERROR) {
+      return new SaveResult($this, $statusCode, $statusMessage, $context);
+    }
+
+    return parent::trySave();
   }
 
 }

@@ -52,7 +52,7 @@ class Field {
     if ($this->createOnly) {
       if ($this->bundle->getId()) {
         throw new InvalidOperationException('Field "%s" is not settable'
-          . 'on a %s which has an id', $this->name, get_class($this->bundle));
+          . ' on a %s which has an id', $this->name, get_class($this->bundle));
       }
     }
     $this->newValue = $value;
@@ -70,13 +70,13 @@ class Field {
     if ($this->isTouched) {
       return $this->newValue;
     }
-    return $this->restoreNull($this->getOriginal());
+    return $this->restoreNull($this->getAsLoaded());
   }
 
   /**
    * @return string|array|null
    */
-  public function getOriginal() {
+  public function getAsLoaded() {
     if ($resource = $this->bundle->getResource()) {
       $val = $resource->getProperty($this->path[0]) ?? NULL;
       for ($i = 1; $i < count($this->path); $i++) {
@@ -92,12 +92,12 @@ class Field {
    */
   public function getWithNullPreparedForUpdate() {
     if (!$this->isTouched) {
-      return $this->getOriginal();
+      return $this->getAsLoaded();
     }
     if (!$this->mungeNulls) {
       return $this->get();
     }
-    if (is_null($this->newValue) && !is_null($this->getOriginal())) {
+    if (is_null($this->newValue) && !is_null($this->getAsLoaded())) {
       return $this->bundle::NULL_CHAR;
     }
     return $this->newValue;
@@ -112,11 +112,11 @@ class Field {
   }
 
   public function isAltered(): bool {
-    return $this->isTouched && $this->newValue !== $this->getOriginal();
+    return $this->isTouched && $this->newValue !== $this->getAsLoaded();
   }
 
   public function isAlteredLoose(): bool {
-    return $this->isTouched && $this->newValue != $this->getOriginal();
+    return $this->isTouched && $this->newValue != $this->getAsLoaded();
   }
 
   private function restoreNull($val) {

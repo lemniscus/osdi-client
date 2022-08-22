@@ -233,7 +233,8 @@ class Person extends Base implements LocalObjectInterface {
       if ("$joinName" === $selectParts[0]) {
         $mungedSelect = $keepJoinName ? $select : $selectParts[1];
         $record[$mungedSelect] = $this->$camelName->get();
-      } elseif (empty($joinName) && count($selectParts) === 1) {
+      }
+      elseif (empty($joinName) && count($selectParts) === 1) {
         $record[$select] = $this->$camelName->get();
       }
     }

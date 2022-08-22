@@ -30,10 +30,10 @@ class CRM_OSDI_ActionNetwork_TestUtils {
       ->addValue('entry_point', 'http://foo')
       ->addValue(
         'matcher',
-        \Civi\Osdi\ActionNetwork\Matcher\OneToOneEmailOrFirstLastEmail::class)
+        \Civi\Osdi\ActionNetwork\Matcher\Person\OneToOneEmailOrFirstLastEmail::class)
       ->addValue(
         'mapper',
-        \Civi\Osdi\ActionNetwork\Mapper\Person::class)
+        \Civi\Osdi\ActionNetwork\Mapper\Person\Basic::class)
       ->execute()->single();
   }
 

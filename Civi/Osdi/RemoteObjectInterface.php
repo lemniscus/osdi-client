@@ -2,12 +2,15 @@
 
 namespace Civi\Osdi;
 
+use Civi\Osdi\Result\Save as SaveResult;
 use Jsor\HalClient\HalResource;
 
 interface RemoteObjectInterface {
 
   public function __construct(RemoteSystemInterface $system,
                               ?HalResource $resource = NULL);
+
+  public static function loadFromId(string $id, RemoteSystemInterface $system);
 
   public function getAll(): array;
 
@@ -50,5 +53,7 @@ interface RemoteObjectInterface {
   public function loadOnce(): RemoteObjectInterface;
 
   public function save(): RemoteObjectInterface;
+
+  public function trySave(): SaveResult;
 
 }

@@ -3,15 +3,18 @@
 namespace Civi\Osdi;
 
 use Civi\Osdi\LocalObject\LocalObjectInterface;
+use Civi\Osdi\Result\Map as MapResult;
 
 interface MapperInterface {
 
-  public function mapRemoteToLocal(
+  public function mapOneWay(LocalRemotePair $pair): MapResult;
+
+  /*public function mapRemoteToLocal(
     RemoteObjectInterface $remotePerson,
     LocalObjectInterface $localPerson = NULL): LocalObjectInterface;
 
   public function mapLocalToRemote(
     LocalObjectInterface $localPerson,
-    RemoteObjectInterface $remotePerson = NULL): RemoteObjectInterface;
+    RemoteObjectInterface $remotePerson = NULL): RemoteObjectInterface;*/
 
 }

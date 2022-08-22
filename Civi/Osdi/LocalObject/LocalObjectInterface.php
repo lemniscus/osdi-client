@@ -20,10 +20,16 @@ interface LocalObjectInterface {
 
   public function load(): LocalObjectInterface;
 
+  public static function fromId(string $id): self;
+
   public function loadOnce(): LocalObjectInterface;
 
   public function save(): LocalObjectInterface;
 
+  public function trySave(): \Civi\Osdi\Result\Save;
+
   public function delete(): ?\Civi\Api4\Generic\Result;
+
+  public function loadFromArray(array $array);
 
 }

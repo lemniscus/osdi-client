@@ -78,7 +78,7 @@ class Field {
   /**
    * @return string|array|null
    */
-  public function getLoaded(): ?string {
+  public function getAsLoaded(): ?string {
     return $this->loadedValue;
   }
 

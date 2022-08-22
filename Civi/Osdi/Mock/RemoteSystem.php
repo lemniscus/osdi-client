@@ -5,7 +5,7 @@ namespace Civi\Osdi\Mock;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Generic\OsdiPerson;
 use Civi\Osdi\RemoteObjectInterfaceOLD;
-use Civi\Osdi\ResultCollection;
+use Civi\Osdi\RemoteFindResult;
 use Jsor\HalClient\HalClient;
 use Jsor\HalClient\HalResource;
 
@@ -31,7 +31,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
    * @return array
    * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
-  public function find(string $objectType, array $criteria): ResultCollection {
+  public function find(string $objectType, array $criteria): RemoteFindResult {
     if ('osdi:people' === $objectType) {
       if ([['email', '=', 'testy@test.net']] === $criteria) {
         $osdiPersonArr = array_filter($this->database['osdi:people'], function ($person) use ($criteria) {
@@ -45,7 +45,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
           return FALSE;
         });
         $pageResource = new HalResource(new HalClient(''), [], [], $osdiPersonArr);
-        new ResultCollection($this, 'osdi:people', $pageResource);
+        new RemoteFindResult($this, 'osdi:people', $pageResource);
       }
     }
   }
@@ -103,7 +103,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     // TODO: Implement getEntryPoint() method.
   }
 
-  public function trySave(RemoteObjectInterfaceOLD $objectBeingSaved): \Civi\Osdi\SaveResult {
+  public function trySave(RemoteObjectInterfaceOLD $objectBeingSaved): \Civi\Osdi\Result\Save {
     // TODO: Implement trySave() method.
   }
 

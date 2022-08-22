@@ -138,10 +138,10 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
     $zoeChanged = $zoeSaved->save();
 
     self::assertNotEquals('abe@ba.ca',
-      $zoeChanged->emailAddress->getOriginal(),
+      $zoeChanged->emailAddress->getAsLoaded(),
       'We did not expect email change to be successful');
     self::assertEquals('Abe',
-      $zoeChanged->givenName->getOriginal(),
+      $zoeChanged->givenName->getAsLoaded(),
       'We expect name change to stick, even if email change is unsuccessful. Messy!');
   }
 
@@ -172,8 +172,8 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
     $savedPerson->emailAddress->set($email2);
     $savedPerson->givenName->set($name2);
     $this->createdPeople[] = $changedPerson = $savedPerson->save();
-    $changedPersonEmail = $changedPerson->emailAddress->getOriginal();
-    $changedPersonName = $changedPerson->givenName->getOriginal();
+    $changedPersonEmail = $changedPerson->emailAddress->getAsLoaded();
+    $changedPersonName = $changedPerson->givenName->getAsLoaded();
 
     // CLEAN UP BEFORE ASSERTING
     $changedPerson->emailAddress->set($email1);
@@ -197,7 +197,7 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
     self::assertEquals(\Civi\Osdi\ActionNetwork\Object\Person::class,
       get_class($savedPerson));
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $savedPerson */
-    self::assertEquals(\Civi\Osdi\SaveResult::SUCCESS, $result->getStatus());
+    self::assertEquals(\Civi\Osdi\Result\Save::SUCCESS, $result->getStatusCode());
     self::assertEquals($draftPerson->emailAddress->get(),
       $savedPerson->emailAddress->get());
     self::assertEquals($draftPerson->phoneNumber->get(),
@@ -221,13 +221,13 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
     $draftPerson2->givenName->set($name2);
     $savedPerson2 = $this->createdPeople[] = $draftPerson2->save();
 
-    self::assertEquals($email2, $savedPerson2->emailAddress->getOriginal());
+    self::assertEquals($email2, $savedPerson2->emailAddress->getAsLoaded());
 
     // CHANGE EMAIL
     $savedPerson2->emailAddress->set($email1);
     $saveResult = $system->trySave($savedPerson2);
 
-    self::assertEquals(\Civi\Osdi\SaveResult::ERROR, $saveResult->getStatus());
+    self::assertEquals(\Civi\Osdi\Result\Save::ERROR, $saveResult->getStatusCode());
   }
 
   public function testPersonCreate_Append() {
@@ -330,8 +330,8 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
     $unsavedRoberto->emailAddress->set('roberto.longname@muchlonger.com');
     $savedRoberto = $unsavedRoberto->save();
 
-    self::assertEquals('Rob', $savedRob->givenName->getOriginal());
-    self::assertEquals('Roberto', $savedRoberto->givenName->getOriginal());
+    self::assertEquals('Rob', $savedRob->givenName->getAsLoaded());
+    self::assertEquals('Roberto', $savedRoberto->givenName->getAsLoaded());
 
     // FIND
     $searchResults = self::$system->find('osdi:people', [

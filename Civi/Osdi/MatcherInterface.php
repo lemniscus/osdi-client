@@ -2,12 +2,14 @@
 
 namespace Civi\Osdi;
 
-use Civi\Osdi\LocalObject\Person as LocalPerson;
+use Civi\Osdi\Result\Match as MatchResult;
 
 interface MatcherInterface {
 
-  public function tryToFindMatchForLocalContact(LocalPerson $localPerson): MatchResult;
+  public function tryToFindMatchFor(LocalRemotePair $pair): MatchResult;
 
-  public function tryToFindMatchForRemotePerson(RemoteObjectInterface $remotePerson): MatchResult;
+  public function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult;
+
+  public function tryToFindMatchForRemoteObject(LocalRemotePair $pair): MatchResult;
 
 }

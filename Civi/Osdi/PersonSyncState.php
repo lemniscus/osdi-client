@@ -5,6 +5,7 @@ namespace Civi\Osdi;
 use Civi\Api4\Generic\DAOGetAction;
 use Civi\Api4\OsdiPersonSyncState;
 use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\LocalObject\LocalObjectInterface;
 
 class PersonSyncState {
 
@@ -40,7 +41,7 @@ class PersonSyncState {
   }
 
   public static function getForLocalPerson(
-    LocalObject\Person\N2F $localPerson,
+    LocalObjectInterface $localPerson,
     ?int $syncProfileId
   ): self {
     return self::getForLocalOrRemotePerson('contact_id', $localPerson, $syncProfileId);
@@ -110,6 +111,10 @@ class PersonSyncState {
     if (empty($this->getId())) {
       throw new InvalidArgumentException("Can't delete a %s without an id", static::class);
     }
+  }
+
+  public function toArray(): array {
+    return $this->data;
   }
 
   public function getId(): ?int {

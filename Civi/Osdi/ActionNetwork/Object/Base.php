@@ -7,6 +7,7 @@ use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
+use Civi\Osdi\Result\Save as SaveResult;
 use Jsor\HalClient\HalResource;
 
 abstract class Base implements RemoteObjectInterface {
@@ -125,7 +126,7 @@ abstract class Base implements RemoteObjectInterface {
     return $this;
   }
 
-  public static function loadFromId(string $id, RemoteSystemInterface $system) {
+  public static function loadFromId(string $id, RemoteSystemInterface $system): self {
     $object = new static($system);
     $object->setId($id);
     return $object->load();
@@ -160,6 +161,48 @@ abstract class Base implements RemoteObjectInterface {
     $this->load($this->_system->save($this));
     $this->initializeFields();
     return $this;
+  }
+
+  public function trySave(): SaveResult {
+    $statusCode = $statusMessage = $context = NULL;
+
+    $objectBeforeSaving = clone $this;
+    $changesBeingSaved = $this->diffChanges()->toArray();
+
+    try {
+      $this->save();
+      $statusCode = SaveResult::SUCCESS;
+      $context = ['diff' => $changesBeingSaved];
+    }
+
+    catch (\Throwable $e) {
+      $statusCode = SaveResult::ERROR;
+      $statusMessage = $e->getMessage();
+      $context = [
+        'object' => $objectBeforeSaving,
+        'exception' => $e,
+      ];
+      return new SaveResult(NULL, $statusCode, $statusMessage, $context);
+    }
+
+    if (!$this->isSupersetOf(
+      $objectBeforeSaving,
+      ['identifiers', 'createdDate', 'modifiedDate']
+    )) {
+      $statusCode = SaveResult::ERROR;
+      $statusMessage = E::ts(
+        'Some or all of the %1 object could not be saved.',
+        [1 => $objectBeforeSaving->getType()],
+      );
+      $context = [
+        'diff with left=sent, right=response' => self::diff($objectBeforeSaving, $this)->toArray(),
+        'intended changes' => $changesBeingSaved,
+        'sent' => $objectBeforeSaving->getArrayForCreate(),
+        'response' => $this->getArrayForCreate(),
+      ];
+    }
+
+    return new SaveResult($this, $statusCode, $statusMessage, $context);
   }
 
   public function touch() {

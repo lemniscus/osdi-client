@@ -1,6 +1,6 @@
 <?php
 
-use \Civi\Osdi\ActionNetwork\Object\Person;
+use Civi\Osdi\ActionNetwork\Object\Person;
 use Civi\Osdi\ActionNetwork\Object\Tag;
 use Civi\Osdi\ActionNetwork\Object\Tagging;
 use Civi\Test\HeadlessInterface;
