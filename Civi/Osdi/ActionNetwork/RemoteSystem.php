@@ -234,7 +234,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       $this->client = new HalClient($entryPoint, $httpClient);
     }
     if (empty($this->client->getHeader('OSDI-API-Token'))) {
-      $apiToken = $this->systemProfile ? $this->systemProfile->api_token : '';
+      $apiToken = isset($this->systemProfile) ? $this->systemProfile->api_token : '';
       if ($apiToken) {
         $this->client = $this->client->withHeader('OSDI-API-Token', $apiToken);
       }
