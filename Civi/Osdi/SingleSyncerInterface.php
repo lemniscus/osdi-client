@@ -17,18 +17,18 @@ interface SingleSyncerInterface {
 
   public function getMapper(): MapperInterface;
 
-  public function setMapper(MapperInterface $mapper): void;
+  public function setMapper(?MapperInterface $mapper): self;
 
   public function getMatcher(): MatcherInterface;
 
-  public function setMatcher(MatcherInterface $matcher): void;
+  public function setMatcher(?MatcherInterface $matcher): self;
 
   public function getRemoteSystem(): RemoteSystemInterface;
 
-  public function setRemoteSystem(RemoteSystemInterface $remoteSystem): void;
+  public function setRemoteSystem(RemoteSystemInterface $remoteSystem): self;
 
   public function getSyncProfile(): array;
 
-  public function setSyncProfile(array $syncProfile): void;
+  public function setSyncProfile(array $syncProfile): self;
 
 }

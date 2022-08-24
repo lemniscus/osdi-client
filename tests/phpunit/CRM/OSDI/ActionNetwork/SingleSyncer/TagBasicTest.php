@@ -13,8 +13,6 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
     \Civi\Test\HeadlessInterface,
     \Civi\Test\TransactionalInterface {
 
-  private static array $syncProfile;
-
   private static \Civi\Osdi\ActionNetwork\SingleSyncer\Tag\Basic $syncer;
 
   private static \Civi\Osdi\ActionNetwork\RemoteSystem $remoteSystem;
@@ -46,7 +44,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
   }
 
   public static function tearDownAfterClass(): void {
-    Civi::settings()->revert('osdi-client:tag-match');
+    Civi::cache('long')->delete('osdi-client:tag-match');
   }
 
   private static function makeNewSyncer(): \Civi\Osdi\ActionNetwork\SingleSyncer\Tag\Basic {

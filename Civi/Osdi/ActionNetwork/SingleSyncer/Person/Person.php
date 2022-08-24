@@ -392,31 +392,34 @@ class Person implements SingleSyncerInterface {
     return \Civi\Osdi\ActionNetwork\Object\Person::class;
   }
 
-  public function setMapper(MapperInterface $mapper): void {
+  public function setMapper(?MapperInterface $mapper): self {
     $this->mapper = $mapper;
+    return $this;
   }
 
   public function getMapper(): MapperInterface {
     return $this->mapper;
   }
 
-  public function setMatcher(MatcherInterface $matcher): void {
+  public function setMatcher(?MatcherInterface $matcher): self {
     $this->matcher = $matcher;
+    return $this;
   }
 
   public function getMatcher(): MatcherInterface {
     return $this->matcher;
   }
 
-  public function setRemoteSystem(RemoteSystemInterface $remoteSystem): void {
+  public function setRemoteSystem(RemoteSystemInterface $remoteSystem): self {
     $this->remoteSystem = $remoteSystem;
+    return $this;
   }
 
   public function getRemoteSystem(): RemoteSystemInterface {
     return $this->remoteSystem;
   }
 
-  public function setSyncProfile(array $syncProfile): void {
+  public function setSyncProfile(array $syncProfile): self {
     $this->syncProfile = $syncProfile;
     if (isset($syncProfile['id'])) {
       $this->syncProfileId = $syncProfile['id'];
@@ -427,6 +430,7 @@ class Person implements SingleSyncerInterface {
     if (isset($syncProfile['matcher'])) {
       $this->setMatcher(new $syncProfile['matcher']($this->getRemoteSystem()));
     }
+    return $this;
   }
 
   public function getSyncProfile(): array {
