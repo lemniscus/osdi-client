@@ -33,7 +33,7 @@ abstract class Base implements LocalObjectInterface {
     }
   }
 
-  public static function fromArray(array $array): Tag {
+  public static function fromArray(array $array): self {
     $object = new static();
     return $object->loadFromArray($array);
   }
