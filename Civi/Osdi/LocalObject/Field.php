@@ -98,4 +98,8 @@ class Field {
     return $this->isTouched && $this->newValue != $this->loadedValue;
   }
 
+  public function setBundle(LocalObjectInterface $bundle): void {
+    $this->bundle = $bundle;
+  }
+
 }

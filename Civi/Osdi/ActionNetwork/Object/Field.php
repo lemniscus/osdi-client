@@ -126,4 +126,8 @@ class Field {
     return $val;
   }
 
+  public function setBundle(RemoteObjectInterface $bundle) {
+    $this->bundle = $bundle;
+  }
+
 }

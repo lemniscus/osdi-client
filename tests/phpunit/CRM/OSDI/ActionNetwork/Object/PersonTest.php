@@ -541,4 +541,37 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
     self::assertEquals(0, $result->getTotalDifferenceCount());
   }
 
+  public function testClone() {
+    $original = $this->makeUnsavedPersonWithFirstLastEmailPhone();
+    $original->givenName->set('A');
+    $clone1 = clone $original;
+
+    self::assertFalse($original->isLoaded());
+    self::assertFalse($clone1->isLoaded());
+
+    self::assertTrue($original->isAltered());
+    self::assertTrue($clone1->isAltered());
+
+    self::assertEquals($original->givenName->get(), $clone1->givenName->get());
+
+    $clone1->givenName->set('B');
+
+    self::assertNotEquals($original->givenName->get(), $clone1->givenName->get());
+
+    $original->save();
+
+    self::assertTrue($original->isLoaded());
+    self::assertFalse($clone1->isLoaded());
+
+    $clone2 = clone $original;
+
+    self::assertFalse($original->isTouched());
+    self::assertFalse($clone2->isTouched());
+
+    $clone2->familyName->set('C');
+
+    self::assertFalse($original->isTouched());
+    self::assertTrue($clone2->isTouched());
+  }
+
 }

@@ -68,6 +68,39 @@ class CRM_OSDI_LocalObject_PersonTest extends \PHPUnit\Framework\TestCase implem
     self::assertEquals(123, $this->person->getId());
   }
 
+  public function testClone() {
+    $original = $this->person;
+    $original->firstName->set('A');
+    $clone1 = clone $original;
+
+    self::assertFalse($original->isLoaded());
+    self::assertFalse($clone1->isLoaded());
+
+    self::assertTrue($original->isAltered());
+    self::assertTrue($clone1->isAltered());
+
+    self::assertEquals($original->firstName->get(), $clone1->firstName->get());
+
+    $clone1->firstName->set('B');
+
+    self::assertNotEquals($original->firstName->get(), $clone1->firstName->get());
+
+    $original->save();
+
+    self::assertTrue($original->isLoaded());
+    self::assertFalse($clone1->isLoaded());
+
+    $clone2 = clone $original;
+
+    self::assertFalse($original->isTouched());
+    self::assertFalse($clone2->isTouched());
+
+    $clone2->lastName->set('C');
+
+    self::assertFalse($original->isTouched());
+    self::assertTrue($clone2->isTouched());
+  }
+
   public function testDelete() {
     $this->person->setId(\Civi\Api4\Contact::create(FALSE)
       ->addValue('first_name', 'Willow')
