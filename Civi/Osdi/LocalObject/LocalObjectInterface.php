@@ -12,6 +12,8 @@ interface LocalObjectInterface {
 
   public function getAllLoaded(): array;
 
+  public static function getCiviEntityName(): string;
+
   public function getId(): ?int;
 
   public function isAltered(): bool;
