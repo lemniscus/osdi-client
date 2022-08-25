@@ -88,7 +88,7 @@ abstract class Base implements LocalObjectInterface {
     return $this->isTouched;
   }
 
-  public function getAllLoaded(): array {
+  public function getAllAsLoaded(): array {
     $this->loadOnce();
     $return = [];
     foreach (static::FIELDS as $fieldName => $x) {

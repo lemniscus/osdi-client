@@ -10,7 +10,7 @@ interface LocalObjectInterface {
 
   public function getAll(): array;
 
-  public function getAllLoaded(): array;
+  public function getAllAsLoaded(): array;
 
   public static function getCiviEntityName(): string;
 
