@@ -79,7 +79,7 @@ class Person extends Base implements LocalObjectInterface {
     'phone.id' => 'ASC',
   ];
 
-  protected function getWhereClause(): array {
+  protected function getWhereClauseForLoad(): array {
     return [['id', '=', $this->getId()], ['contact_type', '=', 'Individual']];
   }
 
