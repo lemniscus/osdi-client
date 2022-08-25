@@ -8,8 +8,6 @@ use Civi\Osdi\Result\Save as SaveResult;
 
 abstract class Base implements LocalObjectInterface {
 
-  public const CIVI_ENTITY = '';
-
   public const FIELDS = [];
 
   public const JOINS = [];
@@ -144,7 +142,7 @@ abstract class Base implements LocalObjectInterface {
 
     if (!$result->count()) {
       throw new InvalidArgumentException('Unable to retrieve '
-        . static::CIVI_ENTITY . ' id %d', $id);
+        . static::getCiviEntityName() . ' id %d', $id);
     }
 
     $result = $result->last();
@@ -187,7 +185,7 @@ abstract class Base implements LocalObjectInterface {
   }
 
   private function makeApi4Action(string $action, bool $checkPermissions = FALSE): AbstractAction {
-    $api4Class = '\\Civi\\Api4\\' . static::CIVI_ENTITY;
+    $api4Class = '\\Civi\\Api4\\' . static::getCiviEntityName();
     return call_user_func([$api4Class, $action], $checkPermissions);
   }
 
@@ -220,6 +218,13 @@ abstract class Base implements LocalObjectInterface {
 
   public function getId(): ?int {
     return $this->id->get();
+  }
+
+  public static function getCiviEntityName(): string {
+    if (defined('static::CIVI_ENTITY')) {
+      return static::CIVI_ENTITY;
+    }
+    return '';
   }
 
 }
