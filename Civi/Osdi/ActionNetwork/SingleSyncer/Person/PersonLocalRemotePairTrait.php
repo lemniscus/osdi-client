@@ -6,7 +6,7 @@ use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\PersonSyncState;
-use Civi\Osdi\Result\Match;
+use Civi\Osdi\Result\Matched;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\Util;
 
@@ -58,10 +58,10 @@ trait PersonLocalRemotePairTrait {
   }
 
   protected function fillLocalRemotePairFromNewfoundMatch(
-    Match $matchResult,
+    Matched $matchResult,
     LocalRemotePair $pair
   ): LocalRemotePair {
-    if (Match::ORIGIN_LOCAL === $matchResult->getOrigin()) {
+    if (Matched::ORIGIN_LOCAL === $matchResult->getOrigin()) {
       $localObject = $matchResult->getOriginObject();
       $remoteObject = $matchResult->getMatch();
     }

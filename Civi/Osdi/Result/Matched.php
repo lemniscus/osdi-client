@@ -7,7 +7,7 @@ use Civi\Osdi\LocalObject\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\RemoteObjectInterface;
 
-class Match extends AbstractResult implements \Civi\Osdi\ResultInterface {
+class Matched extends AbstractResult implements \Civi\Osdi\ResultInterface {
 
   const ERROR_INDETERMINATE = 'provided criteria do not uniquely identify a record';
 
@@ -127,7 +127,7 @@ class Match extends AbstractResult implements \Civi\Osdi\ResultInterface {
     return $this->localObject;
   }
 
-  public function setLocalObject(?LocalObjectInterface $localObject): Match {
+  public function setLocalObject(?LocalObjectInterface $localObject): Matched {
     $this->localObject = $localObject;
     return $this;
   }
@@ -136,7 +136,7 @@ class Match extends AbstractResult implements \Civi\Osdi\ResultInterface {
     return $this->remoteObject;
   }
 
-  public function setRemoteObject(?RemoteObjectInterface $remoteObject): Match {
+  public function setRemoteObject(?RemoteObjectInterface $remoteObject): Matched {
     $this->remoteObject = $remoteObject;
     return $this;
   }

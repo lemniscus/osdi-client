@@ -62,10 +62,10 @@ class CRM_OSDI_ActionNetwork_Matcher_PersonTest extends \PHPUnit\Framework\TestC
     return $pair;
   }
 
-  private function assertMatchResultIsNotError_NoMatch_ZeroCount(\Civi\Osdi\Result\Match $matchResult): void {
+  private function assertMatchResultIsNotError_NoMatch_ZeroCount(\Civi\Osdi\Result\Matched $matchResult): void {
     $this->assertNull($matchResult->getMatch());
     $this->assertFalse($matchResult->isError());
-    $this->assertEquals(\Civi\Osdi\Result\Match::NO_MATCH, $matchResult->getStatusCode());
+    $this->assertEquals(\Civi\Osdi\Result\Matched::NO_MATCH, $matchResult->getStatusCode());
   }
 
   public function testRemoteMatch_OneToOneEmailSuccess() {
@@ -99,7 +99,7 @@ class CRM_OSDI_ActionNetwork_Matcher_PersonTest extends \PHPUnit\Framework\TestC
     $matchResult = $this->matcher->tryToFindMatchForLocalObject(self::makePair($contactId));
     $this->assertNull($matchResult->getMatch());
     $this->assertTrue($matchResult->isError());
-    $this->assertEquals(\Civi\Osdi\Result\Match::ERROR_INVALID_ID, $matchResult->getStatusCode());
+    $this->assertEquals(\Civi\Osdi\Result\Matched::ERROR_INVALID_ID, $matchResult->getStatusCode());
   }*/
 
   public function testRemoteMatch_NoEmail() {

@@ -174,7 +174,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
     $pair = $syncer->matchAndSyncIfEligible($localTag);
     $resultStack = $pair->getResultStack();
     $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
-    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\Match::class);
+    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\Matched::class);
     $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
     $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
     $syncResult = $resultStack->getLastOfType(Sync::class);
@@ -244,7 +244,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
     $pair = $syncer->matchAndSyncIfEligible($remoteTag);
     $resultStack = $pair->getResultStack();
     $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
-    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\Match::class);
+    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\Matched::class);
     $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
     $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
     $syncResult = $resultStack->getLastOfType(Sync::class);
@@ -323,14 +323,14 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
     $pair = $syncer->matchAndSyncIfEligible($remoteTag);
     $resultStack = $pair->getResultStack();
     $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
-    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\Match::class);
+    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\Matched::class);
     $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
     $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
     $syncResult = $resultStack->getLastOfType(Sync::class);
     $savedMatch = $syncResult->getState();
 
     self::assertEquals(FetchOldOrFindNewMatch::FOUND_NEW_MATCH, $fetchFindMatchResult->getStatusCode());
-    self::assertEquals(\Civi\Osdi\Result\Match::FOUND_MATCH, $matchResult->getStatusCode());
+    self::assertEquals(\Civi\Osdi\Result\Matched::FOUND_MATCH, $matchResult->getStatusCode());
     self::assertEquals(MapAndWrite::NO_CHANGES_TO_WRITE, $mapAndWriteResult->getStatusCode());
     self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
     self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());

@@ -5,7 +5,7 @@ namespace Civi\Osdi;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\LocalObject\LocalObjectInterface;
-use Civi\Osdi\Result\Match;
+use Civi\Osdi\Result\Matched;
 use Civi\Osdi\Result\ResultStack;
 use Civi\Osdi\Result\Sync;
 
@@ -24,7 +24,7 @@ class LocalRemotePair {
 
   private ?string $message;
   private ?PersonSyncState $personSyncState;
-  private ?Match $matchResult;
+  private ?Matched $matchResult;
   private ?Sync $syncResult;
 
   private $origin;
@@ -35,7 +35,7 @@ class LocalRemotePair {
       bool $isError = FALSE,
       string $message = NULL,
       $personSyncState = NULL,
-      Match $matchResult = NULL,
+      Matched $matchResult = NULL,
       Sync $syncResult = NULL) {
     $this->localObject = $localObject;
     $this->remoteObject = $remoteObject;
@@ -151,11 +151,11 @@ class LocalRemotePair {
     return $this;
   }
 
-  public function getMatchResult(): ?Match {
+  public function getMatchResult(): ?Matched {
     return $this->matchResult;
   }
 
-  public function setMatchResult(?Match $matchResult): self {
+  public function setMatchResult(?Matched $matchResult): self {
     $this->matchResult = $matchResult;
     return $this;
   }

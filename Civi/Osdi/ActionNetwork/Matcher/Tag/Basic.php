@@ -5,7 +5,7 @@ namespace Civi\Osdi\ActionNetwork\Matcher\Tag;
 use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\RemoteSystemInterface;
-use Civi\Osdi\Result\Match as MatchResult;
+use Civi\Osdi\Result\Matched as MatchResult;
 
 class Basic implements \Civi\Osdi\MatcherInterface {
 

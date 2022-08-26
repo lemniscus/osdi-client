@@ -11,7 +11,7 @@ use Civi\Osdi\PersonSyncState;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
-use Civi\Osdi\Result\Match;
+use Civi\Osdi\Result\Matched;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\SingleSyncerInterface;
 use Civi\Osdi\Util;
@@ -294,7 +294,7 @@ class Person implements SingleSyncerInterface {
       return $pair->setIsError(TRUE)->setMessage('error finding match');
     }
 
-    elseif (Match::NO_MATCH == $matchResult->getStatusCode()) {
+    elseif (Matched::NO_MATCH == $matchResult->getStatusCode()) {
       if (!$this->newRemoteShouldBeCreatedForLocal($pair)) {
         return $pair;
       }
@@ -325,7 +325,7 @@ class Person implements SingleSyncerInterface {
       return $pair->setIsError(TRUE)->setMessage('error finding match');
     }
 
-    elseif (Match::NO_MATCH == $matchResult->getStatusCode()) {
+    elseif (Matched::NO_MATCH == $matchResult->getStatusCode()) {
       $syncResult = $this->oneWayWriteFromRemote($pair);
       return $this->fillLocalRemotePairFromSyncResult($syncResult, $pair);
     }
