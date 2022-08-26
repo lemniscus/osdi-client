@@ -2,36 +2,20 @@
 
 namespace Civi\Osdi\ActionNetwork\Matcher\Tag;
 
-use Civi\Osdi\ActionNetwork\RemoteSystem;
+use Civi\Osdi\ActionNetwork\Matcher\AbstractMatcher;
 use Civi\Osdi\LocalRemotePair;
-use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\Match as MatchResult;
 
-class Basic implements \Civi\Osdi\MatcherInterface {
+class Basic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
-  private RemoteSystem $system;
-
-  public function __construct(RemoteSystemInterface $system) {
-    /** @var \Civi\Osdi\ActionNetwork\RemoteSystem $system */
-    $this->system = $system;
-  }
-
-  public function tryToFindMatchFor(LocalRemotePair $pair): MatchResult {
-    $result = $pair->isOriginLocal()
-      ? $this->tryToFindMatchForLocalObject($pair)
-      : $this->tryToFindMatchForRemoteObject($pair);
-    $pair->getResultStack()->push($result);
-    return $result;
-  }
-
-  public function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult {
+  protected function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult {
     $result = new MatchResult($pair->getOrigin());
     $result->setStatusCode($result::NO_MATCH);
     $result->setMessage('Finding tags on Action Network is not implemented');
     return $result;
   }
 
-  public function tryToFindMatchForRemoteObject(LocalRemotePair $pair): MatchResult {
+  protected function tryToFindMatchForRemoteObject(LocalRemotePair $pair): MatchResult {
     $result = new MatchResult($pair->getOrigin());
     $localClass = $pair->getLocalClass();
 

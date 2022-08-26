@@ -122,7 +122,10 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
 
     $mapResult = $this->getMapper()->mapOneWay($pair);
 
-    if ($mapResult::SKIPPED_ALL_CHANGES === $mapResult->getStatusCode()) {
+    if ($mapResult->isError()) {
+      $result->setStatusCode($result::ERROR)->setMessage($mapResult->getMessage());
+    }
+    elseif ($mapResult->isStatus($mapResult::SKIPPED_ALL_CHANGES)) {
       $result->setStatusCode(MapAndWriteResult::SKIPPED_CHANGES)
         ->setMessage($mapResult->getMessage());
     }
@@ -141,6 +144,14 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     return $result;
   }
 
+  protected function getSavedMatch(LocalRemotePair $pair) {
+    return NULL;
+  }
+
+  protected function saveSyncStateIfNeeded(LocalRemotePair $pair) {
+    return NULL;
+  }
+
   public function toLocalRemotePair(
     LocalObjectInterface $localObject = NULL,
     RemoteObjectInterface $remoteObject = NULL
@@ -151,7 +162,7 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     return $pair;
   }
 
-  protected function fetchOldOrFindNewMatch(LocalRemotePair $pair): OldOrNewMatchResult {
+  public function fetchOldOrFindNewMatch(LocalRemotePair $pair): OldOrNewMatchResult {
     if (!empty($pair->getTargetObject())) {
       throw new InvalidArgumentException('Parameter to %s must be a ' .
         '%s containing only the origin object', __FUNCTION__, LocalRemotePair::class);
@@ -215,5 +226,9 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
         ? MapAndWriteResult::SAVE_ERROR
         : MapAndWriteResult::WROTE_CHANGES);
   }
+
+  abstract protected function getLocalObjectClass(): string;
+
+  abstract protected function getRemoteObjectClass(): string;
 
 }

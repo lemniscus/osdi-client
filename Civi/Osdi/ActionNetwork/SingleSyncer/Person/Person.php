@@ -10,6 +10,7 @@ use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\PersonSyncState;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
+use Civi\Osdi\Result\FetchOldOrFindNewMatch as OldOrNewMatchResult;
 use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
 use Civi\Osdi\Result\Match;
 use Civi\Osdi\Result\Sync;
@@ -32,6 +33,46 @@ class Person implements SingleSyncerInterface {
 
   public function __construct(RemoteSystemInterface $remoteSystem) {
     $this->remoteSystem = $remoteSystem;
+  }
+
+  public function fetchOldOrFindNewMatch(LocalRemotePair $pair): OldOrNewMatchResult {
+    $result = new OldOrNewMatchResult();
+
+    $syncState = $pair->isOriginLocal()
+      ? PersonSyncState::getForLocalPerson($pair->getLocalObject(), $this->syncProfileId)
+      : PersonSyncState::getForRemotePerson($pair->getRemoteObject(), $this->syncProfileId);
+
+    if ($this->fillLocalRemotePairFromSyncState($pair, $syncState)) {
+      $result->setStatusCode($result::FETCHED_SAVED_MATCH);
+      $pair->getResultStack()->push($result);
+      return $result;
+    }
+
+    $matchResult = $this->getMatcher()->tryToFindMatchFor($pair);
+
+    if ($matchResult->isError()) {
+      $result->setStatusCode($result::ERROR)->setMessage('error finding match');
+    }
+
+    elseif (Match::NO_MATCH == $matchResult->getStatusCode()) {
+      $result->setStatusCode($result::NO_MATCH_FOUND);
+    }
+
+    else {
+      $pair->setTargetObject($matchResult->getMatch());
+      $result->setStatusCode($result::FOUND_NEW_MATCH);
+    }
+
+    $pair->getResultStack()->push($result);
+    return $result;
+  }
+
+  public function makeLocalObject($id = NULL): LocalObjectInterface {
+    // TODO: Implement makeLocalObject() method.
+  }
+
+  public function makeRemoteObject($id = NULL): RemoteObjectInterface {
+    // TODO: Implement makeRemoteObject() method.
   }
 
   public function matchAndSyncIfEligible($originObject): LocalRemotePair {
@@ -199,13 +240,14 @@ class Person implements SingleSyncerInterface {
     }
 
     if ('error finding match' === $pair->getMessage()) {
+      $matchResult = $pair->getResultStack()->getLastOfType(Match::class);
       return new Sync(
         NULL,
         $remoteObject,
         Sync::ERROR,
-        'Match error: ' . $pair->getMatchResult()->getMessage(),
+        'Match error: ' . $matchResult->getMessage(),
         NULL,
-        $pair->getMatchResult()->getContext()
+        $matchResult->getContext()
       );
     }
 
@@ -244,7 +286,6 @@ class Person implements SingleSyncerInterface {
     $remotePersonClass = $this->getRemoteObjectClass();
 
     \Civi\Osdi\Util::assertClass($localObject, $localPersonClass);
-    /** @var \Civi\Osdi\LocalObject\Person\N2F $localObject */
 
     $pair = $this->getOrCreateLocalRemotePairFromLocal($localObject);
 
@@ -356,20 +397,7 @@ class Person implements SingleSyncerInterface {
   }
 
   protected function newRemoteShouldBeCreatedForLocal(LocalRemotePair $pair): bool {
-    $localPerson = $pair->getLocalObject();
-    $localPerson->loadOnce();
-    $doNotEmail = $localPerson->doNotEmail->get();
-    $emailOnHold = $localPerson->emailOnHold->get();
-    $emailIsDummy = 'noemail@' === substr($localPerson->emailEmail->get(), 0, 8);
-    $doNotSms = $localPerson->doNotSms->get();
-
-    if ($doNotEmail || $emailIsDummy || $emailOnHold) {
-      if ($doNotSms || empty($localPerson->smsPhonePhone->get())) {
-        return TRUE;
-      }
-    }
-
-    return FALSE;
+    return TRUE;
   }
 
   protected function typeCheckLocalPerson(LocalObjectInterface $object): \Civi\Osdi\LocalObject\Person {

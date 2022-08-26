@@ -16,12 +16,20 @@ class Tagging extends Base implements LocalObjectInterface {
 
   protected Field $tagId;
 
-  protected ?LocalObjectInterface $localPerson = NULL;
+  protected ?LocalObjectInterface $person = NULL;
 
-  protected ?LocalObjectInterface $localTag = NULL;
+  protected ?LocalObjectInterface $tag = NULL;
 
   public static function getCiviEntityName(): string {
     return 'EntityTag';
+  }
+
+  public function getPerson(): ?LocalObjectInterface {
+    return $this->person;
+  }
+
+  public function getTag(): ?LocalObjectInterface {
+    return $this->tag;
   }
 
   public function isAltered(): bool {
@@ -44,7 +52,7 @@ class Tagging extends Base implements LocalObjectInterface {
   }
 
   public function save(): self {
-    if (is_null($p = $this->localPerson) || is_null($t = $this->localTag)) {
+    if (is_null($p = $this->person) || is_null($t = $this->tag)) {
       throw new InvalidArgumentException(
         'Unable to save %s: missing Person or Tag', __CLASS__);
     }
@@ -69,7 +77,7 @@ class Tagging extends Base implements LocalObjectInterface {
     if ('Contact' !== $localPerson->getCiviEntityName()) {
       throw new InvalidArgumentException();
     }
-    $this->localPerson = $localPerson;
+    $this->person = $localPerson;
     $this->touch();
     return $this;
   }
@@ -78,7 +86,7 @@ class Tagging extends Base implements LocalObjectInterface {
     if ('Tag' !== $localTag->getCiviEntityName()) {
       throw new InvalidArgumentException();
     }
-    $this->localTag = $localTag;
+    $this->tag = $localTag;
     $this->touch();
     return $this;
   }
@@ -88,8 +96,8 @@ class Tagging extends Base implements LocalObjectInterface {
   }
 
   protected function updateIdFieldsFromReferencedObjects() {
-    $contactId = is_null($this->localPerson) ? NULL : $this->localPerson->getId();
-    $tagId = is_null($this->localTag) ? NULL : $this->localTag->getId();
+    $contactId = is_null($this->person) ? NULL : $this->person->getId();
+    $tagId = is_null($this->tag) ? NULL : $this->tag->getId();
     $this->contactId->set($contactId);
     $this->tagId->set($tagId);
   }
@@ -98,10 +106,10 @@ class Tagging extends Base implements LocalObjectInterface {
     $newContactId = $this->contactId->get();
     $newTagId = $this->tagId->get();
 
-    if (is_null($this->localPerson) || ($newContactId !== $this->localPerson->getId())) {
+    if (is_null($this->person) || ($newContactId !== $this->person->getId())) {
       $this->setPerson(new Person($newContactId));
     }
-    if (is_null($this->localTag) || ($newTagId !== $this->localTag->getId())) {
+    if (is_null($this->tag) || ($newTagId !== $this->tag->getId())) {
       $this->setTag(new Tag($newTagId));
     }
   }

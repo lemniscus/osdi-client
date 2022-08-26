@@ -8,6 +8,7 @@ use Civi\Osdi\RemoteObjectInterface;
 
 class Tagging extends Base implements RemoteObjectInterface {
 
+  protected bool $_isAltered = FALSE;
   protected Person $person;
   protected Tag $tag;
 
@@ -49,7 +50,8 @@ class Tagging extends Base implements RemoteObjectInterface {
     return $this->_system->delete($this);
   }
 
-  public function setPerson(Person $person) {
+  public function setPerson(RemoteObjectInterface $person) {
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $person */
     if (!($url = $person->getUrlForRead())) {
       throw new InvalidArgumentException("We need to know the person's URL");
     }
@@ -60,11 +62,14 @@ class Tagging extends Base implements RemoteObjectInterface {
     $this->person = $person;
   }
 
-  public function setTag(Tag $tag) {
+  public function setTag(RemoteObjectInterface $tag) {
     if ($this->_id) {
       throw new InvalidOperationException('Modifying an existing tagging is not allowed');
     }
+    /** @var \Civi\Osdi\ActionNetwork\Object\Tag $tag */
     $this->tag = $tag;
+    $this->touch();
+    $this->_isAltered = TRUE;
   }
 
   public function getPerson(): ?Person {
@@ -81,6 +86,10 @@ class Tagging extends Base implements RemoteObjectInterface {
       $this->tag = new Tag($this->_system, $tagResource);
     }
     return $this->tag;
+  }
+
+  public function isAltered(): bool {
+    return $this->_isAltered || parent::isAltered();
   }
 
 }
