@@ -8,8 +8,4 @@ interface MatcherInterface {
 
   public function tryToFindMatchFor(LocalRemotePair $pair): MatchResult;
 
-  public function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult;
-
-  public function tryToFindMatchForRemoteObject(LocalRemotePair $pair): MatchResult;
-
 }

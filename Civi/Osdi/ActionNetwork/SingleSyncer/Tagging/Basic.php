@@ -2,31 +2,24 @@
 
 namespace Civi\Osdi\ActionNetwork\SingleSyncer\Tagging;
 
-use Civi\Osdi\ActionNetwork\Mapper\Person\Basic;
-use Civi\Osdi\ActionNetwork\Matcher\Person\OneToOneEmailOrFirstLastEmail;
 use Civi\Osdi\ActionNetwork\Object\Tagging as OsdiTaggingObject;
 use Civi\Osdi\ActionNetwork\RemoteSystem;
+use Civi\Osdi\ActionNetwork\SingleSyncer\AbstractSingleSyncer;
 use Civi\Osdi\ActionNetwork\SingleSyncer\Person as PersonSyncer;
 use Civi\Osdi\ActionNetwork\SingleSyncer\Tag\Basic as TagSyncer;
 use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\LocalObject\Tagging as LocalTaggingObject;
+use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Result\Sync;
+use Civi\Osdi\SingleSyncerInterface;
 
-class Basic {
+class Basic extends AbstractSingleSyncer {
 
-  private array $syncProfile;
+  protected static array $savedMatches = [];
 
-  private RemoteSystem $remoteSystem;
+  protected ?SingleSyncerInterface $personSyncer = NULL;
 
-  /**
-   * @var mixed
-   */
-  private $matcher;
-
-  private Basic $mapper;
-
-  private PersonSyncer $personSyncer;
-
-  private TagSyncer $tagSyncer;
+  protected ?SingleSyncerInterface $tagSyncer = NULL;
 
   const inputTypeActionNetworkTaggingObject = 'ActionNetwork:Tagging:Object';
   const inputTypeLocalEntityTagId = 'Local:EntityTag:Id';
@@ -35,74 +28,30 @@ class Basic {
     $this->remoteSystem = $remoteSystem;
   }
 
-  public function setRemoteSystem(RemoteSystem $system): void {
-    $this->remoteSystem = $system;
+  public function setPersonSyncer(SingleSyncerInterface $personSyncer): self {
+    $this->personSyncer = $personSyncer;
+    return $this;
   }
 
-  public function getRemoteSystem(): RemoteSystem {
-    return $this->remoteSystem;
+  public function setTagSyncer(SingleSyncerInterface $tagSyncer): self {
+    $this->tagSyncer = $tagSyncer;
+    return $this;
   }
 
-  public function getMapper() {
-    if (empty($this->mapper)) {
-      $mapperClass = $this->getSyncProfile()['mapper'];
-      $this->mapper = new $mapperClass($this->getRemoteSystem());
-    }
-    return $this->mapper;
-  }
-
-  public function setMapper($mapper): void {
-    $this->mapper = $mapper;
-  }
-
-  public function getMatcher(): OneToOneEmailOrFirstLastEmail {
-    if (empty($this->matcher)) {
-      $matcherClass = $this->getSyncProfile()['matcher'];
-      $this->matcher = new $matcherClass($this->getRemoteSystem());
-    }
-    return $this->matcher;
-  }
-
-  public function setMatcher($matcher): void {
-    $this->matcher = $matcher;
-  }
-
-  public function getSyncProfile(): array {
-    return $this->syncProfile;
-  }
-
-  public function setSyncProfile(array $syncProfile): void {
-    $this->syncProfile = $syncProfile;
-  }
-
-  private function getPersonSyncer(): PersonSyncer {
+  public function getPersonSyncer(): SingleSyncerInterface {
     if (empty($this->personSyncer)) {
-      $this->personSyncer = new PersonSyncer($this->getRemoteSystem());
-      $this->personSyncer->setSyncProfile($this->getSyncProfile());
+      $personSyncerClass = $this->getSyncProfile()['SingleSyncer']['Person'];
+      $this->personSyncer = new $personSyncerClass($this->getRemoteSystem());
     }
     return $this->personSyncer;
   }
 
-  private function getTagSyncer(): TagSyncer {
+  public function getTagSyncer(): SingleSyncerInterface {
     if (empty($this->tagSyncer)) {
-      $this->tagSyncer = new tagSyncer($this->getRemoteSystem());
-      $this->tagSyncer->setSyncProfile($this->getSyncProfile());
+      $tagSyncerClass = $this->getSyncProfile()['SingleSyncer']['Tag'];
+      $this->tagSyncer = new $tagSyncerClass($this->getRemoteSystem());
     }
     return $this->tagSyncer;
-  }
-
-  public function oneWaySync(string $inputType, $input): Sync {
-    if (self::inputTypeActionNetworkTaggingObject === $inputType) {
-      return $this->oneWaySyncRemoteObject($input);
-    }
-    if (self::inputTypeLocalEntityTagId === $inputType) {
-      return $this->oneWaySyncLocalById($input);
-    }
-    throw new InvalidArgumentException(
-      '%s is not a valid input type for ' . __CLASS__ . '::'
-      . __FUNCTION__,
-      $inputType
-    );
   }
 
   private function oneWaySyncLocalById($id): Sync {
@@ -215,66 +164,41 @@ class Basic {
     );
   }
 
-  private function saveMatch(array $localObject, \Civi\Osdi\RemoteObjectInterface $remoteObject): void {
-    $syncProfileId = self::getSyncProfile()['id'];
-    $inputTypeLocal = self::inputTypeLocalEntityTagId;
-    $inputTypeRemote = self::inputTypeActionNetworkTaggingObject;
+  private function saveMatch(LocalRemotePair $pair): void {
+    $syncProfileId = self::getSyncProfile()['id'] ?? 'null';
+    $localId = $pair->getLocalObject()->getId();
+    $remoteId = $pair->getRemoteObject()->getId();
 
-    $savedMatches = self::getAllSavedMatches();
-
-    $savedMatches[$syncProfileId][$inputTypeLocal][$localObject['id']] = [
-      'local' => $localObject,
-      'remote' => $remoteObject->getAllOriginal() + [
-        'id' => $remoteObject->getId(),
-      ],
-    ];
-
-    $savedMatches[$syncProfileId][$inputTypeRemote][$remoteObject->getId()] =
-      &$savedMatches[$syncProfileId][$inputTypeLocal][$localObject['id']];
-
-    \Civi::cache('short')->set('osdi-client:tagging-match', $savedMatches);
+    self::$savedMatches[$syncProfileId][$pair::ORIGIN_LOCAL][$localId] = $pair;
+    self::$savedMatches[$syncProfileId][$pair::ORIGIN_REMOTE][$remoteId] = $pair;
   }
 
-  /**
-   * @return array{local: array, remote: array}
-   */
-  public function getSavedMatch(string $inputType, $input, int $syncProfileId = NULL): array {
-    $syncProfileId = $syncProfileId ?? $this->getSyncProfile()['id'];
-    $savedMatches = self::getAllSavedMatches()[$syncProfileId] ?? [];
-
-    if (self::inputTypeLocalEntityTagId === $inputType) {
-      return $savedMatches[$inputType][$input] ?? [];
+  public function getSavedMatch(LocalRemotePair $pair): ?LocalRemotePair {
+    $profileId = $this->getSyncProfile()['id'] ?? 'null';
+    if (empty($objectId = $pair->getOriginObject()->getId())) {
+      return NULL;
     }
-
-    if (self::inputTypeActionNetworkTaggingObject === $inputType) {
-      return $savedMatches[$inputType][$input->getId()] ?? [];
-    }
-
-    throw new \Exception("\"$inputType\" is not a valid way to look up saved Tagging matches");
+    return self::$savedMatches[$profileId][$pair->getOrigin()][$objectId] ?? NULL;
   }
 
-  private function getAllSavedMatches(): array {
-    return \Civi::cache('short')->get('osdi-client:tagging-match', []);
+  protected function getLocalObjectClass(): string {
+    return LocalTaggingObject::class;
   }
 
-  /**
-   * @param \Civi\Osdi\Result\Save $saveResult
-   * @param $id
-   *
-   * @return void
-   */
-  private function logSyncLocalEntityTag(\Civi\Osdi\Result\Save $saveResult, $id): void {
-    $logContext = [];
-    if ($message = $saveResult->getMessage()) {
-      $logContext[] = $message;
+  protected function getRemoteObjectClass(): string {
+    return OsdiTaggingObject::class;
+  }
+
+  public function makeLocalObject($id = NULL): LocalTaggingObject {
+    return new LocalTaggingObject($id);
+  }
+
+  public function makeRemoteObject($id = NULL): OsdiTaggingObject {
+    $tagging = new OsdiTaggingObject($this->getRemoteSystem());
+    if ($id) {
+      $tagging->setId($id);
     }
-    if ($saveResult->isError()) {
-      $logContext[] = $saveResult->getContext();
-    }
-    \Civi::log()->debug(
-      "OSDI sync attempt: EntityTag $id: {$saveResult->getStatusCode()}",
-      $logContext,
-    );
+    return $tagging;
   }
 
 }

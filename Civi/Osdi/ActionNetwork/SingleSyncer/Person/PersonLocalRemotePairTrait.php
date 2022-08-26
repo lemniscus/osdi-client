@@ -4,8 +4,10 @@ namespace Civi\Osdi\ActionNetwork\SingleSyncer\Person;
 
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\LocalObject\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\PersonSyncState;
+use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\Result\Match;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\Util;
@@ -94,6 +96,16 @@ trait PersonLocalRemotePairTrait {
         ? 'error creating matching object' : 'created matching object')
       ->setPersonSyncState($syncResult->getState())
       ->setSyncResult($syncResult);
+    return $pair;
+  }
+
+  public function toLocalRemotePair(
+    LocalObjectInterface $localObject = NULL,
+    RemoteObjectInterface $remoteObject = NULL
+  ): LocalRemotePair {
+    $pair = new LocalRemotePair($localObject, $remoteObject);
+    $pair->setLocalClass($this->getLocalObjectClass());
+    $pair->setRemoteClass($this->getRemoteObjectClass());
     return $pair;
   }
 

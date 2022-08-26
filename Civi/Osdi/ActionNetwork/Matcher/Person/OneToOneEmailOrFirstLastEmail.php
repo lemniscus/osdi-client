@@ -72,6 +72,7 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
 
     $remoteSystemFindResult = $this->system->find('osdi:people',
       [['email', 'eq', $email]]);
+
     return $this->makeSingleOrZeroMatchResult(
       $localObject,
       $remoteSystemFindResult,

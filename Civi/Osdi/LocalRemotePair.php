@@ -24,25 +24,22 @@ class LocalRemotePair {
 
   private ?string $message;
   private ?PersonSyncState $personSyncState;
-  private ?Match $matchResult;
   private ?Sync $syncResult;
 
   private $origin;
 
   public function __construct(
       LocalObjectInterface $localObject = NULL,
-      RemoteObjectInterface $remoteObject = NULL,
-      bool $isError = FALSE,
-      string $message = NULL,
-      $personSyncState = NULL,
-      Match $matchResult = NULL,
-      Sync $syncResult = NULL) {
+    RemoteObjectInterface $remoteObject = NULL,
+    bool $isError = FALSE,
+    string $message = NULL,
+    $personSyncState = NULL,
+    Sync $syncResult = NULL) {
     $this->localObject = $localObject;
     $this->remoteObject = $remoteObject;
     $this->isError = $isError;
     $this->message = $message;
     $this->personSyncState = $personSyncState;
-    $this->matchResult = $matchResult;
     $this->syncResult = $syncResult;
     $this->resultStack = new ResultStack();
   }
@@ -113,6 +110,18 @@ class LocalRemotePair {
    *
    * @return $this
    */
+  public function setOriginObject($object): self {
+    if ($this->isOriginLocal()) {
+      return $this->setLocalObject($object);
+    }
+    return $this->setRemoteObject($object);
+  }
+
+  /**
+   * @param \Civi\Osdi\LocalObject\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface $object
+   *
+   * @return $this
+   */
   public function setTargetObject($object): self {
     if ($this->isOriginLocal()) {
       return $this->setRemoteObject($object);
@@ -149,10 +158,6 @@ class LocalRemotePair {
   public function setPersonSyncState($personSyncState) {
     $this->personSyncState = $personSyncState;
     return $this;
-  }
-
-  public function getMatchResult(): ?Match {
-    return $this->matchResult;
   }
 
   public function setMatchResult(?Match $matchResult): self {

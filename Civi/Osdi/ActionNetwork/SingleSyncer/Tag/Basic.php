@@ -36,11 +36,11 @@ class Basic extends AbstractSingleSyncer implements SingleSyncerInterface {
     return \Civi\Osdi\ActionNetwork\Object\Tag::class;
   }
 
-  protected function makeLocalObject($id = NULL): \Civi\Osdi\LocalObject\Tag {
+  public function makeLocalObject($id = NULL): LocalObjectInterface {
     return new \Civi\Osdi\LocalObject\Tag($id);
   }
 
-  protected function makeRemoteObject($id = NULL): \Civi\Osdi\ActionNetwork\Object\Tag {
+  public function makeRemoteObject($id = NULL): RemoteObjectInterface {
     $tag = new \Civi\Osdi\ActionNetwork\Object\Tag($this->getRemoteSystem());
     if ($id) {
       $tag->setId($id);

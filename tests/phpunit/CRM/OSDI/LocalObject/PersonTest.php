@@ -200,7 +200,7 @@ class CRM_OSDI_LocalObject_PersonTest extends \PHPUnit\Framework\TestCase implem
       'addressCountryIdName' => 'US',
     ];
 
-    $actual = $person->getAllLoaded();
+    $actual = $person->getAllAsLoaded();
     unset($actual['emailId'], $actual['phoneId'], $actual['addressId']);
     self::assertEquals($expected, $actual);
   }
