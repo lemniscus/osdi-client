@@ -13,10 +13,11 @@ class Basic implements \Civi\Osdi\MapperInterface {
     $targetObject = $pair->getTargetObject();
 
     if ($targetObject->getId() && $pair->isOriginLocal()) {
-      if ($targetObject->name->get() !== $originObject->name->get()) {
-        return $result->setStatusCode(MapResult::SKIPPED_ALL_CHANGES)
-          ->setMessage('Tag was changed in Civi, but tags cannot be altered on Action Network');
+      if ($targetObject->name->get() === $originObject->name->get()) {
+        return $result->setStatusCode(MapResult::SUCCESS);
       }
+      return $result->setStatusCode(MapResult::SKIPPED_ALL_CHANGES)
+        ->setMessage('Tag was changed in Civi, but tags cannot be altered on Action Network');
     }
 
     try {
