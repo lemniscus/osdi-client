@@ -114,13 +114,13 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     $result = new MapAndWriteResult();
 
     $originObject = $pair->getOriginObject();
-    $targetObject = $pair->getTargetObject();
 
     if ($originObject->getId()) {
       $originObject->loadOnce();
     }
 
     $mapResult = $this->getMapper()->mapOneWay($pair);
+    $targetObject = $pair->getTargetObject();
 
     if ($mapResult->isError()) {
       $result->setStatusCode($result::ERROR)->setMessage($mapResult->getMessage());
