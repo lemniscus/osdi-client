@@ -10,7 +10,7 @@ use CRM_OSDI_Fixture_PersonMatching as PersonMatchFixture;
 /**
  * @group headless
  */
-class CRM_OSDI_ActionNetwork_TaggingBasicTest extends PHPUnit\Framework\TestCase implements
+class CRM_OSDI_ActionNetwork_SingleSyncer_TaggingBasicTest extends PHPUnit\Framework\TestCase implements
     \Civi\Test\HeadlessInterface,
     \Civi\Test\TransactionalInterface {
 
@@ -18,9 +18,7 @@ class CRM_OSDI_ActionNetwork_TaggingBasicTest extends PHPUnit\Framework\TestCase
 
   private static \Civi\Osdi\ActionNetwork\RemoteSystem $remoteSystem;
 
-  private array $createdLocalObjectIds = [];
-
-  private array $createdRemoteObjects = [];
+  private static array $objectsToDelete = [];
 
   public function setUpHeadless() {
     return \Civi\Test::headless()->installMe(__DIR__)->apply();
@@ -41,30 +39,18 @@ class CRM_OSDI_ActionNetwork_TaggingBasicTest extends PHPUnit\Framework\TestCase
   }
 
   protected function tearDown(): void {
-    // tags cannot be deleted
-    foreach (['ppl', 'taggings'] as $type) {
-      if (array_key_exists($type, $this->createdRemoteObjects)) {
-        while ($object = array_pop($this->createdRemoteObjects[$type])) {
-          $object->delete();
-        }
-      }
-    }
-
-    foreach (array_keys($this->createdLocalObjectIds) as $entityType) {
-      while ($id = array_pop($this->createdLocalObjectIds[$entityType])) {
-        civicrm_api4($entityType, 'delete', [
-          'where' => [['id', '=', $id]],
-          'checkPermissions' => FALSE,
-        ]);
-      }
-    }
-
+    Civi::cache('long')->delete('osdi-client:tag-match');
+    Civi::cache('short')->delete('osdi-client:tagging-match');
     parent::tearDown();
   }
 
   public static function tearDownAfterClass(): void {
-    Civi::cache('long')->delete('osdi-client:tag-match');
-    Civi::cache('short')->delete('osdi-client:tagging-match');
+    foreach (self::$objectsToDelete as $object) {
+      try {
+        $object->delete();
+      }
+      catch (Throwable $e) {}
+    }
   }
 
   private static function makeNewSyncer(): \Civi\Osdi\ActionNetwork\SingleSyncer\Tagging\Basic {
@@ -103,6 +89,8 @@ class CRM_OSDI_ActionNetwork_TaggingBasicTest extends PHPUnit\Framework\TestCase
     $localTagging->setPerson($localPerson);
     $localTagging->setTag($localTag);
 
+    array_push(self::$objectsToDelete, $localPerson, $localTag, $localTagging);
+
     $pair = $taggingSyncer->toLocalRemotePair($localTagging);
     $pair->setOrigin($pair::ORIGIN_LOCAL);
 
@@ -111,6 +99,7 @@ class CRM_OSDI_ActionNetwork_TaggingBasicTest extends PHPUnit\Framework\TestCase
     // FIRST SYNC -- NO MATCH
 
     $taggingSyncer->oneWayMapAndWrite($pair);
+    self::$objectsToDelete[] = $pair->getTargetObject();
     $resultStack = $pair->getResultStack();
     $lastResult = $resultStack->last();
 
@@ -122,17 +111,20 @@ class CRM_OSDI_ActionNetwork_TaggingBasicTest extends PHPUnit\Framework\TestCase
 
     // SECOND SYNC -- WITH MATCH
 
+    $localPerson->emailEmail->set('taggingtest@test.net');
+
     $taggingSyncer->getPersonSyncer()->syncFromLocalIfNeeded($localPerson);
     $taggingSyncer->getTagSyncer()->matchAndSyncIfEligible($localTag);
 
     $taggingSyncer->oneWayMapAndWrite($pair);
+    self::$objectsToDelete[] = $pair->getTargetObject();
     $resultStack = $pair->getResultStack();
     $lastResult = $resultStack->last();
 
     self::assertEquals(MapAndWrite::class, get_class($lastResult));
     self::assertFalse($resultStack->lastIsError());
 
-    self::assertEquals(MapAndWrite::WROTE_CHANGES,
+    self::assertEquals(MapAndWrite::WROTE_NEW,
       $lastResult->getStatusCode());
 
     self::assertNotNull($pair->getRemoteObject()->getTag()->getId());
@@ -143,31 +135,73 @@ class CRM_OSDI_ActionNetwork_TaggingBasicTest extends PHPUnit\Framework\TestCase
   }
 
   public function testOneWayMapAndWrite_NoTwinGiven_FromRemote() {
-    $syncer = self::$syncer;
+    $taggingSyncer = self::$syncer;
+
+    $remotePerson = new Civi\Osdi\ActionNetwork\Object\Person(self::$remoteSystem);
+    $remotePerson->emailAddress->set('taggingtest@test.net');
+    $remotePerson->givenName->set('Test Tagging Sync');
+    $remotePerson->save();
+
     $remoteTag = new \Civi\Osdi\ActionNetwork\Object\Tag(self::$remoteSystem);
-    $remoteTag->name->set('testOneWayMapAndWrite_NoTwinGiven');
-    $pair = $syncer->toLocalRemotePair(NULL, $remoteTag);
+    $remoteTag->name->set('test tagging sync');
+    $remoteTag->save();
+
+    $remoteTagging = new \Civi\Osdi\ActionNetwork\Object\Tagging(self::$remoteSystem);
+    $remoteTagging->setPerson($remotePerson);
+    $remoteTagging->setTag($remoteTag);
+
+    $pair = $taggingSyncer->toLocalRemotePair(NULL, $remoteTagging);
     $pair->setOrigin($pair::ORIGIN_REMOTE);
 
     self::assertNull($pair->getLocalObject());
 
-    $syncer->oneWayMapAndWrite($pair);
+    // FIRST SYNC -- NO MATCH
+
+    $taggingSyncer->oneWayMapAndWrite($pair);
+    self::$objectsToDelete[] = $pair->getTargetObject();
     $resultStack = $pair->getResultStack();
     $lastResult = $resultStack->last();
 
-    self::assertFalse($resultStack->lastIsError());
     self::assertEquals(MapAndWrite::class, get_class($lastResult));
+    self::assertTrue($resultStack->lastIsError());
+
+    self::assertEquals(MapAndWrite::ERROR,
+      $lastResult->getStatusCode());
+
+    // SECOND SYNC -- WITH MATCH
+
+    $taggingSyncer->getPersonSyncer()->syncFromRemoteIfNeeded($remotePerson);
+    $taggingSyncer->getTagSyncer()->matchAndSyncIfEligible($remoteTag);
+
+    try {
+      $taggingSyncer->oneWayMapAndWrite($pair);
+    }
+    catch (Throwable $e) {
+      self::fail('A DB constraint error pops up ONLY if this test function is run 
+      after certain others, which is strange because we\'re using TransactionalInterface. 
+      See Civi log file (CONSTRAINT `FK_civicrm_entity_tag_tag_id` FOREIGN KEY (`tag_id`) 
+      REFERENCES `civicrm_tag` (`id`))');
+    }
+
+    array_push(self::$objectsToDelete, $pair->getTargetObject(), $pair->getLocalObject()->getTag());
+    $resultStack = $pair->getResultStack();
+    $lastResult = $resultStack->last();
+
+    self::assertEquals(MapAndWrite::class, get_class($lastResult));
+    self::assertFalse($resultStack->lastIsError());
 
     self::assertEquals(MapAndWrite::WROTE_NEW,
       $lastResult->getStatusCode());
 
-    self::assertNotNull($pair->getLocalObject()->getId());
+    self::assertNotNull($pair->getLocalObject()->getTag()->getId());
 
-    self::assertEquals('testOneWayMapAndWrite_NoTwinGiven',
-      $pair->getLocalObject()->name->get());
+    self::assertEquals(
+      $pair->getRemoteObject()->getTag()->name->get(),
+      $pair->getLocalObject()->getTag()->name->get());
   }
 
   public function testOneWayMapAndWrite_TwinGiven_FromRemote() {
+    self::markTestIncomplete();
     $syncer = self::$syncer;
     $remoteTag = new \Civi\Osdi\ActionNetwork\Object\Tag(self::$remoteSystem);
     $remoteTag->name->set('Abe');
@@ -198,6 +232,7 @@ class CRM_OSDI_ActionNetwork_TaggingBasicTest extends PHPUnit\Framework\TestCase
   }
 
   public function testOneWayMapAndWrite_TwinGiven_FromLocal_CanCreateButNotUpdate() {
+    self::markTestIncomplete();
     $syncer = self::$syncer;
     $remoteTag = new \Civi\Osdi\ActionNetwork\Object\Tag(self::$remoteSystem);
     $remoteTag->name->set('Abe');
@@ -228,6 +263,7 @@ class CRM_OSDI_ActionNetwork_TaggingBasicTest extends PHPUnit\Framework\TestCase
   }
 
   public function testMatchAndSyncIfEligible_WriteNewTwin_FromLocal() {
+    self::markTestIncomplete();
     $taggingSyncer = self::$syncer;
 
     $localPerson = new Civi\Osdi\LocalObject\Person();
@@ -323,6 +359,7 @@ class CRM_OSDI_ActionNetwork_TaggingBasicTest extends PHPUnit\Framework\TestCase
   }
 
   public function testMatchAndSyncIfEligible_WriteNewTwin_FromRemote() {
+    self::markTestIncomplete();
     $syncer = self::$syncer;
     $remoteTag = new \Civi\Osdi\ActionNetwork\Object\Tag(self::$remoteSystem);
     $remoteTag->name->set('testMatchAndSyncIfEligible_FromRemote');
@@ -397,6 +434,7 @@ class CRM_OSDI_ActionNetwork_TaggingBasicTest extends PHPUnit\Framework\TestCase
   }
 
   public function testMatchAndSyncIfEligible_MatchExistingTwin_FromRemote() {
+    self::markTestIncomplete();
     $syncer = self::$syncer;
 
     $localTag = new \Civi\Osdi\LocalObject\Tag();
@@ -449,6 +487,7 @@ class CRM_OSDI_ActionNetwork_TaggingBasicTest extends PHPUnit\Framework\TestCase
   }
 
   public function testSavedMatchPersistence() {
+    self::markTestIncomplete();
     $remoteTag = new \Civi\Osdi\ActionNetwork\Object\Tag(self::$remoteSystem);
     $remoteTag->name->set('testSavedMatchPersistence');
     $remoteTag->save();
