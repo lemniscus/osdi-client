@@ -71,6 +71,14 @@ abstract class Base implements RemoteObjectInterface {
     return $allValues;
   }
 
+  protected function getAllForCompare() {
+    $allValues = [];
+    foreach (static::FIELDS as $fieldName => $metadata) {
+      $allValues[$fieldName] = $this->getFieldValueForCompare($fieldName);
+    }
+    return $allValues;
+  }
+
   public function getAllOriginal(): array {
     if (!$this->isLoaded()) {
       return [];
@@ -244,9 +252,11 @@ abstract class Base implements RemoteObjectInterface {
   public static function diff(self $left, self $right): DiffResult {
     $different = $leftOnly = $rightOnly = [];
 
-    foreach (static::FIELDS as $fieldName => $metadata) {
-      $leftVal = $left->getFieldValueForCompare($fieldName);
-      $rightVal = $right->getFieldValueForCompare($fieldName);
+    $leftVals = $left->getAllForCompare();
+    $rightVals = $right->getAllForCompare();
+
+    foreach ($leftVals as $fieldName => $leftVal) {
+      $rightVal = $rightVals[$fieldName] ?? NULL;
       $leftIsEmpty = in_array($leftVal, [NULL, '', []]);
       $rightIsEmpty = in_array($rightVal, [NULL, '', []]);
 
@@ -263,7 +273,7 @@ abstract class Base implements RemoteObjectInterface {
       }
     }
 
-    return new DiffResult($left, $right, $different, $leftOnly, $rightOnly);
+    return new DiffResult($leftVals, $rightVals, $different, $leftOnly, $rightOnly);
   }
 
   public function diffChanges(): DiffResult {
