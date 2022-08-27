@@ -77,14 +77,21 @@ class Field {
    * @return string|array|null
    */
   public function getAsLoaded() {
-    if ($resource = $this->bundle->getResource()) {
-      $val = $resource->getProperty($this->path[0]) ?? NULL;
-      for ($i = 1; $i < count($this->path); $i++) {
-        $val = $val[$this->path[$i]] ?? NULL;
-      }
-      return $val;
+    if (!$resource = $this->bundle->getResource()) {
+      return NULL;
     }
-    return NULL;
+
+    if ('_links' === $this->path[0]) {
+      $links = $resource->getLink($this->path[1]);
+      $linkOffset = $this->path[2] ?? 0;
+      return $links[$linkOffset]->getHref();
+    }
+
+    $val = $resource->getProperty($this->path[0]) ?? NULL;
+    for ($i = 1; $i < count($this->path); $i++) {
+      $val = $val[$this->path[$i]] ?? NULL;
+    }
+    return $val;
   }
 
   /**
