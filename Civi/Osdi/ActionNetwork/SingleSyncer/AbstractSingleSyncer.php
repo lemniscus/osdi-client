@@ -114,13 +114,13 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     $result = new MapAndWriteResult();
 
     $originObject = $pair->getOriginObject();
-    $targetObject = $pair->getTargetObject();
 
     if ($originObject->getId()) {
       $originObject->loadOnce();
     }
 
     $mapResult = $this->getMapper()->mapOneWay($pair);
+    $targetObject = $pair->getTargetObject();
 
     if ($mapResult->isError()) {
       $result->setStatusCode($result::ERROR)->setMessage($mapResult->getMessage());
@@ -133,10 +133,10 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
       $result->setStatusCode(MapAndWriteResult::NO_CHANGES_TO_WRITE);
     }
     elseif ($targetObject->getId()) {
-      $this->oneWayMapAndWriteUpdate($pair, $result);
+      $this->persistTargetChanges($pair, $result);
     }
     else {
-      $this->oneWayMapAndWriteCreate($pair, $result);
+      $this->persistNewTarget($pair, $result);
     }
 
     $pair->getResultStack()->push($result);
@@ -209,7 +209,7 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     return $result;
   }
 
-  protected function oneWayMapAndWriteCreate(LocalRemotePair $pair, MapAndWriteResult $result): void {
+  protected function persistNewTarget(LocalRemotePair $pair, MapAndWriteResult $result): void {
     $saveResult = $pair->getTargetObject()->trySave();
     $result->setSaveResult($saveResult);
     $result->setStatusCode(
@@ -218,7 +218,7 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
         : MapAndWriteResult::WROTE_NEW);
   }
 
-  protected function oneWayMapAndWriteUpdate(LocalRemotePair $pair, MapAndWriteResult $result): void {
+  protected function persistTargetChanges(LocalRemotePair $pair, MapAndWriteResult $result): void {
     $saveResult = $pair->getTargetObject()->trySave();
     $result->setSaveResult($saveResult);
     $result->setStatusCode(

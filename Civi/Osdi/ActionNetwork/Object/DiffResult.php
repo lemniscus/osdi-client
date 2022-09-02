@@ -2,8 +2,6 @@
 
 namespace Civi\Osdi\ActionNetwork\Object;
 
-use Civi\Osdi\RemoteObjectInterface;
-
 class DiffResult {
 
   private array $differentFields;
@@ -12,13 +10,13 @@ class DiffResult {
 
   private array $rightOnlyFields;
 
-  private RemoteObjectInterface $left;
+  private array $left;
 
-  private RemoteObjectInterface $right;
+  private array $right;
 
   public function __construct(
-    RemoteObjectInterface $left,
-    RemoteObjectInterface $right,
+    array $left,
+    array $right,
     array $differentFields,
     array $leftOnlyFields,
     array $rightOnlyFields
@@ -63,8 +61,8 @@ class DiffResult {
       + $this->getRightOnlyFields();
     foreach ($fieldNames as $fieldName) {
       $return[$fieldName] = [
-        'L' => $this->left->$fieldName->get(),
-        'R' => $this->right->$fieldName->get(),
+        'L' => $this->left[$fieldName],
+        'R' => $this->right[$fieldName],
       ];
     }
     return $return;

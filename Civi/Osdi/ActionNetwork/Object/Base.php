@@ -8,6 +8,7 @@ use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\Save as SaveResult;
+use CRM_OSDI_ExtensionUtil as E;
 use Jsor\HalClient\HalResource;
 
 abstract class Base implements RemoteObjectInterface {
@@ -25,11 +26,10 @@ abstract class Base implements RemoteObjectInterface {
   public function __construct(RemoteSystemInterface $system,
                               ?HalResource $resource = NULL) {
     $this->_system = $system;
+    $this->initializeFields();
     if ($resource) {
       $this->load($resource);
     }
-
-    $this->initializeFields();
   }
 
   public function __clone() {
@@ -67,6 +67,14 @@ abstract class Base implements RemoteObjectInterface {
       $val = $this->$fieldName->get();
       $path = $metadata['path'];
       \CRM_Utils_Array::pathSet($allValues, $path, $val);
+    }
+    return $allValues;
+  }
+
+  protected function getAllForCompare() {
+    $allValues = [];
+    foreach (static::FIELDS as $fieldName => $metadata) {
+      $allValues[$fieldName] = $this->getFieldValueForCompare($fieldName);
     }
     return $allValues;
   }
@@ -244,9 +252,11 @@ abstract class Base implements RemoteObjectInterface {
   public static function diff(self $left, self $right): DiffResult {
     $different = $leftOnly = $rightOnly = [];
 
-    foreach (static::FIELDS as $fieldName => $metadata) {
-      $leftVal = $left->getFieldValueForCompare($fieldName);
-      $rightVal = $right->getFieldValueForCompare($fieldName);
+    $leftVals = $left->getAllForCompare();
+    $rightVals = $right->getAllForCompare();
+
+    foreach ($leftVals as $fieldName => $leftVal) {
+      $rightVal = $rightVals[$fieldName] ?? NULL;
       $leftIsEmpty = in_array($leftVal, [NULL, '', []]);
       $rightIsEmpty = in_array($rightVal, [NULL, '', []]);
 
@@ -263,7 +273,7 @@ abstract class Base implements RemoteObjectInterface {
       }
     }
 
-    return new DiffResult($left, $right, $different, $leftOnly, $rightOnly);
+    return new DiffResult($leftVals, $rightVals, $different, $leftOnly, $rightOnly);
   }
 
   public function diffChanges(): DiffResult {
@@ -325,8 +335,8 @@ abstract class Base implements RemoteObjectInterface {
 
       if ($selfLink) {
         $selfUrl = $selfLink->getHref();
-        \Civi::log()
-          ->debug('Identifiers array was empty; got id from self link', [$selfUrl]);
+        //\Civi::log()
+        //  ->debug('Identifiers array was empty; got id from self link', [$selfUrl]);
         return substr($selfUrl, strrpos($selfUrl, '/') + 1);
       }
       return NULL;
