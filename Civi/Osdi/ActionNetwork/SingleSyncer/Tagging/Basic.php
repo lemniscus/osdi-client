@@ -8,8 +8,10 @@ use Civi\Osdi\ActionNetwork\SingleSyncer\AbstractSingleSyncer;
 use Civi\Osdi\ActionNetwork\SingleSyncer\Person as PersonSyncer;
 use Civi\Osdi\ActionNetwork\SingleSyncer\Tag\Basic as TagSyncer;
 use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\LocalObject\Tagging as LocalTaggingObject;
 use Civi\Osdi\LocalRemotePair;
+use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\SingleSyncerInterface;
 
@@ -199,6 +201,16 @@ class Basic extends AbstractSingleSyncer {
       $tagging->setId($id);
     }
     return $tagging;
+  }
+
+  public function oneWayMapAndWrite(LocalRemotePair $pair): MapAndWriteResult {
+    if (!empty($t = $pair->getTargetObject())) {
+      if (!empty($t->getId())) {
+        throw new InvalidOperationException('%s does not allow updating '
+        . 'already-persisted objects', __CLASS__);
+      }
+    }
+    return parent::oneWayMapAndWrite($pair);
   }
 
 }
