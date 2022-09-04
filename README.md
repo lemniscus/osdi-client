@@ -22,7 +22,7 @@ install it with the command-line tool [cv](https://github.com/civicrm/cv). Depen
 ```bash
 cd <extension-dir>
 cv dl osdi-client@https://github.com/lemniscus/osdi-client/archive/master.zip
-cd osdi-client/hal-client
+cd osdi-client/vendor/hal-client
 composer update
 cv en osdi-client
 ```
