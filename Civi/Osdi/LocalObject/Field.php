@@ -3,6 +3,7 @@
 namespace Civi\Osdi\LocalObject;
 
 use Civi\Osdi\Exception\InvalidOperationException;
+use Civi\Osdi\LocalObjectInterface;
 
 class Field {
 

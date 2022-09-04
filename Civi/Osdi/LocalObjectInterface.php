@@ -1,6 +1,6 @@
 <?php
 
-namespace Civi\Osdi\LocalObject;
+namespace Civi\Osdi;
 
 interface LocalObjectInterface {
 

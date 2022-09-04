@@ -1,6 +1,6 @@
 <?php
 
-use Civi\Osdi\LocalObject\Person as LocalPerson;
+use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
@@ -60,7 +60,7 @@ class CRM_OSDI_ActionNetwork_Mapper_PersonTest extends \PHPUnit\Framework\TestCa
   }
 
   private function createMapper(\Civi\Osdi\ActionNetwork\RemoteSystem $system) {
-    return new \Civi\Osdi\ActionNetwork\Mapper\Person\Basic($system);
+    return new \Civi\Osdi\ActionNetwork\Mapper\PersonBasic($system);
   }
 
   public function makeBlankOsdiPerson(): \Civi\Osdi\ActionNetwork\Object\Person {
@@ -290,7 +290,7 @@ class CRM_OSDI_ActionNetwork_Mapper_PersonTest extends \PHPUnit\Framework\TestCa
     $stateName = 'Missouri';
 
     $result = $this->mapper->mapRemoteToLocal($remotePerson);
-    $this->assertEquals(\Civi\Osdi\LocalObject\Person::class, get_class($result));
+    $this->assertEquals(\Civi\Osdi\LocalObject\PersonBasic::class, get_class($result));
     $cid = $result->save()->getId();
     $resultContact = Civi\Api4\Contact::get(0)
       ->addWhere('id', '=', $cid)

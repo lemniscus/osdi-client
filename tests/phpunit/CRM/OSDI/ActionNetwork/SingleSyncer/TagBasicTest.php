@@ -13,7 +13,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
     \Civi\Test\HeadlessInterface,
     \Civi\Test\TransactionalInterface {
 
-  private static \Civi\Osdi\ActionNetwork\SingleSyncer\Tag\Basic $syncer;
+  private static \Civi\Osdi\ActionNetwork\SingleSyncer\TagBasic $syncer;
 
   private static \Civi\Osdi\ActionNetwork\RemoteSystem $remoteSystem;
 
@@ -47,16 +47,16 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
     Civi::cache('long')->delete('osdi-client:tag-match');
   }
 
-  private static function makeNewSyncer(): \Civi\Osdi\ActionNetwork\SingleSyncer\Tag\Basic {
-    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Tag\Basic(self::$remoteSystem);
-    $syncer->setMapper(new \Civi\Osdi\ActionNetwork\Mapper\Tag\Basic());
-    $syncer->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\Tag\Basic(self::$remoteSystem));
+  private static function makeNewSyncer(): \Civi\Osdi\ActionNetwork\SingleSyncer\TagBasic {
+    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\TagBasic(self::$remoteSystem);
+    $syncer->setMapper(new \Civi\Osdi\ActionNetwork\Mapper\TagBasic());
+    $syncer->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\TagBasic(self::$remoteSystem));
     return $syncer;
   }
 
   public function testOneWayMapAndWrite_NoTwinGiven_FromLocal() {
     $syncer = self::$syncer;
-    $localTag = new \Civi\Osdi\LocalObject\Tag();
+    $localTag = new \Civi\Osdi\LocalObject\TagBasic();
     $localTag->name->set('testOneWayMapAndWrite_NoTwinGiven');
     $pair = $syncer->toLocalRemotePair($localTag);
     $pair->setOrigin($pair::ORIGIN_LOCAL);
@@ -108,7 +108,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
     $syncer = self::$syncer;
     $remoteTag = new \Civi\Osdi\ActionNetwork\Object\Tag(self::$remoteSystem);
     $remoteTag->name->set('Abe');
-    $localTag = new \Civi\Osdi\LocalObject\Tag();
+    $localTag = new \Civi\Osdi\LocalObject\TagBasic();
     $localTag->name->set('Zev');
     $pair = $syncer->toLocalRemotePair($localTag, $remoteTag);
     $pair->setOrigin($pair::ORIGIN_REMOTE);
@@ -138,7 +138,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
     $syncer = self::$syncer;
     $remoteTag = new \Civi\Osdi\ActionNetwork\Object\Tag(self::$remoteSystem);
     $remoteTag->name->set('Abe');
-    $localTag = new \Civi\Osdi\LocalObject\Tag();
+    $localTag = new \Civi\Osdi\LocalObject\TagBasic();
     $localTag->name->set('Zev');
     $pair = $syncer->toLocalRemotePair($localTag, $remoteTag);
     $pair->setOrigin($pair::ORIGIN_LOCAL);
@@ -166,7 +166,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
 
   public function testMatchAndSyncIfEligible_WriteNewTwin_FromLocal() {
     $syncer = self::$syncer;
-    $localTag = new \Civi\Osdi\LocalObject\Tag();
+    $localTag = new \Civi\Osdi\LocalObject\TagBasic();
     $localTag->name->set('testMatchAndSyncIfEligible_FromLocal');
     $localTag->save();
 
@@ -174,7 +174,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
     $pair = $syncer->matchAndSyncIfEligible($localTag);
     $resultStack = $pair->getResultStack();
     $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
-    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\Match::class);
+    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\MatchResult::class);
     $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
     $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
     $syncResult = $resultStack->getLastOfType(Sync::class);
@@ -244,7 +244,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
     $pair = $syncer->matchAndSyncIfEligible($remoteTag);
     $resultStack = $pair->getResultStack();
     $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
-    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\Match::class);
+    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\MatchResult::class);
     $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
     $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
     $syncResult = $resultStack->getLastOfType(Sync::class);
@@ -311,7 +311,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
   public function testMatchAndSyncIfEligible_MatchExistingTwin_FromRemote() {
     $syncer = self::$syncer;
 
-    $localTag = new \Civi\Osdi\LocalObject\Tag();
+    $localTag = new \Civi\Osdi\LocalObject\TagBasic();
     $localTag->name->set('testMatchAndSyncIfEligible_MatchyMatchy');
     $localTag->save();
 
@@ -323,14 +323,14 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Tag_BasicTest extends PHPUnit\Framewor
     $pair = $syncer->matchAndSyncIfEligible($remoteTag);
     $resultStack = $pair->getResultStack();
     $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
-    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\Match::class);
+    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\MatchResult::class);
     $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
     $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
     $syncResult = $resultStack->getLastOfType(Sync::class);
     $savedMatch = $syncResult->getState();
 
     self::assertEquals(FetchOldOrFindNewMatch::FOUND_NEW_MATCH, $fetchFindMatchResult->getStatusCode());
-    self::assertEquals(\Civi\Osdi\Result\Match::FOUND_MATCH, $matchResult->getStatusCode());
+    self::assertEquals(\Civi\Osdi\Result\MatchResult::FOUND_MATCH, $matchResult->getStatusCode());
     self::assertEquals(MapAndWrite::NO_CHANGES_TO_WRITE, $mapAndWriteResult->getStatusCode());
     self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
     self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());

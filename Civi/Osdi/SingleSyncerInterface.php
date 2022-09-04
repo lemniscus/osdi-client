@@ -2,14 +2,13 @@
 
 namespace Civi\Osdi;
 
-use Civi\Osdi\LocalObject\LocalObjectInterface;
 use Civi\Osdi\Result\FetchOldOrFindNewMatch as OldOrNewMatchResult;
 use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
 
 interface SingleSyncerInterface {
 
   /**
-   * @param \Civi\Osdi\LocalObject\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface $originObject
+   * @param \Civi\Osdi\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface $originObject
    *
    * @return \Civi\Osdi\LocalRemotePair
    */

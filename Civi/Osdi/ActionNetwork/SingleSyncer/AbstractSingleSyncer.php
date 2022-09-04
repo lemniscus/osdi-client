@@ -3,7 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\LocalObject\LocalObjectInterface;
+use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MapperInterface;
 use Civi\Osdi\MatcherInterface;

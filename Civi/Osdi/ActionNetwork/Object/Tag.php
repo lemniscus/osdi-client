@@ -2,7 +2,7 @@
 
 namespace Civi\Osdi\ActionNetwork\Object;
 
-class Tag extends Base implements \Civi\Osdi\RemoteObjectInterface {
+class Tag extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInterface {
 
   public Field $identifiers;
   public Field $createdDate;

@@ -3,8 +3,9 @@
 namespace Civi\Osdi\LocalObject;
 
 use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\LocalObjectInterface;
 
-class Tagging extends Base implements LocalObjectInterface {
+class TaggingBasic extends AbstractLocalObject implements LocalObjectInterface {
 
   const FIELDS = [
     'id' => ['select' => 'id'],
@@ -107,10 +108,10 @@ class Tagging extends Base implements LocalObjectInterface {
     $newTagId = $this->tagId->get();
 
     if (is_null($this->person) || ($newContactId !== $this->person->getId())) {
-      $this->setPerson(new Person($newContactId));
+      $this->setPerson(new PersonBasic($newContactId));
     }
     if (is_null($this->tag) || ($newTagId !== $this->tag->getId())) {
-      $this->setTag(new Tag($newTagId));
+      $this->setTag(new TagBasic($newTagId));
     }
   }
 

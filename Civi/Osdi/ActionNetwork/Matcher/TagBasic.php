@@ -1,12 +1,11 @@
 <?php
 
-namespace Civi\Osdi\ActionNetwork\Matcher\Tag;
+namespace Civi\Osdi\ActionNetwork\Matcher;
 
-use Civi\Osdi\ActionNetwork\Matcher\AbstractMatcher;
 use Civi\Osdi\LocalRemotePair;
-use Civi\Osdi\Result\Match as MatchResult;
+use Civi\Osdi\Result\MatchResult as MatchResult;
 
-class Basic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
+class TagBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
   protected function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult {
     $result = new MatchResult($pair->getOrigin());
@@ -25,7 +24,7 @@ class Basic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
     if ($civiApiTagGet->count()) {
       $tagArray = $civiApiTagGet->single();
-      /** @var \Civi\Osdi\LocalObject\Tag $localObject */
+      /** @var \Civi\Osdi\LocalObject\TagBasic $localObject */
       $localObject = new $localClass();
       $localObject->loadFromArray($tagArray);
       $result->setLocalObject($localObject);

@@ -2,10 +2,7 @@
 
 namespace Civi\Osdi\Result;
 
-use Civi\Osdi\LocalObject\LocalObjectInterface;
-use Civi\Osdi\RemoteObjectInterface;
-
-class Save extends AbstractResult implements \Civi\Osdi\ResultInterface{
+class Save extends AbstractResult implements \Civi\Osdi\ResultInterface {
 
   use SimpleErrorTrait;
 
@@ -14,7 +11,7 @@ class Save extends AbstractResult implements \Civi\Osdi\ResultInterface{
   const SUCCESS = 'success';
 
   /**
-   * @var RemoteObjectInterface|LocalObjectInterface|null
+   * @var \Civi\Osdi\RemoteObjectInterface|\Civi\Osdi\LocalObjectInterface|null
    */
   protected $returnedObject;
 
@@ -28,7 +25,7 @@ class Save extends AbstractResult implements \Civi\Osdi\ResultInterface{
   protected $context;
 
   /**
-   * @param RemoteObjectInterface|LocalObjectInterface|null $returnedObject
+   * @param \Civi\Osdi\RemoteObjectInterface|\Civi\Osdi\LocalObjectInterface|null $returnedObject
    * @param string $statusCode
    * @param string $statusMessage
    * @param mixed $context
@@ -59,14 +56,14 @@ class Save extends AbstractResult implements \Civi\Osdi\ResultInterface{
   }
 
   /**
-   * @return \Civi\Osdi\LocalObject\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface|null
+   * @return \Civi\Osdi\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface|null
    */
   public function getReturnedObject() {
     return $this->returnedObject;
   }
 
   /**
-   * @param \Civi\Osdi\LocalObject\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface|null $returnedObject
+   * @param \Civi\Osdi\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface|null $returnedObject
    *
    * @return self
    */

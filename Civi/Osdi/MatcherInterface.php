@@ -2,7 +2,7 @@
 
 namespace Civi\Osdi;
 
-use Civi\Osdi\Result\Match as MatchResult;
+use Civi\Osdi\Result\MatchResult as MatchResult;
 
 interface MatcherInterface {
 

@@ -5,7 +5,6 @@ namespace Civi\Osdi;
 use Civi\Api4\Generic\DAOGetAction;
 use Civi\Api4\OsdiPersonSyncState;
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\LocalObject\LocalObjectInterface;
 
 class PersonSyncState {
 

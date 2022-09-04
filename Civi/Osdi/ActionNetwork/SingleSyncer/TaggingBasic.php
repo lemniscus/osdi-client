@@ -1,21 +1,20 @@
 <?php
 
-namespace Civi\Osdi\ActionNetwork\SingleSyncer\Tagging;
+namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
 use Civi\Osdi\ActionNetwork\Object\Tagging as OsdiTaggingObject;
 use Civi\Osdi\ActionNetwork\RemoteSystem;
-use Civi\Osdi\ActionNetwork\SingleSyncer\AbstractSingleSyncer;
 use Civi\Osdi\ActionNetwork\SingleSyncer\Person as PersonSyncer;
-use Civi\Osdi\ActionNetwork\SingleSyncer\Tag\Basic as TagSyncer;
+use Civi\Osdi\ActionNetwork\SingleSyncer\TagBasic as TagSyncer;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
-use Civi\Osdi\LocalObject\Tagging as LocalTaggingObject;
+use Civi\Osdi\LocalObject\TaggingBasic as LocalTaggingObject;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\SingleSyncerInterface;
 
-class Basic extends AbstractSingleSyncer {
+class TaggingBasic extends AbstractSingleSyncer {
 
   protected static array $savedMatches = [];
 

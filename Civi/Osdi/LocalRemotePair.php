@@ -4,8 +4,7 @@ namespace Civi\Osdi;
 
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
-use Civi\Osdi\LocalObject\LocalObjectInterface;
-use Civi\Osdi\Result\Match;
+use Civi\Osdi\Result\MatchResult;
 use Civi\Osdi\Result\ResultStack;
 use Civi\Osdi\Result\Sync;
 
@@ -106,7 +105,7 @@ class LocalRemotePair {
   }
 
   /**
-   * @param \Civi\Osdi\LocalObject\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface $object
+   * @param \Civi\Osdi\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface $object
    *
    * @return $this
    */
@@ -118,7 +117,7 @@ class LocalRemotePair {
   }
 
   /**
-   * @param \Civi\Osdi\LocalObject\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface $object
+   * @param \Civi\Osdi\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface $object
    *
    * @return $this
    */
@@ -160,7 +159,7 @@ class LocalRemotePair {
     return $this;
   }
 
-  public function setMatchResult(?Match $matchResult): self {
+  public function setMatchResult(?MatchResult $matchResult): self {
     $this->matchResult = $matchResult;
     return $this;
   }

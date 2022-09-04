@@ -2,7 +2,9 @@
 
 namespace Civi\Osdi\LocalObject;
 
-class Tag extends Base implements LocalObjectInterface {
+use Civi\Osdi\LocalObjectInterface;
+
+class TagBasic extends AbstractLocalObject implements LocalObjectInterface {
 
   public Field $createdDate;
   public Field $modifiedDate;

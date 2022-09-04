@@ -6,8 +6,9 @@ use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Api4\Email;
 use Civi\Api4\Phone;
+use Civi\Osdi\LocalObjectInterface;
 
-class Person extends Base implements LocalObjectInterface {
+class PersonBasic extends AbstractLocalObject implements LocalObjectInterface {
 
   public Field $createdDate;
   public Field $modifiedDate;

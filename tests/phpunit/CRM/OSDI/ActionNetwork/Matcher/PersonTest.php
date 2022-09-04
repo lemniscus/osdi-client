@@ -1,6 +1,6 @@
 <?php
 
-use Civi\Osdi\LocalObject\Person as LocalPerson;
+use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\TransactionalInterface;
 use CRM_OSDI_Fixture_PersonMatching as F;
@@ -16,7 +16,7 @@ class CRM_OSDI_ActionNetwork_Matcher_PersonTest extends \PHPUnit\Framework\TestC
 
   private \Civi\Osdi\ActionNetwork\RemoteSystem $system;
 
-  private \Civi\Osdi\ActionNetwork\Matcher\Person\OneToOneEmailOrFirstLastEmail $matcher;
+  private \Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail $matcher;
 
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()->installMe(__DIR__)->apply();
@@ -39,8 +39,8 @@ class CRM_OSDI_ActionNetwork_Matcher_PersonTest extends \PHPUnit\Framework\TestC
   }
 
   private function createMatcher(\Civi\Osdi\RemoteSystemInterface $system
-  ): \Civi\Osdi\ActionNetwork\Matcher\Person\OneToOneEmailOrFirstLastEmail {
-    return new \Civi\Osdi\ActionNetwork\Matcher\Person\OneToOneEmailOrFirstLastEmail($system, NULL);
+  ): \Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail {
+    return new \Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail($system, NULL);
   }
 
   /**
@@ -62,10 +62,10 @@ class CRM_OSDI_ActionNetwork_Matcher_PersonTest extends \PHPUnit\Framework\TestC
     return $pair;
   }
 
-  private function assertMatchResultIsNotError_NoMatch_ZeroCount(\Civi\Osdi\Result\Match $matchResult): void {
+  private function assertMatchResultIsNotError_NoMatch_ZeroCount(\Civi\Osdi\Result\MatchResult $matchResult): void {
     $this->assertNull($matchResult->getMatch());
     $this->assertFalse($matchResult->isError());
-    $this->assertEquals(\Civi\Osdi\Result\Match::NO_MATCH, $matchResult->getStatusCode());
+    $this->assertEquals(\Civi\Osdi\Result\MatchResult::NO_MATCH, $matchResult->getStatusCode());
   }
 
   public function testRemoteMatch_OneToOneEmailSuccess() {

@@ -2,7 +2,6 @@
 
 namespace Civi\Osdi;
 
-use Civi\Osdi\LocalObject\LocalObjectInterface;
 use Civi\Osdi\Result\Map as MapResult;
 
 interface MapperInterface {

@@ -1,8 +1,8 @@
 <?php
 
-use Civi\Osdi\LocalObject\Person;
-use Civi\Osdi\LocalObject\Tag;
-use Civi\Osdi\LocalObject\Tagging;
+use Civi\Osdi\LocalObject\PersonBasic;
+use Civi\Osdi\LocalObject\TagBasic;
+use Civi\Osdi\LocalObject\TaggingBasic;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
@@ -20,19 +20,19 @@ class CRM_OSDI_LocalObject_TaggingTest extends \PHPUnit\Framework\TestCase imple
   }
 
   public function testGetCiviEntity() {
-    $tagging = new Tagging();
+    $tagging = new TaggingBasic();
     self::assertEquals('EntityTag', $tagging::getCiviEntityName());
   }
 
   public function testCreate_Save() {
     // CREATE
-    $tag = new Tag();
+    $tag = new TagBasic();
     $tag->name->set('Tagalina');
 
-    $person = new Person();
+    $person = new PersonBasic();
     $person->emailEmail->set('tagteam@dio.de');
 
-    $tagging = new Tagging();
+    $tagging = new TaggingBasic();
     $tagging->setTag($tag);
     $tagging->setPerson($person);
 
@@ -54,15 +54,15 @@ class CRM_OSDI_LocalObject_TaggingTest extends \PHPUnit\Framework\TestCase imple
 
   public function testCreate_Save_ReFetch_GetComponents() {
     // CREATE
-    $tag = new Tag();
+    $tag = new TagBasic();
     $tag->name->set('Tagalina');
     $tag->save();
 
-    $person = new Person();
+    $person = new PersonBasic();
     $person->emailEmail->set('tagteam@dio.de');
     $person->save();
 
-    $tagging = new Tagging();
+    $tagging = new TaggingBasic();
     $tagging->setTag($tag);
     $tagging->setPerson($person);
     $tagging->save();
@@ -71,7 +71,7 @@ class CRM_OSDI_LocalObject_TaggingTest extends \PHPUnit\Framework\TestCase imple
 
     // FETCH COMPONENTS
 
-    $taggingFromDatabase = Tagging::fromId($tagging->getId());
+    $taggingFromDatabase = TaggingBasic::fromId($tagging->getId());
 
     self::assertNotEquals($tag, $taggingFromDatabase->getTag());
     self::assertEquals($tag->getId(), $taggingFromDatabase->getTag()->getId());
@@ -81,13 +81,13 @@ class CRM_OSDI_LocalObject_TaggingTest extends \PHPUnit\Framework\TestCase imple
 
   public function testCreate_TrySave() {
     // CREATE
-    $tag = new Tag();
+    $tag = new TagBasic();
     $tag->name->set('Tagalina');
 
-    $person = new Person();
+    $person = new PersonBasic();
     $person->emailEmail->set('tagteam@dio.de');
 
-    $tagging = new Tagging();
+    $tagging = new TaggingBasic();
     $tagging->setTag($tag);
     $tagging->setPerson($person);
     $result = $tagging->trySave();
@@ -103,15 +103,15 @@ class CRM_OSDI_LocalObject_TaggingTest extends \PHPUnit\Framework\TestCase imple
 
   public function testCreate_Delete() {
     // CREATE
-    $tag = new Tag();
+    $tag = new TagBasic();
     $tag->name->set('Tagalina');
     $tag->save();
 
-    $person = new Person();
+    $person = new PersonBasic();
     $person->emailEmail->set('tagteam@dio.de');
     $person->save();
 
-    $tagging = new Tagging();
+    $tagging = new TaggingBasic();
     $tagging->setTag($tag);
     $tagging->setPerson($person);
     $tagging->save();
@@ -120,19 +120,19 @@ class CRM_OSDI_LocalObject_TaggingTest extends \PHPUnit\Framework\TestCase imple
     $taggingId = $tagging->getId();
     $tagging->delete();
     $this->expectException(\Civi\Osdi\Exception\InvalidArgumentException::class);
-    Tagging::fromId($taggingId);
+    TaggingBasic::fromId($taggingId);
   }
 
   public function testisAltered() {
-    $tag = new Tag();
+    $tag = new TagBasic();
     $tag->name->set('Tagalina');
     $tag->save();
 
-    $person = new Person();
+    $person = new PersonBasic();
     $person->emailEmail->set('tagteam@dio.de');
     $person->save();
 
-    $tagging = new Tagging();
+    $tagging = new TaggingBasic();
     self::assertFalse($tagging->isAltered());
 
     $tagging->setTag($tag);

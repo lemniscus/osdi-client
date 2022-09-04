@@ -1,12 +1,12 @@
 <?php
 
-namespace Civi\Osdi\ActionNetwork\Mapper\Tagging;
+namespace Civi\Osdi\ActionNetwork\Mapper;
 
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Result\Map as MapResult;
 use Civi\Osdi\SingleSyncerInterface;
 
-class Basic implements \Civi\Osdi\MapperInterface {
+class TaggingBasic implements \Civi\Osdi\MapperInterface {
 
   protected ?SingleSyncerInterface $personSyncer = NULL;
 
@@ -20,7 +20,7 @@ class Basic implements \Civi\Osdi\MapperInterface {
 
   public function mapOneWay(LocalRemotePair $taggingPair): MapResult {
     $result = new MapResult();
-    /** @var \Civi\Osdi\LocalObject\Tagging $originTagging */
+    /** @var \Civi\Osdi\LocalObject\TaggingBasic $originTagging */
     $originTagging = $taggingPair->getOriginObject();
     $errorMessage = 'Person and Tag must exist on both systems before '
       . 'Tagging can be mapped';
@@ -81,7 +81,7 @@ class Basic implements \Civi\Osdi\MapperInterface {
     return $this->personSyncer;
   }
 
-  public function setPersonSyncer(?SingleSyncerInterface $personSyncer): Basic {
+  public function setPersonSyncer(?SingleSyncerInterface $personSyncer): TaggingBasic {
     $this->personSyncer = $personSyncer;
     return $this;
   }
@@ -93,7 +93,7 @@ class Basic implements \Civi\Osdi\MapperInterface {
     return $this->tagSyncer;
   }
 
-  public function setTagSyncer(?SingleSyncerInterface $tagSyncer): Basic {
+  public function setTagSyncer(?SingleSyncerInterface $tagSyncer): TaggingBasic {
     $this->tagSyncer = $tagSyncer;
     return $this;
   }
@@ -102,7 +102,7 @@ class Basic implements \Civi\Osdi\MapperInterface {
     return $this->taggingSyncer;
   }
 
-  public function setTaggingSyncer(?SingleSyncerInterface $taggingSyncer): Basic {
+  public function setTaggingSyncer(?SingleSyncerInterface $taggingSyncer): TaggingBasic {
     $this->taggingSyncer = $taggingSyncer;
     return $this;
   }

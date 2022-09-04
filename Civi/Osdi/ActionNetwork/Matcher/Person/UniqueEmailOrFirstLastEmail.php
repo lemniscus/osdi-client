@@ -7,14 +7,14 @@ use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\Exception\AmbiguousResultException;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\LocalObject\LocalObjectInterface;
-use Civi\Osdi\LocalObject\Person as LocalPerson;
+use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
+use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\RemoteObjectInterface;
-use Civi\Osdi\Result\Match;
+use Civi\Osdi\Result\MatchResult as MatchResult;
 
-class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
+class UniqueEmailOrFirstLastEmail implements MatcherInterface {
 
   protected RemoteSystem $system;
 
@@ -29,7 +29,7 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
     $this->localPersonClass = $localPersonClass ?? LocalPerson::class;
   }
 
-  public function tryToFindMatchFor(LocalRemotePair $pair): Match {
+  public function tryToFindMatchFor(LocalRemotePair $pair): MatchResult {
     $result = $pair->isOriginLocal()
       ? $this->tryToFindMatchForLocalObject($pair)
       : $this->tryToFindMatchForRemoteObject($pair);
@@ -37,28 +37,28 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
     return $result;
   }
 
-  public function tryToFindMatchForLocalObject(LocalRemotePair $pair): Match {
+  public function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult {
     $localObject = $pair->getLocalObject();
     try {
       $localObject->loadOnce();
     }
     catch (InvalidArgumentException $e) {
-      return new Match(
-        Match::ORIGIN_LOCAL,
+      return new MatchResult(
+        MatchResult::ORIGIN_LOCAL,
         $localObject,
         NULL,
-        Match::ERROR_INVALID_ID,
+        MatchResult::ERROR_INVALID_ID,
         'Bad contact id',
         $e
       );
     }
 
     if (empty($email = $localObject->emailEmail->get())) {
-      return new Match(
-        Match::ORIGIN_LOCAL,
+      return new MatchResult(
+        MatchResult::ORIGIN_LOCAL,
         $localObject,
         NULL,
-        Match::ERROR_MISSING_DATA,
+        MatchResult::ERROR_MISSING_DATA,
         'Insufficient data in source contact to match on: email needed'
       );
     }
@@ -80,7 +80,7 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
     );
   }
 
-  private function findRemoteMatchByEmailAndName(LocalObjectInterface $localPerson): Match {
+  private function findRemoteMatchByEmailAndName(LocalObjectInterface $localPerson): MatchResult {
     $email = $localPerson->emailEmail->get();
     $firstName = $localPerson->firstName->get() ?? '';
     $lastName = $localPerson->lastName->get() ?? '';
@@ -88,11 +88,11 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
     $countOfCiviContactsWithSameEmailFirstLast = $civiApi4Result->count();
 
     if ($countOfCiviContactsWithSameEmailFirstLast > 1) {
-      return new Match(
-        Match::ORIGIN_LOCAL,
+      return new MatchResult(
+        MatchResult::ORIGIN_LOCAL,
         $localPerson,
         NULL,
-        Match::ERROR_INDETERMINATE,
+        MatchResult::ERROR_INDETERMINATE,
         'The email, first name and last name of the source CiviCRM contact are not unique in CiviCRM',
         $civiApi4Result
       );
@@ -108,11 +108,11 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
     );
 
     if (0 === $remoteSystemFindResult->rawCurrentCount()) {
-      return new Match(
-        Match::ORIGIN_LOCAL,
+      return new MatchResult(
+        MatchResult::ORIGIN_LOCAL,
         $localPerson,
         NULL,
-        Match::ERROR_INDETERMINATE,
+        MatchResult::ERROR_INDETERMINATE,
         'The email of the source CiviCRM contact is not unique, and no remote match was found by email, first name and last name.',
         $civiApi4Result
       );
@@ -125,23 +125,23 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
     );
   }
 
-  public function tryToFindMatchForRemoteObject(LocalRemotePair $pair): Match {
+  public function tryToFindMatchForRemoteObject(LocalRemotePair $pair): MatchResult {
     $remoteObject = $pair->getRemoteObject();
 
     if (empty($email = $remoteObject->emailAddress->get())) {
-      return new Match(
-        Match::ORIGIN_REMOTE,
+      return new MatchResult(
+        MatchResult::ORIGIN_REMOTE,
         NULL,
         $remoteObject,
-        Match::ERROR_MISSING_DATA,
+        MatchResult::ERROR_MISSING_DATA,
         'Insufficient data in source contact to match on: email needed');
     }
 
     $civiContactsWithEmail = $this->getCiviContactsBy($email);
 
     if ($civiContactsWithEmail->count() === 1) {
-      return new Match(
-        Match::ORIGIN_REMOTE,
+      return new MatchResult(
+        MatchResult::ORIGIN_REMOTE,
         new $this->localPersonClass($civiContactsWithEmail->first()['id']),
         $remoteObject,
         NULL,
@@ -150,11 +150,11 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
     }
 
     if ($civiContactsWithEmail->count() === 0) {
-      return new Match(
-        Match::ORIGIN_REMOTE,
+      return new MatchResult(
+        MatchResult::ORIGIN_REMOTE,
         NULL,
         $remoteObject,
-        Match::NO_MATCH,
+        MatchResult::NO_MATCH,
         'No match by email');
     }
 
@@ -162,7 +162,7 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
     return $this->findLocalMatchByEmailAndName($remoteObject);
   }
 
-  private function findLocalMatchByEmailAndName(RemoteObjectInterface $remotePerson): Match {
+  private function findLocalMatchByEmailAndName(RemoteObjectInterface $remotePerson): MatchResult {
     $civiApi4Result = $this->getCiviContactsBy(
       $remotePerson->emailAddress->get(),
       $remotePerson->givenName->get(),
@@ -171,27 +171,27 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
     $countOfCiviContactsWithSameEmailFirstLast = $civiApi4Result->count();
 
     if ($countOfCiviContactsWithSameEmailFirstLast > 1) {
-      return new Match(
-        Match::ORIGIN_REMOTE,
+      return new MatchResult(
+        MatchResult::ORIGIN_REMOTE,
         NULL,
         $remotePerson,
-        Match::ERROR_INDETERMINATE,
+        MatchResult::ERROR_INDETERMINATE,
         'The email, first name and last name of the source Action Network person have more than one match in CiviCRM',
         $civiApi4Result);
     }
 
     if ($countOfCiviContactsWithSameEmailFirstLast === 0) {
-      return new Match(
-        Match::ORIGIN_REMOTE,
+      return new MatchResult(
+        MatchResult::ORIGIN_REMOTE,
         NULL,
         $remotePerson,
-        Match::ERROR_INDETERMINATE,
+        MatchResult::ERROR_INDETERMINATE,
         'Multiple matches by email, but no match by email, first name and last name',
         $civiApi4Result);
     }
 
-    return new Match(
-      Match::ORIGIN_REMOTE,
+    return new MatchResult(
+      MatchResult::ORIGIN_REMOTE,
       new $this->localPersonClass($civiApi4Result->first()['id']),
       $remotePerson,
       NULL,
@@ -226,24 +226,24 @@ class OneToOneEmailOrFirstLastEmail implements MatcherInterface {
 
   private function makeSingleOrZeroMatchResult(LocalObjectInterface $localPerson,
                                                RemoteFindResult $collection,
-                                               string $message): Match {
+                                               string $message): MatchResult {
     if (($count = $collection->rawCurrentCount()) > 1) {
       throw new AmbiguousResultException('At most one match expected, %d returned', $count);
     }
     try {
-      return new Match(
-        Match::ORIGIN_LOCAL,
+      return new MatchResult(
+        MatchResult::ORIGIN_LOCAL,
         $localPerson,
         $collection->rawFirst(),
         NULL,
         $message);
     }
     catch (EmptyResultException $e) {
-      return new Match(
-        Match::ORIGIN_LOCAL,
+      return new MatchResult(
+        MatchResult::ORIGIN_LOCAL,
         $localPerson,
         NULL,
-        Match::NO_MATCH,
+        MatchResult::NO_MATCH,
         'No match by email, first name and last name');
     }
   }

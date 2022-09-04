@@ -12,7 +12,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Person_BasicTest extends PHPUnit\Frame
 
   private static array $syncProfile;
 
-  private static \Civi\Osdi\ActionNetwork\SingleSyncer\Person\Person $syncer;
+  private static \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic $syncer;
 
   private static \Civi\Osdi\ActionNetwork\RemoteSystem $remoteSystem;
 
@@ -32,7 +32,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Person_BasicTest extends PHPUnit\Frame
 
     self::$syncProfile = CRM_OSDI_ActionNetwork_TestUtils::createSyncProfile();
 
-    self::$syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\Person(self::$remoteSystem);
+    self::$syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic(self::$remoteSystem);
 
     self::$syncer->setSyncProfile(self::$syncProfile);
 
@@ -69,11 +69,11 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Person_BasicTest extends PHPUnit\Frame
   /** @noinspection PhpParamsInspection */
   public function testConstructorRequiresRemoteSystem() {
     $this->expectException('ArgumentCountError');
-    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\Person();
+    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic();
   }
 
   public function testRemoteSystemIsSettable() {
-    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\Person(self::$remoteSystem);
+    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic(self::$remoteSystem);
     $originalSystem = $syncer->getRemoteSystem();
     $defaultSystemAEP = $originalSystem->getEntryPoint();
 
@@ -176,7 +176,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Person_BasicTest extends PHPUnit\Frame
 
     // TEST PROPER
 
-    $localPerson = Civi\Osdi\LocalObject\Person::fromId($contact['id']);
+    $localPerson = Civi\Osdi\LocalObject\PersonBasic::fromId($contact['id']);
     $result = self::$syncer->syncFromLocalIfNeeded($localPerson);
 
     self::assertEquals(\Civi\Osdi\Result\Sync::class, get_class($result));
@@ -273,7 +273,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Person_BasicTest extends PHPUnit\Frame
       ->addValue('first_name', $changedFirstName)
       ->execute();
 
-    $localPerson = new Civi\Osdi\LocalObject\Person($contactId);
+    $localPerson = new Civi\Osdi\LocalObject\PersonBasic($contactId);
     $syncResult = self::$syncer->syncFromLocalIfNeeded($localPerson);
 
     $remotePeopleWithTheEmail = self::$remoteSystem->find(
@@ -348,7 +348,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Person_BasicTest extends PHPUnit\Frame
       ->addValue('postal_code', '65542')
       ->execute();
 
-    $localPerson = new Civi\Osdi\LocalObject\Person($contactId);
+    $localPerson = new Civi\Osdi\LocalObject\PersonBasic($contactId);
     self::$syncer->syncFromLocalIfNeeded($localPerson);
 
     $reFetchedRemotePerson =
@@ -376,7 +376,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Person_BasicTest extends PHPUnit\Frame
       ->addValue('postal_code', '')
       ->execute();
 
-    $localPerson = new Civi\Osdi\LocalObject\Person($contactId);
+    $localPerson = new Civi\Osdi\LocalObject\PersonBasic($contactId);
         self::$syncer->syncFromLocalIfNeeded($localPerson);
 
     $reFetchedRemotePerson =
@@ -404,7 +404,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Person_BasicTest extends PHPUnit\Frame
     self::assertCount(0, $existingMatchHistory);
 
     // FIRST SYNC
-    $localPerson = new Civi\Osdi\LocalObject\Person($contact['id']);
+    $localPerson = new Civi\Osdi\LocalObject\PersonBasic($contact['id']);
         $syncResult = self::$syncer->syncFromLocalIfNeeded($localPerson);
 
     $remotePeopleWithEmail1 = self::$remoteSystem->find(
@@ -443,7 +443,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Person_BasicTest extends PHPUnit\Frame
 
 
     // SYNC CHANGES
-    $localPerson = new Civi\Osdi\LocalObject\Person($contact['id']);
+    $localPerson = new Civi\Osdi\LocalObject\PersonBasic($contact['id']);
         self::$syncer->syncFromLocalIfNeeded($localPerson);
 
     // "find" on Action Network is sometimes slow to catch up
@@ -490,7 +490,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Person_BasicTest extends PHPUnit\Frame
     self::assertCount(0, $existingMatchHistory);
 
     // FIRST SYNC
-    $localPerson = new Civi\Osdi\LocalObject\Person($contact['id']);
+    $localPerson = new Civi\Osdi\LocalObject\PersonBasic($contact['id']);
     $pair = self::$syncer->makeLocalRemotePair($localPerson);
     self::$syncer->oneWayWriteFromLocal($pair);
 
@@ -526,7 +526,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_Person_BasicTest extends PHPUnit\Frame
       ->execute();
 
     // SYNC CHANGES
-    $localPerson = new Civi\Osdi\LocalObject\Person($contact['id']);
+    $localPerson = new Civi\Osdi\LocalObject\PersonBasic($contact['id']);
     $pair = self::$syncer->makeLocalRemotePair($localPerson);
     $result = self::$syncer->oneWayWriteFromLocal($pair);
 

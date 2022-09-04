@@ -4,9 +4,10 @@ namespace Civi\Osdi\LocalObject;
 
 use Civi\Api4\Generic\AbstractAction;
 use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\Result\Save as SaveResult;
 
-abstract class Base implements LocalObjectInterface {
+abstract class AbstractLocalObject implements LocalObjectInterface {
 
   public const FIELDS = [];
 

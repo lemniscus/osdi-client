@@ -42,7 +42,7 @@ class CRM_OSDI_Result_ResultStackTest extends PHPUnit\Framework\TestCase impleme
   public function testForeach() {
     $testData = [
       0 => new \Civi\Osdi\Result\Sync(),
-      1 => new \Civi\Osdi\Result\Match(\Civi\Osdi\Result\Match::ORIGIN_LOCAL)
+      1 => new \Civi\Osdi\Result\MatchResult(\Civi\Osdi\Result\MatchResult::ORIGIN_LOCAL)
     ];
 
     $stack = new Civi\Osdi\Result\ResultStack;

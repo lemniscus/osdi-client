@@ -14,7 +14,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_TaggingBasicTest extends PHPUnit\Frame
     \Civi\Test\HeadlessInterface,
     \Civi\Test\TransactionalInterface {
 
-  private static \Civi\Osdi\ActionNetwork\SingleSyncer\Tagging\Basic $syncer;
+  private static \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic $syncer;
 
   private static \Civi\Osdi\ActionNetwork\RemoteSystem $remoteSystem;
 
@@ -46,7 +46,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_TaggingBasicTest extends PHPUnit\Frame
     $remotePerson->givenName->set('Test Tagging Sync');
     $remotePerson->save();
     
-    $localPerson = new \Civi\Osdi\LocalObject\Person();
+    $localPerson = new \Civi\Osdi\LocalObject\PersonBasic();
     $localPerson->emailEmail->set('taggingtest@test.net');
     $localPerson->firstName->set('Test Tagging Sync');
     $localPerson->save();
@@ -55,7 +55,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_TaggingBasicTest extends PHPUnit\Frame
     $remoteTag->name->set('test tagging sync');
     $remoteTag->save();
 
-    $localTag  = new \Civi\Osdi\LocalObject\Tag();
+    $localTag  = new \Civi\Osdi\LocalObject\TagBasic();
     $localTag->name->set('test tagging sync');
     $localTag->save();
 
@@ -64,27 +64,27 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_TaggingBasicTest extends PHPUnit\Frame
     $remoteTagging->setTag($remoteTag);
     $remoteTagging->save();
 
-    $localTagging = new \Civi\Osdi\LocalObject\Tagging();
+    $localTagging = new \Civi\Osdi\LocalObject\TaggingBasic();
     $localTagging->setPerson($localPerson)->setTag($localTag);
     $localTagging->save();
 
     return [$localTagging, $remoteTagging];
   }
 
-  private static function makeNewSyncer(): \Civi\Osdi\ActionNetwork\SingleSyncer\Tagging\Basic {
+  private static function makeNewSyncer(): \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic {
     $remoteSystem = self::$remoteSystem;
 
-    $personSyncer = new Civi\Osdi\ActionNetwork\SingleSyncer\Person\Person($remoteSystem);
-    $personSyncer->setMapper(new Civi\Osdi\ActionNetwork\Mapper\Person\Basic($remoteSystem))
-      ->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\Person\OneToOneEmailOrFirstLastEmail($remoteSystem));
+    $personSyncer = new Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic($remoteSystem);
+    $personSyncer->setMapper(new \Civi\Osdi\ActionNetwork\Mapper\PersonBasic($remoteSystem))
+      ->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail($remoteSystem));
 
-    $tagSyncer = new Civi\Osdi\ActionNetwork\SingleSyncer\Tag\Basic($remoteSystem);
-    $tagSyncer->setMapper(new Civi\Osdi\ActionNetwork\Mapper\Tag\Basic())
-      ->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\Tag\Basic());
+    $tagSyncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\TagBasic($remoteSystem);
+    $tagSyncer->setMapper(new \Civi\Osdi\ActionNetwork\Mapper\TagBasic())
+      ->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\TagBasic());
 
-    $taggingSyncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Tagging\Basic($remoteSystem);
-    $taggingSyncer->setMapper(new \Civi\Osdi\ActionNetwork\Mapper\Tagging\Basic($taggingSyncer))
-      ->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\Tagging\Basic($taggingSyncer))
+    $taggingSyncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic($remoteSystem);
+    $taggingSyncer->setMapper(new \Civi\Osdi\ActionNetwork\Mapper\TaggingBasic($taggingSyncer))
+      ->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\TaggingBasic($taggingSyncer))
       ->setPersonSyncer($personSyncer)
       ->setTagSyncer($tagSyncer);
 
@@ -158,16 +158,16 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_TaggingBasicTest extends PHPUnit\Frame
   public function testOneWayMapAndWrite_NoTwinGiven_FromLocal() {
     $taggingSyncer = self::$syncer;
 
-    $localPerson = new Civi\Osdi\LocalObject\Person();
+    $localPerson = new Civi\Osdi\LocalObject\PersonBasic();
     $localPerson->emailEmail->set('taggingtest' . uniqid() .  '@test.net');
     $localPerson->firstName->set('Test Tagging Sync');
     $localPerson->save();
 
-    $localTag = new \Civi\Osdi\LocalObject\Tag();
+    $localTag = new \Civi\Osdi\LocalObject\TagBasic();
     $localTag->name->set('test tagging sync');
     $localTag->save();
 
-    $localTagging = new \Civi\Osdi\LocalObject\Tagging();
+    $localTagging = new \Civi\Osdi\LocalObject\TaggingBasic();
     $localTagging->setPerson($localPerson);
     $localTagging->setTag($localTag);
 
@@ -230,16 +230,16 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_TaggingBasicTest extends PHPUnit\Frame
     self::markTestIncomplete();
     $taggingSyncer = self::$syncer;
 
-    $localPerson = new Civi\Osdi\LocalObject\Person();
+    $localPerson = new Civi\Osdi\LocalObject\PersonBasic();
     $localPerson->emailEmail->set('taggingtest' . uniqid() .  '@test.net');
     $localPerson->firstName->set('Test Tagging Sync');
     $localPerson->save();
 
-    $localTag = new \Civi\Osdi\LocalObject\Tag();
+    $localTag = new \Civi\Osdi\LocalObject\TagBasic();
     $localTag->name->set('test tagging sync');
     $localTag->save();
 
-    $localTagging = new \Civi\Osdi\LocalObject\Tagging();
+    $localTagging = new \Civi\Osdi\LocalObject\TaggingBasic();
     $localTagging->setPerson($localPerson);
     $localTagging->setTag($localTag);
 
@@ -252,7 +252,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_TaggingBasicTest extends PHPUnit\Frame
     $pair = $taggingSyncer->matchAndSyncIfEligible($localTagging);
     $resultStack = $pair->getResultStack();
     $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
-    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\Match::class);
+    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\MatchResult::class);
     $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
     $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
     $syncResult = $resultStack->getLastOfType(Sync::class);
@@ -333,7 +333,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_TaggingBasicTest extends PHPUnit\Frame
     $pair = $syncer->matchAndSyncIfEligible($remoteTag);
     $resultStack = $pair->getResultStack();
     $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
-    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\Match::class);
+    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\MatchResult::class);
     $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
     $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
     $syncResult = $resultStack->getLastOfType(Sync::class);
@@ -401,7 +401,7 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_TaggingBasicTest extends PHPUnit\Frame
     self::markTestIncomplete();
     $syncer = self::$syncer;
 
-    $localTag = new \Civi\Osdi\LocalObject\Tag();
+    $localTag = new \Civi\Osdi\LocalObject\TagBasic();
     $localTag->name->set('testMatchAndSyncIfEligible_MatchyMatchy');
     $localTag->save();
 
@@ -413,14 +413,14 @@ class CRM_OSDI_ActionNetwork_SingleSyncer_TaggingBasicTest extends PHPUnit\Frame
     $pair = $syncer->matchAndSyncIfEligible($remoteTag);
     $resultStack = $pair->getResultStack();
     $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
-    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\Match::class);
+    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\MatchResult::class);
     $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
     $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
     $syncResult = $resultStack->getLastOfType(Sync::class);
     $savedMatch = $syncResult->getState();
 
     self::assertEquals(FetchOldOrFindNewMatch::FOUND_NEW_MATCH, $fetchFindMatchResult->getStatusCode());
-    self::assertEquals(\Civi\Osdi\Result\Match::FOUND_MATCH, $matchResult->getStatusCode());
+    self::assertEquals(\Civi\Osdi\Result\MatchResult::FOUND_MATCH, $matchResult->getStatusCode());
     self::assertEquals(MapAndWrite::NO_CHANGES_TO_WRITE, $mapAndWriteResult->getStatusCode());
     self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
     self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());

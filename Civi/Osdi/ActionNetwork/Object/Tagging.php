@@ -8,7 +8,7 @@ use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\RemoteObjectInterface;
 use Jsor\HalClient\HalResource;
 
-class Tagging extends Base implements RemoteObjectInterface {
+class Tagging extends AbstractRemoteObject implements RemoteObjectInterface {
 
   const FIELDS = [
     'personHref' => ['path' => ['_links', 'osdi:person'], 'createOnly' => TRUE],

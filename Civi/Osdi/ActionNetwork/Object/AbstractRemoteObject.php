@@ -11,7 +11,7 @@ use Civi\Osdi\Result\Save as SaveResult;
 use CRM_OSDI_ExtensionUtil as E;
 use Jsor\HalClient\HalResource;
 
-abstract class Base implements RemoteObjectInterface {
+abstract class AbstractRemoteObject implements RemoteObjectInterface {
 
   public const NULL_CHAR = "\xE2\x90\x80";
 

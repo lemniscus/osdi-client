@@ -2,8 +2,7 @@
 
 namespace Civi\Osdi\Result;
 
-use Civi\Osdi\LocalObject\LocalObjectInterface;
-use Civi\Osdi\PersonSyncState;
+use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\RemoteObjectInterface;
 
 class Sync extends AbstractResult implements \Civi\Osdi\ResultInterface {

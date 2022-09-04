@@ -1,11 +1,11 @@
 <?php
 
-namespace Civi\Osdi\ActionNetwork\Mapper\Tag;
+namespace Civi\Osdi\ActionNetwork\Mapper;
 
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Result\Map as MapResult;
 
-class Basic implements \Civi\Osdi\MapperInterface {
+class TagBasic implements \Civi\Osdi\MapperInterface {
 
   public function mapOneWay(LocalRemotePair $pair): MapResult {
     $result = new MapResult();

@@ -6,7 +6,7 @@ use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\Result\Save;
 use Civi\Osdi\Result\Save as SaveResult;
 
-class Person extends Base implements \Civi\Osdi\RemoteObjectInterface {
+class Person extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInterface {
 
   public Field $identifiers;
   public Field $createdDate;

@@ -3,7 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\Matcher;
 
 use Civi\Osdi\LocalRemotePair;
-use Civi\Osdi\Result\Match as MatchResult;
+use Civi\Osdi\Result\MatchResult as MatchResult;
 
 abstract class AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 

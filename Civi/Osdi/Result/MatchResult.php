@@ -3,11 +3,10 @@
 namespace Civi\Osdi\Result;
 
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\LocalObject\LocalObjectInterface;
-use Civi\Osdi\LocalRemotePair;
+use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\RemoteObjectInterface;
 
-class Match extends AbstractResult implements \Civi\Osdi\ResultInterface {
+class MatchResult extends AbstractResult implements \Civi\Osdi\ResultInterface {
 
   const ERROR_INDETERMINATE = 'provided criteria do not uniquely identify a record';
 
@@ -48,7 +47,7 @@ class Match extends AbstractResult implements \Civi\Osdi\ResultInterface {
   }
 
   /**
-   * @return \Civi\Osdi\LocalObject\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface|null
+   * @return \Civi\Osdi\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface|null
    */
   public function getMatch() {
     if (self::ORIGIN_LOCAL === $this->origin) {
@@ -58,7 +57,7 @@ class Match extends AbstractResult implements \Civi\Osdi\ResultInterface {
   }
 
   /**
-   * @param \Civi\Osdi\LocalObject\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface $object
+   * @param \Civi\Osdi\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface $object
    *
    * @return $this
    */
@@ -70,7 +69,7 @@ class Match extends AbstractResult implements \Civi\Osdi\ResultInterface {
   }
 
   /**
-   * @return \Civi\Osdi\LocalObject\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface|null
+   * @return \Civi\Osdi\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface|null
    */
   public function getOriginObject() {
     if (self::ORIGIN_LOCAL === $this->origin) {
@@ -80,7 +79,7 @@ class Match extends AbstractResult implements \Civi\Osdi\ResultInterface {
   }
 
   /**
-   * @param \Civi\Osdi\LocalObject\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface $object
+   * @param \Civi\Osdi\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface $object
    *
    * @return $this
    */
@@ -127,7 +126,7 @@ class Match extends AbstractResult implements \Civi\Osdi\ResultInterface {
     return $this->localObject;
   }
 
-  public function setLocalObject(?LocalObjectInterface $localObject): Match {
+  public function setLocalObject(?LocalObjectInterface $localObject): self {
     $this->localObject = $localObject;
     return $this;
   }
@@ -136,7 +135,7 @@ class Match extends AbstractResult implements \Civi\Osdi\ResultInterface {
     return $this->remoteObject;
   }
 
-  public function setRemoteObject(?RemoteObjectInterface $remoteObject): Match {
+  public function setRemoteObject(?RemoteObjectInterface $remoteObject): self {
     $this->remoteObject = $remoteObject;
     return $this;
   }

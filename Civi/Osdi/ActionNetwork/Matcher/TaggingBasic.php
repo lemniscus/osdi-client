@@ -1,13 +1,12 @@
 <?php
 
-namespace Civi\Osdi\ActionNetwork\Matcher\Tagging;
+namespace Civi\Osdi\ActionNetwork\Matcher;
 
-use Civi\Osdi\ActionNetwork\Matcher\AbstractMatcher;
 use Civi\Osdi\LocalRemotePair;
-use Civi\Osdi\Result\Match as MatchResult;
+use Civi\Osdi\Result\MatchResult as MatchResult;
 use Civi\Osdi\SingleSyncerInterface;
 
-class Basic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
+class TaggingBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
   protected SingleSyncerInterface $personSyncer;
 

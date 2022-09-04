@@ -1,9 +1,8 @@
 <?php
 
-namespace Civi\Osdi\ActionNetwork\SingleSyncer\Tag;
+namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
-use Civi\Osdi\ActionNetwork\SingleSyncer\AbstractSingleSyncer;
-use Civi\Osdi\LocalObject\LocalObjectInterface;
+use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
@@ -11,7 +10,7 @@ use Civi\Osdi\Result\FetchOldOrFindNewMatch as OldOrNewMatchResult;
 use Civi\Osdi\SingleSyncerInterface;
 use Civi\Osdi\Util;
 
-class Basic extends AbstractSingleSyncer implements SingleSyncerInterface {
+class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
 
   public function __construct(RemoteSystemInterface $remoteSystem) {
     $this->remoteSystem = $remoteSystem;
@@ -29,7 +28,7 @@ class Basic extends AbstractSingleSyncer implements SingleSyncerInterface {
   }
 
   protected function getLocalObjectClass(): string {
-    return \Civi\Osdi\LocalObject\Tag::class;
+    return \Civi\Osdi\LocalObject\TagBasic::class;
   }
 
   protected function getRemoteObjectClass(): string {
@@ -37,7 +36,7 @@ class Basic extends AbstractSingleSyncer implements SingleSyncerInterface {
   }
 
   public function makeLocalObject($id = NULL): LocalObjectInterface {
-    return new \Civi\Osdi\LocalObject\Tag($id);
+    return new \Civi\Osdi\LocalObject\TagBasic($id);
   }
 
   public function makeRemoteObject($id = NULL): RemoteObjectInterface {
@@ -90,9 +89,9 @@ class Basic extends AbstractSingleSyncer implements SingleSyncerInterface {
     return $this->saveMatch($pair);
   }
 
-  protected function typeCheckLocalObject(LocalObjectInterface $object): \Civi\Osdi\LocalObject\Tag {
-    Util::assertClass($object, \Civi\Osdi\LocalObject\Tag::class);
-    /** @var \Civi\Osdi\LocalObject\Tag $object */
+  protected function typeCheckLocalObject(LocalObjectInterface $object): \Civi\Osdi\LocalObject\TagBasic {
+    Util::assertClass($object, \Civi\Osdi\LocalObject\TagBasic::class);
+    /** @var \Civi\Osdi\LocalObject\TagBasic $object */
     return $object;
   }
 

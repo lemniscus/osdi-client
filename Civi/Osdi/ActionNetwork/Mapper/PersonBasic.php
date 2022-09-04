@@ -1,17 +1,17 @@
 <?php
 
-namespace Civi\Osdi\ActionNetwork\Mapper\Person;
+namespace Civi\Osdi\ActionNetwork\Mapper;
 
 use Civi\Osdi\ActionNetwork\Object\Person as RemotePerson;
-use Civi\Osdi\LocalObject\LocalObjectInterface;
-use Civi\Osdi\LocalObject\Person as LocalPerson;
+use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
+use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MapperInterface;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\Map as MapResult;
 
-class Basic implements MapperInterface {
+class PersonBasic implements MapperInterface {
 
   private RemoteSystemInterface $remoteSystem;
 
