@@ -33,7 +33,7 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
   }
 
   public function __clone() {
-    foreach (static::FIELDS as $name => $metadata) {
+    foreach ($this->getFieldMetadata() as $name => $metadata) {
       $this->$name = clone $this->$name;
       $this->$name->setBundle($this);
     }
@@ -48,7 +48,7 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
     }
     catch (EmptyResultException $e) {
     }
-    foreach (static::FIELDS as $fieldName => $x) {
+    foreach ($this->getFieldMetadata() as $fieldName => $x) {
       if ($this->$fieldName->isAltered()) {
         return TRUE;
       }
@@ -63,7 +63,7 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
 
   public function getAllWithoutLoading(): array {
     $allValues = [];
-    foreach (static::FIELDS as $fieldName => $metadata) {
+    foreach ($this->getFieldMetadata() as $fieldName => $metadata) {
       $val = $this->$fieldName->get();
       $path = $metadata['path'];
       \CRM_Utils_Array::pathSet($allValues, $path, $val);
@@ -73,7 +73,7 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
 
   protected function getAllForCompare() {
     $allValues = [];
-    foreach (static::FIELDS as $fieldName => $metadata) {
+    foreach ($this->getFieldMetadata() as $fieldName => $metadata) {
       $allValues[$fieldName] = $this->getFieldValueForCompare($fieldName);
     }
     return $allValues;
@@ -85,7 +85,7 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
     }
 
     $allValues = [];
-    foreach (static::FIELDS as $fieldName => $metadata) {
+    foreach ($this->getFieldMetadata() as $fieldName => $metadata) {
       $val = $this->$fieldName->getOriginal();
       $path = $metadata['path'];
       \CRM_Utils_Array::pathSet($allValues, $path, $val);
@@ -101,7 +101,7 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
     $this->loadOnce();
 
     $allValues = [];
-    foreach (static::FIELDS as $fieldName => $metadata) {
+    foreach ($this->getFieldMetadata() as $fieldName => $metadata) {
       $val = $this->$fieldName->getWithNullPreparedForUpdate();
       $path = $metadata['path'];
       \CRM_Utils_Array::pathSet($allValues, $path, $val);
@@ -144,7 +144,7 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
   public function loadFromArray(array $flatFields): self {
     $nestedArray = [];
     foreach ($flatFields as $flatFieldName => $value) {
-      $path = static::FIELDS[$flatFieldName]['path'];
+      $path = $this->getFieldMetadata()[$flatFieldName]['path'];
       \CRM_Utils_Array::pathSet($nestedArray, $path, $value);
     }
     $resource = HalResource::fromArray($this->_system->getClient(), $nestedArray);
@@ -282,7 +282,7 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
   }
 
   public function equals(self $comparee, array $ignoring = []): bool {
-    foreach (static::FIELDS as $fieldName => $metadata) {
+    foreach ($this->getFieldMetadata() as $fieldName => $metadata) {
       if ($this->$fieldName->get() !== $comparee->$fieldName->get()) {
         if (!in_array($fieldName, $ignoring)) {
           return FALSE;
@@ -352,7 +352,7 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
   }
 
   private function initializeFields(): void {
-    foreach (static::FIELDS as $name => $metadata) {
+    foreach ($this->getFieldMetadata() as $name => $metadata) {
       $this->$name = new Field($name, $this, $metadata);
     }
     $this->_isTouched = FALSE;

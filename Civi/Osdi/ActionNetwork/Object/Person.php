@@ -25,39 +25,41 @@ class Person extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInte
   public Field $languageSpoken;
   public Field $customFields;
 
-  const FIELDS = [
-    'identifiers' => ['path' => ['identifiers'], 'appendOnly' => TRUE],
-    'createdDate' => ['path' => ['created_date'], 'readOnly' => TRUE],
-    'modifiedDate' => ['path' => ['modified_date'], 'readOnly' => TRUE],
-    'givenName' => ['path' => ['given_name'], 'mungeNulls' => TRUE],
-    'familyName' => ['path' => ['family_name'], 'mungeNulls' => TRUE],
-    'emailAddress' => ['path' => ['email_addresses', '0', 'address']],
-    'emailStatus' => ['path' => ['email_addresses', '0', 'status']],
-    'phoneNumber' => ['path' => ['phone_numbers', '0', 'number']],
-    'phoneStatus' => ['path' => ['phone_numbers', '0', 'status']],
-    'postalStreet' => [
-      'path' => ['postal_addresses', '0', 'address_lines', '0'],
-      'mungeNulls' => TRUE,
-    ],
-    'postalLocality' => [
-      'path' => ['postal_addresses', '0', 'locality'],
-      'mungeNulls' => TRUE,
-    ],
-    'postalRegion' => [
-      'path' => ['postal_addresses', '0', 'region'],
-      'mungeNulls' => TRUE,
-    ],
-    'postalCode' => [
-      'path' => ['postal_addresses', '0', 'postal_code'],
-      'mungeNulls' => TRUE,
-    ],
-    'postalCountry' => [
-      'path' => ['postal_addresses', '0', 'country'],
-      'mungeNulls' => TRUE,
-    ],
-    'languageSpoken' => ['path' => ['languages_spoken', '0']],
-    'customFields' => ['path' => ['custom_fields']],
-  ];
+  protected function getFieldMetadata() {
+    return [
+      'identifiers' => ['path' => ['identifiers'], 'appendOnly' => TRUE],
+      'createdDate' => ['path' => ['created_date'], 'readOnly' => TRUE],
+      'modifiedDate' => ['path' => ['modified_date'], 'readOnly' => TRUE],
+      'givenName' => ['path' => ['given_name'], 'mungeNulls' => TRUE],
+      'familyName' => ['path' => ['family_name'], 'mungeNulls' => TRUE],
+      'emailAddress' => ['path' => ['email_addresses', '0', 'address']],
+      'emailStatus' => ['path' => ['email_addresses', '0', 'status']],
+      'phoneNumber' => ['path' => ['phone_numbers', '0', 'number']],
+      'phoneStatus' => ['path' => ['phone_numbers', '0', 'status']],
+      'postalStreet' => [
+        'path' => ['postal_addresses', '0', 'address_lines', '0'],
+        'mungeNulls' => TRUE,
+      ],
+      'postalLocality' => [
+        'path' => ['postal_addresses', '0', 'locality'],
+        'mungeNulls' => TRUE,
+      ],
+      'postalRegion' => [
+        'path' => ['postal_addresses', '0', 'region'],
+        'mungeNulls' => TRUE,
+      ],
+      'postalCode' => [
+        'path' => ['postal_addresses', '0', 'postal_code'],
+        'mungeNulls' => TRUE,
+      ],
+      'postalCountry' => [
+        'path' => ['postal_addresses', '0', 'country'],
+        'mungeNulls' => TRUE,
+      ],
+      'languageSpoken' => ['path' => ['languages_spoken', '0']],
+      'customFields' => ['path' => ['custom_fields']],
+    ];
+  }
 
   public function getType(): string {
     return 'osdi:people';

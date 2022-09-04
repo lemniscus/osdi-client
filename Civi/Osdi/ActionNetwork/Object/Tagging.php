@@ -10,15 +10,6 @@ use Jsor\HalClient\HalResource;
 
 class Tagging extends AbstractRemoteObject implements RemoteObjectInterface {
 
-  const FIELDS = [
-    'personHref' => ['path' => ['_links', 'osdi:person'], 'createOnly' => TRUE],
-    'tagHref' => ['path' => ['_links', 'osdi:tag'], 'createOnly' => TRUE],
-    'identifiers' => ['path' => ['identifiers'], 'appendOnly' => TRUE],
-    'createdDate' => ['path' => ['created_date'], 'readOnly' => TRUE],
-    'modifiedDate' => ['path' => ['modified_date'], 'readOnly' => TRUE],
-    'itemType' => ['path' => ['item_type'], 'readOnly' => TRUE],
-  ];
-
   protected Field $personHref;
 
   protected Field $tagHref;
@@ -34,6 +25,17 @@ class Tagging extends AbstractRemoteObject implements RemoteObjectInterface {
   protected ?RemoteObjectInterface $person = NULL;
 
   protected ?RemoteObjectInterface $tag = NULL;
+
+  protected function getFieldMetadata() {
+    return [
+      'personHref' => ['path' => ['_links', 'osdi:person'], 'createOnly' => TRUE],
+      'tagHref' => ['path' => ['_links', 'osdi:tag'], 'createOnly' => TRUE],
+      'identifiers' => ['path' => ['identifiers'], 'appendOnly' => TRUE],
+      'createdDate' => ['path' => ['created_date'], 'readOnly' => TRUE],
+      'modifiedDate' => ['path' => ['modified_date'], 'readOnly' => TRUE],
+      'itemType' => ['path' => ['item_type'], 'readOnly' => TRUE],
+    ];
+  }
 
   public function delete() {
     return $this->_system->delete($this);
