@@ -1,14 +1,18 @@
 <?php
 
+namespace Civi\Osdi\ActionNetwork\Object;
+
 use Civi\Osdi\ActionNetwork\Object\Tag as Tag;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
+use CRM_OSDI_ActionNetwork_TestUtils;
+use CRM_OSDI_FixtureHttpClient;
 
 /**
  * @group headless
  */
-class CRM_OSDI_ActionNetwork_Object_TagTest extends \PHPUnit\Framework\TestCase implements
+class TagTest extends \PHPUnit\Framework\TestCase implements
     HeadlessInterface,
     HookInterface,
     TransactionalInterface {

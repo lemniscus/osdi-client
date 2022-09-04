@@ -1,8 +1,7 @@
 <?php
 
-use Civi\Osdi\LocalObject\PersonBasic;
-use Civi\Osdi\LocalObject\TagBasic;
-use Civi\Osdi\LocalObject\TaggingBasic;
+namespace Civi\Osdi\LocalObject;
+
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
@@ -10,7 +9,7 @@ use Civi\Test\TransactionalInterface;
 /**
  * @group headless
  */
-class CRM_OSDI_LocalObject_TaggingTest extends \PHPUnit\Framework\TestCase implements
+class TaggingTest extends \PHPUnit\Framework\TestCase implements
     HeadlessInterface,
     HookInterface,
     TransactionalInterface {
@@ -76,7 +75,8 @@ class CRM_OSDI_LocalObject_TaggingTest extends \PHPUnit\Framework\TestCase imple
     self::assertNotEquals($tag, $taggingFromDatabase->getTag());
     self::assertEquals($tag->getId(), $taggingFromDatabase->getTag()->getId());
     self::assertNotEquals($person, $taggingFromDatabase->getPerson());
-    self::assertEquals($person->getId(), $taggingFromDatabase->getPerson()->getId());
+    self::assertEquals($person->getId(), $taggingFromDatabase->getPerson()
+      ->getId());
   }
 
   public function testCreate_TrySave() {

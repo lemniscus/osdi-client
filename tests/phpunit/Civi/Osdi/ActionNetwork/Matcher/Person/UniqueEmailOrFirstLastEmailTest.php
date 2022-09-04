@@ -1,16 +1,20 @@
 <?php
 
+namespace Civi\Osdi\ActionNetwork\Matcher\Person;
+
 use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\TransactionalInterface;
+use CRM_OSDI_ActionNetwork_TestUtils;
 use CRM_OSDI_Fixture_PersonMatching as F;
+use CRM_OSDI_FixtureHttpClient;
 
 /**
  * Test \Civi\Osdi\RemoteSystemInterface
  *
  * @group headless
  */
-class CRM_OSDI_ActionNetwork_Matcher_PersonTest extends \PHPUnit\Framework\TestCase implements
+class UniqueEmailOrFirstLastEmailTest extends \PHPUnit\Framework\TestCase implements
     HeadlessInterface,
     TransactionalInterface {
 
@@ -23,12 +27,12 @@ class CRM_OSDI_ActionNetwork_Matcher_PersonTest extends \PHPUnit\Framework\TestC
   }
 
   public static function setUpBeforeClass(): void {
-    CRM_OSDI_Fixture_PersonMatching::$personClass = \Civi\Osdi\ActionNetwork\Object\Person::class;
+    F::$personClass = \Civi\Osdi\ActionNetwork\Object\Person::class;
   }
 
   public function setUp(): void {
     $this->system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
-    CRM_OSDI_Fixture_PersonMatching::$remoteSystem = $this->system;
+    F::$remoteSystem = $this->system;
     $this->matcher = $this->createMatcher($this->system);
     CRM_OSDI_FixtureHttpClient::resetHistory();
     parent::setUp();
@@ -84,23 +88,23 @@ class CRM_OSDI_ActionNetwork_Matcher_PersonTest extends \PHPUnit\Framework\TestC
     $this->assertMatchResultIsNotError_NoMatch_ZeroCount($matchResult);
   }
 
-/*  public function testRemoteMatch_BadContactId() {
-    $contactId = 999999999;
-    $contactsWithTheId = civicrm_api4(
-      'Contact',
-      'get',
-      [
-        'select' => ['row_count'],
-        'where' => [['id', '=', $contactId]],
-      ]
-    );
-    $this->assertEquals(0, $contactsWithTheId->count());
-
-    $matchResult = $this->matcher->tryToFindMatchForLocalObject(self::makePair($contactId));
-    $this->assertNull($matchResult->getMatch());
-    $this->assertTrue($matchResult->isError());
-    $this->assertEquals(\Civi\Osdi\Result\Match::ERROR_INVALID_ID, $matchResult->getStatusCode());
-  }*/
+  //public function testRemoteMatch_BadContactId() {
+  //  $contactId = 999999999;
+  //  $contactsWithTheId = civicrm_api4(
+  //    'Contact',
+  //    'get',
+  //    [
+  //      'select' => ['row_count'],
+  //      'where' => [['id', '=', $contactId]],
+  //    ]
+  //  );
+  //  $this->assertEquals(0, $contactsWithTheId->count());
+  //
+  //  $matchResult = $this->matcher->tryToFindMatchForLocalObject(self::makePair($contactId));
+  //  $this->assertNull($matchResult->getMatch());
+  //  $this->assertTrue($matchResult->isError());
+  //  $this->assertEquals(\Civi\Osdi\Result\Match::ERROR_INVALID_ID, $matchResult->getStatusCode());
+  //}
 
   public function testRemoteMatch_NoEmail() {
     $unsavedRemotePerson = F::makeNewOsdiPersonWithFirstLastEmail();
@@ -136,7 +140,7 @@ class CRM_OSDI_ActionNetwork_Matcher_PersonTest extends \PHPUnit\Framework\TestC
 
   public function testRemoteMatch_EmailIndeterminate_NoMatchingFirstLast() {
     [$remotePerson, $idsOfContactsWithSameEmailAndDifferentName] =
-      F::setUpRemotePerson_TwoLocalContactsMatchingByEmail_NeitherMatchingByName($this->system);
+      F::setUpRemotePerson_TwoLocalContactsMatchingByEmail_NeitherMatchingByName();
 
     foreach ($idsOfContactsWithSameEmailAndDifferentName as $id) {
       $matchResult = $this->matcher->tryToFindMatchForLocalObject(self::makePair($id));
@@ -148,15 +152,16 @@ class CRM_OSDI_ActionNetwork_Matcher_PersonTest extends \PHPUnit\Framework\TestC
 
   public function testLocalMatch_OneToOneEmailSuccess() {
     [$emailAddress, $remotePerson, $contactId] =
-      F::setUpExactlyOneMatchByEmail_DifferentNames($this->system);
+      F::setUpExactlyOneMatchByEmail_DifferentNames();
     $matchResult = $this->matcher->tryToFindMatchForRemoteObject(self::makePair($remotePerson));
     $this->assertNotNull($matchResult->getMatch());
-    $this->assertEquals($emailAddress, $matchResult->getLocalObject()->loadOnce()->emailEmail->get());
+    $this->assertEquals($emailAddress, $matchResult->getLocalObject()
+      ->loadOnce()->emailEmail->get());
   }
 
   public function testLocalMatch_OrganizationWithEmailIsIgnored() {
     [$emailAddress, $remotePerson, $contactId] =
-      F::setUpExactlyOneMatchByEmail_DifferentNames($this->system);
+      F::setUpExactlyOneMatchByEmail_DifferentNames();
 
     \Civi\Api4\Contact::create(FALSE)
       ->addValue('contact_type', 'Organization')
@@ -173,7 +178,8 @@ class CRM_OSDI_ActionNetwork_Matcher_PersonTest extends \PHPUnit\Framework\TestC
 
     $matchResult = $this->matcher->tryToFindMatchForRemoteObject(self::makePair($remotePerson));
     $this->assertTrue($matchResult->gotMatch());
-    $this->assertEquals($emailAddress, $matchResult->getLocalObject()->loadOnce()->emailEmail->get());
+    $this->assertEquals($emailAddress, $matchResult->getLocalObject()
+      ->loadOnce()->emailEmail->get());
   }
 
   public function testLocalMatch_NoMatchingEmail() {
@@ -204,7 +210,7 @@ class CRM_OSDI_ActionNetwork_Matcher_PersonTest extends \PHPUnit\Framework\TestC
 
   public function testLocalMatch_EmailIndeterminate_NoMatchingFirstLast() {
     [$remotePerson, $idsOfContactsWithSameEmailAndDifferentName] =
-      F::setUpRemotePerson_TwoLocalContactsMatchingByEmail_NeitherMatchingByName($this->system);
+      F::setUpRemotePerson_TwoLocalContactsMatchingByEmail_NeitherMatchingByName();
 
     $matchResult = $this->matcher->tryToFindMatchForRemoteObject(self::makePair($remotePerson));
     self::assertTrue($matchResult->isError());

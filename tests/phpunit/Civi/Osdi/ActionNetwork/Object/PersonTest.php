@@ -1,13 +1,17 @@
 <?php
 
+namespace Civi\Osdi\ActionNetwork\Object;
+
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
+use CRM_OSDI_ActionNetwork_TestUtils;
+use CRM_OSDI_FixtureHttpClient;
 
 /**
  * @group headless
  */
-class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCase implements
+class PersonTest extends \PHPUnit\Framework\TestCase implements
     HeadlessInterface,
     HookInterface,
     TransactionalInterface {
@@ -191,7 +195,7 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
   public function testTrySaveSuccess() {
     $system = self::$system;
     $draftPerson = $this->makeUnsavedPersonWithFirstLastEmailPhone();
-    $result = $system->trySave($draftPerson);
+    $result = $draftPerson->trySave();
     $this->createdPeople[] = $savedPerson = $result->getReturnedObject();
 
     self::assertEquals(\Civi\Osdi\ActionNetwork\Object\Person::class,
@@ -225,14 +229,14 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
 
     // CHANGE EMAIL
     $savedPerson2->emailAddress->set($email1);
-    $saveResult = $system->trySave($savedPerson2);
+    $saveResult = $savedPerson2->trySave();
 
     self::assertEquals(\Civi\Osdi\Result\Save::ERROR, $saveResult->getStatusCode());
   }
 
   public function testPersonCreate_Append() {
     self::markTestSkipped('In Action Network, the only multivalue field is also '
-    . 'subject to uniqueness constraints, so is difficult to test using mocks.');
+      . 'subject to uniqueness constraints, so is difficult to test using mocks.');
 
     /*
     $system = self::$system;
@@ -500,7 +504,10 @@ class CRM_OSDI_ActionNetwork_Object_PersonTest extends \PHPUnit\Framework\TestCa
     $personB->familyName->set('Mc' . $personB->familyName->get());
     $personA->postalLocality->set('West ' . $personA->postalLocality->get());
 
-    self::assertTrue($personA->equals($personB, ['familyName', 'postalLocality']));
+    self::assertTrue($personA->equals($personB, [
+      'familyName',
+      'postalLocality',
+    ]));
   }
 
   public function testDiff() {

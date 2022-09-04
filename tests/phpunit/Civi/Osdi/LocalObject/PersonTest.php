@@ -1,12 +1,15 @@
 <?php
 
+namespace Civi\Osdi\LocalObject;
+
+use Civi;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\TransactionalInterface;
 
 /**
  * @group headless
  */
-class CRM_OSDI_LocalObject_PersonTest extends \PHPUnit\Framework\TestCase implements
+class PersonTest extends \PHPUnit\Framework\TestCase implements
     HeadlessInterface,
     TransactionalInterface {
 

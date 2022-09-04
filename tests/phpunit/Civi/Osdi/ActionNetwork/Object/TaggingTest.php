@@ -1,16 +1,17 @@
 <?php
 
-use Civi\Osdi\ActionNetwork\Object\Person;
-use Civi\Osdi\ActionNetwork\Object\Tag;
-use Civi\Osdi\ActionNetwork\Object\Tagging;
+namespace Civi\Osdi\ActionNetwork\Object;
+
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
+use CRM_OSDI_ActionNetwork_TestUtils;
+use CRM_OSDI_FixtureHttpClient;
 
 /**
  * @group headless
  */
-class CRM_OSDI_ActionNetwork_Object_TaggingTest extends \PHPUnit\Framework\TestCase implements
+class TaggingTest extends \PHPUnit\Framework\TestCase implements
     HeadlessInterface,
     HookInterface,
     TransactionalInterface {
@@ -110,7 +111,8 @@ class CRM_OSDI_ActionNetwork_Object_TaggingTest extends \PHPUnit\Framework\TestC
     self::assertNotEquals($tag, $taggingFromRemote->getTag());
     self::assertEquals($tag->getId(), $taggingFromRemote->getTag()->getId());
     self::assertNotEquals($person, $taggingFromRemote->getPerson());
-    self::assertEquals($person->getId(), $taggingFromRemote->getPerson()->getId());
+    self::assertEquals($person->getId(), $taggingFromRemote->getPerson()
+      ->getId());
   }
 
   public function testCreate_TrySave() {

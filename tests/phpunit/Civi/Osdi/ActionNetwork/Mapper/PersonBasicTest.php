@@ -1,34 +1,34 @@
 <?php
 
+namespace Civi\Osdi\ActionNetwork\Mapper;
+
+use Civi;
 use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
+use CRM_OSDI_ActionNetwork_TestUtils;
+use CRM_OSDI_FixtureHttpClient;
 
 /**
  * Test \Civi\Osdi\RemoteSystemInterface
  *
  * @group headless
  */
-class CRM_OSDI_ActionNetwork_Mapper_PersonTest extends \PHPUnit\Framework\TestCase implements
+class PersonBasicTest extends \PHPUnit\Framework\TestCase implements
     HeadlessInterface,
     HookInterface,
     TransactionalInterface {
 
   /**
-   * @var array{Contact: array, OptionGroup: array, OptionValue: array, CustomGroup: array, CustomField: array}
+   * @var array{Contact: array, OptionGroup: array, OptionValue: array,
+   *   CustomGroup: array, CustomField: array}
    */
   private static $createdEntities = [];
 
-  /**
-   * @var \Civi\Osdi\ActionNetwork\RemoteSystem
-   */
-  private $system;
+  private Civi\Osdi\ActionNetwork\RemoteSystem $system;
 
-  /**
-   * @var \Civi\Osdi\Mapper\Person
-   */
-  private $mapper;
+  private PersonBasic $mapper;
 
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()->installMe(__DIR__)->apply();
@@ -159,7 +159,10 @@ class CRM_OSDI_ActionNetwork_Mapper_PersonTest extends \PHPUnit\Framework\TestCa
     $civiContact = $this->getCookieCutterCiviContact();
     Civi\Api4\Contact::update(0)
       ->addWhere('id', '=', $civiContact['id'])
-      ->setValues(['first_name' => 'DifferentFirst', 'last_name' => 'DifferentLast'])
+      ->setValues([
+        'first_name' => 'DifferentFirst',
+        'last_name' => 'DifferentLast',
+      ])
       ->execute();
 
     $result = $this->mapper->mapLocalToRemote(

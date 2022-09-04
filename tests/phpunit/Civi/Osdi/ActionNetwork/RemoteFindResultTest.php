@@ -1,14 +1,18 @@
 <?php
 
+namespace Civi\Osdi\ActionNetwork;
+
 use Civi\Test\HeadlessInterface;
 use Civi\Test\TransactionalInterface;
+use CRM_OSDI_ActionNetwork_TestUtils;
+use CRM_OSDI_FixtureHttpClient;
 
 /**
  * @group headless
  */
-class CRM_OSDI_ActionNetwork_RemoteFindResultTest extends \PHPUnit\Framework\TestCase implements
-    HeadlessInterface,
-    TransactionalInterface {
+class RemoteFindResultTest extends \PHPUnit\Framework\TestCase implements
+  HeadlessInterface,
+  TransactionalInterface {
 
   /**
    * @var \Civi\Osdi\ActionNetwork\RemoteSystem

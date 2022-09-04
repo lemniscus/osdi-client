@@ -1,11 +1,16 @@
 <?php
 
+namespace Civi\Osdi\Result;
+
+use Civi;
+use PHPUnit;
+
 /**
  * @group headless
  */
-class CRM_OSDI_Result_ResultStackTest extends PHPUnit\Framework\TestCase implements
-  \Civi\Test\HeadlessInterface,
-  \Civi\Test\TransactionalInterface {
+class ResultStackTest extends PHPUnit\Framework\TestCase implements
+    \Civi\Test\HeadlessInterface,
+    \Civi\Test\TransactionalInterface {
 
   public function setUpHeadless() {
     return \Civi\Test::headless()->installMe(__DIR__)->apply();
@@ -18,7 +23,7 @@ class CRM_OSDI_Result_ResultStackTest extends PHPUnit\Framework\TestCase impleme
   }
 
   protected function tearDown(): void {
-   }
+  }
 
   public static function tearDownAfterClass(): void {
   }
@@ -42,14 +47,14 @@ class CRM_OSDI_Result_ResultStackTest extends PHPUnit\Framework\TestCase impleme
   public function testForeach() {
     $testData = [
       0 => new \Civi\Osdi\Result\Sync(),
-      1 => new \Civi\Osdi\Result\MatchResult(\Civi\Osdi\Result\MatchResult::ORIGIN_LOCAL)
+      1 => new \Civi\Osdi\Result\MatchResult(\Civi\Osdi\Result\MatchResult::ORIGIN_LOCAL),
     ];
 
     $stack = new Civi\Osdi\Result\ResultStack;
     $stack->push($testData[0]);
     $stack->push($testData[1]);
 
-    self::assertTrue(is_a($stack, Iterator::class));
+    self::assertTrue(is_a($stack, \Iterator::class));
 
     $currentIndex = 1;
     foreach ($stack as $i => $result) {
