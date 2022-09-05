@@ -7,12 +7,6 @@ use Civi\Osdi\LocalObjectInterface;
 
 class TaggingBasic extends AbstractLocalObject implements LocalObjectInterface {
 
-  const FIELDS = [
-    'id' => ['select' => 'id'],
-    'contactId' => ['select' => 'entity_id'],
-    'tagId' => ['select' => 'tag_id'],
-  ];
-
   protected Field $contactId;
 
   protected Field $tagId;
@@ -20,6 +14,14 @@ class TaggingBasic extends AbstractLocalObject implements LocalObjectInterface {
   protected ?LocalObjectInterface $person = NULL;
 
   protected ?LocalObjectInterface $tag = NULL;
+
+  protected function getFieldMetadata() {
+    return [
+      'id' => ['select' => 'id'],
+      'contactId' => ['select' => 'entity_id'],
+      'tagId' => ['select' => 'tag_id'],
+    ];
+  }
 
   public static function getCiviEntityName(): string {
     return 'EntityTag';

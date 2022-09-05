@@ -9,12 +9,6 @@ use Civi\Osdi\Result\Save as SaveResult;
 
 abstract class AbstractLocalObject implements LocalObjectInterface {
 
-  public const FIELDS = [];
-
-  public const JOINS = [];
-
-  public const ORDER_BY = [];
-
   public Field $id;
 
   protected bool $isTouched = FALSE;
@@ -26,10 +20,18 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
   }
 
   public function __clone() {
-    foreach (static::FIELDS as $name => $metadata) {
+    foreach ($this->getFieldMetadata() as $name => $metadata) {
       $this->$name = clone $this->$name;
       $this->$name->setBundle($this);
     }
+  }
+
+  public static function getJoins(): array {
+    return [];
+  }
+
+  public static function getOrderBys(): array {
+    return [];
   }
 
   public static function fromArray(array $array): self {
@@ -56,7 +58,7 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
   }
 
   private function initializeFields($idValue = NULL): void {
-    foreach (static::FIELDS as $name => $metadata) {
+    foreach ($this->getFieldMetadata() as $name => $metadata) {
       $options = array_merge($metadata, ['bundle' => $this]);
       $this->$name = new Field($name, $options);
     }
@@ -77,7 +79,7 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     if ($this->getId()) {
       $this->loadOnce();
     }
-    foreach (static::FIELDS as $fieldName => $x) {
+    foreach ($this->getFieldMetadata() as $fieldName => $x) {
       if ($this->$fieldName->isAltered()) {
         return TRUE;
       }
@@ -92,7 +94,7 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
   public function getAllAsLoaded(): array {
     $this->loadOnce();
     $return = [];
-    foreach (static::FIELDS as $fieldName => $x) {
+    foreach ($this->getFieldMetadata() as $fieldName => $x) {
       $return[$fieldName] = $this->$fieldName->getAsLoaded();
     }
     return $return;
@@ -105,7 +107,7 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
 
   public function getAllWithoutLoading(): array {
     $return = [];
-    foreach (static::FIELDS as $fieldName => $x) {
+    foreach ($this->getFieldMetadata() as $fieldName => $x) {
       $return[$fieldName] = $this->$fieldName->get();
     }
     return $return;
@@ -126,7 +128,7 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     $this->initializeFields($id);
     $this->isTouched = FALSE;
 
-    foreach (static::FIELDS as $camelName => $fieldMetaData) {
+    foreach ($this->getFieldMetadata() as $camelName => $fieldMetaData) {
       if (array_key_exists('select', $fieldMetaData)) {
         $selects[$fieldMetaData['select']] = $camelName;
       }
@@ -135,8 +137,8 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     /** @var \Civi\Api4\Generic\AbstractGetAction $getAction */
     $getAction = $this->makeApi4Action('get');
     $result = $getAction
-      ->setJoin(static::JOINS)
-      ->setOrderBy(static::ORDER_BY)
+      ->setJoin($this->getJoins())
+      ->setOrderBy($this->getOrderBys())
       ->setSelect(array_keys($selects))
       ->setWhere($this->getWhereClauseForLoad())
       ->execute();
@@ -161,7 +163,7 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
   public function loadFromArray(array $array) {
     $this->initializeFields();
 
-    foreach (static::FIELDS as $camelName => $fieldMetaData) {
+    foreach ($this->getFieldMetadata() as $camelName => $fieldMetaData) {
       if (array_key_exists('select', $fieldMetaData)) {
         $selects[$fieldMetaData['select']] = $camelName;
       }
@@ -219,13 +221,6 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
 
   public function getId(): ?int {
     return $this->id->get();
-  }
-
-  public static function getCiviEntityName(): string {
-    if (defined('static::CIVI_ENTITY')) {
-      return static::CIVI_ENTITY;
-    }
-    return '';
   }
 
 }

@@ -2,6 +2,7 @@
 
 namespace Civi\Osdi\ActionNetwork\Matcher\Person;
 
+use Civi\Osdi\ActionNetwork\Matcher\AbstractMatcher;
 use Civi\Osdi\ActionNetwork\RemoteFindResult;
 use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\Exception\AmbiguousResultException;
@@ -14,7 +15,7 @@ use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\Result\MatchResult as MatchResult;
 
-class UniqueEmailOrFirstLastEmail implements MatcherInterface {
+class UniqueEmailOrFirstLastEmail extends AbstractMatcher implements MatcherInterface {
 
   protected RemoteSystem $system;
 
@@ -29,15 +30,8 @@ class UniqueEmailOrFirstLastEmail implements MatcherInterface {
     $this->localPersonClass = $localPersonClass ?? LocalPerson::class;
   }
 
-  public function tryToFindMatchFor(LocalRemotePair $pair): MatchResult {
-    $result = $pair->isOriginLocal()
-      ? $this->tryToFindMatchForLocalObject($pair)
-      : $this->tryToFindMatchForRemoteObject($pair);
-    $pair->getResultStack()->push($result);
-    return $result;
-  }
-
   public function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult {
+    $this->localPersonClass = $pair->getLocalClass();
     $localObject = $pair->getLocalObject();
     try {
       $localObject->loadOnce();
@@ -126,6 +120,7 @@ class UniqueEmailOrFirstLastEmail implements MatcherInterface {
   }
 
   public function tryToFindMatchForRemoteObject(LocalRemotePair $pair): MatchResult {
+    $this->localPersonClass = $pair->getLocalClass();
     $remoteObject = $pair->getRemoteObject();
 
     if (empty($email = $remoteObject->emailAddress->get())) {
@@ -207,7 +202,7 @@ class UniqueEmailOrFirstLastEmail implements MatcherInterface {
     $apiParams = [
       'checkPermissions' => FALSE,
       'select' => ['id'],
-      'join' => LocalPerson::JOINS,
+      'join' => call_user_func([$this->localPersonClass, 'getJoins']),
       'groupBy' => ['id'],
     ];
     $apiParams['where'] = [

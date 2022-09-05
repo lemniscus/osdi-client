@@ -10,6 +10,8 @@ use Civi\Osdi\LocalObjectInterface;
 
 class PersonBasic extends AbstractLocalObject implements LocalObjectInterface {
 
+  protected static ?array $fieldMetadata = NULL;
+
   public Field $createdDate;
   public Field $modifiedDate;
   public Field $firstName;
@@ -34,51 +36,87 @@ class PersonBasic extends AbstractLocalObject implements LocalObjectInterface {
   public Field $addressCountryId;
   public Field $addressCountryIdName;
 
-  const CIVI_ENTITY = 'Contact';
+  public static function getCiviEntityName(): string {
+    return 'Contact';
+  }
 
-  const FIELDS = [
-    'id' => ['select' => 'id'],
-    'createdDate' => ['select' => 'created_date', 'readOnly' => TRUE],
-    'modifiedDate' => ['select' => 'modified_date', 'readOnly' => TRUE],
-    'firstName' => ['select' => 'first_name'],
-    'lastName' => ['select' => 'last_name'],
-    'isOptOut' => ['select' => 'is_opt_out'],
-    'doNotEmail' => ['select' => 'do_not_email'],
-    'doNotSms' => ['select' => 'do_not_sms'],
-    'isDeleted' => ['select' => 'is_deleted'],
-    'preferredLanguage' => ['select' => 'preferred_language'],
-    'preferredLanguageName' => ['select' => 'preferred_language:name'],
-    'emailId' => ['select' => 'email.id'],
-    'emailEmail' => ['select' => 'email.email'],
-    'phoneId' => ['select' => 'phone.id'],
-    'phonePhone' => ['select' => 'phone.phone'],
-    'phonePhoneNumeric' => [
-      'select' => 'phone.phone_numeric',
-      'readOnly' => TRUE,
-    ],
-    'addressId' => ['select' => 'address.id'],
-    'addressStreetAddress' => ['select' => 'address.street_address'],
-    'addressCity' => ['select' => 'address.city'],
-    'addressStateProvinceId' => [
-      'select' => 'address.state_province_id',
-      'afterSet' => 'updateStateAbbreviation',
-    ],
-    'addressStateProvinceIdAbbreviation' => [],
-    'addressPostalCode' => ['select' => 'address.postal_code'],
-    'addressCountryId' => ['select' => 'address.country_id'],
-    'addressCountryIdName' => ['select' => 'address.country_id:name'],
-  ];
+  public static function getFieldMetadata(): array {
+    if (is_null(static::$fieldMetadata)) {
+      static::$fieldMetadata = array_merge(
+        static::getContactFieldMetadata(),
+        static::getEmailFieldMetadata(),
+        static::getPhoneFieldMetadata(),
+        static::getAddressFieldMetadata()
+      );
+    }
+    return static::$fieldMetadata;
+  }
 
-  const JOINS = [
-    ['Email AS email', 'LEFT', NULL, ['email.is_primary', '=', 1]],
-    ['Phone AS phone', 'LEFT', NULL,
-      ['phone.phone_type_id:name', '=', '"Mobile"'],
-    ],
-    ['Address AS address', FALSE, NULL, ['address.is_primary', '=', 1]],
-  ];
-  const ORDER_BY = [
-    'phone.id' => 'ASC',
-  ];
+  protected static function getContactFieldMetadata(): array {
+    return [
+      'id' => ['select' => 'id'],
+      'createdDate' => ['select' => 'created_date', 'readOnly' => TRUE],
+      'modifiedDate' => ['select' => 'modified_date', 'readOnly' => TRUE],
+      'firstName' => ['select' => 'first_name'],
+      'lastName' => ['select' => 'last_name'],
+      'isOptOut' => ['select' => 'is_opt_out'],
+      'doNotEmail' => ['select' => 'do_not_email'],
+      'doNotSms' => ['select' => 'do_not_sms'],
+      'isDeleted' => ['select' => 'is_deleted'],
+      'preferredLanguage' => ['select' => 'preferred_language'],
+      'preferredLanguageName' => ['select' => 'preferred_language:name'],
+    ];
+  }
+
+  protected static function getEmailFieldMetadata(): array {
+    return [
+      'emailId' => ['select' => 'email.id'],
+      'emailEmail' => ['select' => 'email.email'],
+    ];
+  }
+
+  protected static function getPhoneFieldMetadata(): array {
+    return [
+      'phoneId' => ['select' => 'phone.id'],
+      'phonePhone' => ['select' => 'phone.phone'],
+      'phonePhoneNumeric' => [
+        'select' => 'phone.phone_numeric',
+        'readOnly' => TRUE,
+      ],
+    ];
+  }
+
+  protected static function getAddressFieldMetadata(): array {
+    return [
+      'addressId' => ['select' => 'address.id'],
+      'addressStreetAddress' => ['select' => 'address.street_address'],
+      'addressCity' => ['select' => 'address.city'],
+      'addressStateProvinceId' => [
+        'select' => 'address.state_province_id',
+        'afterSet' => 'updateStateAbbreviation',
+      ],
+      'addressStateProvinceIdAbbreviation' => [],
+      'addressPostalCode' => ['select' => 'address.postal_code'],
+      'addressCountryId' => ['select' => 'address.country_id'],
+      'addressCountryIdName' => ['select' => 'address.country_id:name'],
+    ];
+  }
+
+  public static function getJoins(): array {
+    return [
+      ['Email AS email', 'LEFT', NULL, ['email.is_primary', '=', 1]],
+      ['Phone AS phone', 'LEFT', NULL,
+        ['phone.phone_type_id:name', '=', '"Mobile"'],
+      ],
+      ['Address AS address', FALSE, NULL, ['address.is_primary', '=', 1]],
+    ];
+  }
+
+  public static function getOrderBys(): array {
+    return [
+      'phone.id' => 'ASC',
+    ];
+  }
 
   protected function getWhereClauseForLoad(): array {
     return [['id', '=', $this->getId()], ['contact_type', '=', 'Individual']];
@@ -179,7 +217,7 @@ class PersonBasic extends AbstractLocalObject implements LocalObjectInterface {
       foreach ($matchFields as $name) {
         $val = $this->$name->get();
         $op = is_null($val) ? 'IS NULL' : '=';
-        $dbName = substr(self::FIELDS[$name]['select'], 8);
+        $dbName = substr($this->getFieldMetadata()[$name]['select'], 8);
         $addressMatchGet->addWhere($dbName, $op, $val);
       }
 
@@ -223,7 +261,7 @@ class PersonBasic extends AbstractLocalObject implements LocalObjectInterface {
 
   protected function getSaveableFieldContents($joinName, $keepJoinName = FALSE): array {
     $record = [];
-    foreach (static::FIELDS as $camelName => $metaData) {
+    foreach ($this->getFieldMetadata() as $camelName => $metaData) {
       if (!($select = $metaData['select'] ?? FALSE)) {
         continue;
       }

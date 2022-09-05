@@ -10,14 +10,18 @@ class TagBasic extends AbstractLocalObject implements LocalObjectInterface {
   public Field $modifiedDate;
   public Field $name;
 
-  const CIVI_ENTITY = 'Tag';
+  public static function getCiviEntityName(): string {
+    return 'Tag';
+  }
 
-  const FIELDS = [
-    'id' => ['select' => 'id'],
-    'createdDate' => ['select' => 'created_date', 'readOnly' => TRUE],
-    'modifiedDate' => ['select' => 'modified_date', 'readOnly' => TRUE],
-    'name' => ['select' => 'name'],
-  ];
+  protected function getFieldMetadata() {
+    return [
+      'id' => ['select' => 'id'],
+      'createdDate' => ['select' => 'created_date', 'readOnly' => TRUE],
+      'modifiedDate' => ['select' => 'modified_date', 'readOnly' => TRUE],
+      'name' => ['select' => 'name'],
+    ];
+  }
 
   public function save(): self {
     $returnedRecord = \Civi\Api4\Tag::save(FALSE)->addRecord([
