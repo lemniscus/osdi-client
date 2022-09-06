@@ -3,7 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\Object;
 
 use Civi\Test\HeadlessInterface;
-use Civi\Test\HookInterface;
+use Civi\Core\HookInterface;
 use Civi\Test\TransactionalInterface;
 use CRM_OSDI_ActionNetwork_TestUtils;
 use CRM_OSDI_FixtureHttpClient;
