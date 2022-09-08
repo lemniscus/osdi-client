@@ -8,6 +8,7 @@ use Civi\Osdi\ActionNetwork\Object\Tag;
 use Civi\Osdi\ActionNetwork\Object\Tagging;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\Factory;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\Result\Save;
 use CRM_OSDI_ExtensionUtil as E;
@@ -41,18 +42,9 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
   public function makeOsdiObject(
       string $type,
-      ?HalResource $resource = NULL,
-      ?array $initData = NULL): RemoteObjectInterface {
-    if ('osdi:people' === $type) {
-      return new Person($this, $resource);
-    }
-    if ('osdi:tags' === $type) {
-      return new Tag($this, $resource);
-    }
-    if ('osdi:taggings' === $type) {
-      return new Tagging($this, $resource);
-    }
-    throw new InvalidArgumentException('Cannot make OSDI object of type "%s"', $type);
+      ?HalResource $resource = NULL
+  ): RemoteObjectInterface {
+    return Factory::make('OsdiObject', $type, $this, $resource);
   }
 
   public function fetchObjectByUrl(string $type, string $url): RemoteObjectInterface {

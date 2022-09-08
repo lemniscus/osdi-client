@@ -20,8 +20,8 @@ interface RemoteSystemInterface {
 
   public function makeOsdiObject(
     string $type,
-    ?HalResource $resource,
-    ?array $initData = NULL): RemoteObjectInterface;
+    ?HalResource $resource
+  ): RemoteObjectInterface;
 
   public function save(RemoteObjectInterface $osdiObject): HalResource;
 
