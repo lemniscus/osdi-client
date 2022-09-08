@@ -40,7 +40,7 @@ class Factory {
     }
     return new $class(...$constructorParams);
   }
-  
+
   public static function register(string $category, string $key, string $class) {
     self::$registry[$category][$key] = $class;
   }
