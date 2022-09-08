@@ -107,6 +107,11 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     return new RemoteFindResult($this, $objectType, $endPointWithQuery);
   }
 
+  public function findAll(string $objectType): RemoteFindResult {
+    $endpoint = $this->getEndpointFor($objectType);
+    return new RemoteFindResult($this, $objectType, $endpoint);
+  }
+
   public function save(RemoteObjectInterface $osdiObject): HalResource {
     if ($osdiObject->getId()) {
       try {
