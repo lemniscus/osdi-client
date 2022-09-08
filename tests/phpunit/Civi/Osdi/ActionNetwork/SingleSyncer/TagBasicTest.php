@@ -173,7 +173,8 @@ class TagBasicTest extends PHPUnit\Framework\TestCase implements
   public function testMatchAndSyncIfEligible_WriteNewTwin_FromLocal() {
     $syncer = self::$syncer;
     $localTag = new \Civi\Osdi\LocalObject\TagBasic();
-    $localTag->name->set('testMatchAndSyncIfEligible_FromLocal');
+    $originalName = 'testMatchAndSyncIfEligible_FromLocal ' . microtime();
+    $localTag->name->set($originalName);
     $localTag->save();
 
     // FIRST SYNC
@@ -186,19 +187,14 @@ class TagBasicTest extends PHPUnit\Framework\TestCase implements
     $syncResult = $resultStack->getLastOfType(Sync::class);
     $savedMatch = $syncResult->getState();
 
+    self::assertEquals(Civi\Osdi\Result\MatchResult::NO_MATCH, $matchResult->getStatusCode());
     self::assertEquals(FetchOldOrFindNewMatch::NO_MATCH_FOUND, $fetchFindMatchResult->getStatusCode());
-
-    self::assertEquals('Finding tags on Action Network is not implemented',
-      $matchResult->getMessage());
-
     self::assertEquals(MapAndWrite::WROTE_NEW, $mapAndWriteResult->getStatusCode());
     self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
     self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());
     self::assertEquals(LocalRemotePair::class, get_class($savedMatch));
     self::assertNotNull($pair->getRemoteObject()->getId());
-
-    self::assertEquals('testMatchAndSyncIfEligible_FromLocal',
-      $pair->getRemoteObject()->name->get());
+    self::assertEquals($originalName, $pair->getRemoteObject()->name->get());
 
     // SECOND SYNC
     $pair = $syncer->matchAndSyncIfEligible($localTag);
@@ -215,9 +211,7 @@ class TagBasicTest extends PHPUnit\Framework\TestCase implements
     self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());
     self::assertEquals(LocalRemotePair::class, get_class($savedMatch));
     self::assertNotNull($pair->getRemoteObject()->getId());
-
-    self::assertEquals('testMatchAndSyncIfEligible_FromLocal',
-      $pair->getRemoteObject()->name->get());
+    self::assertEquals($originalName, $pair->getRemoteObject()->name->get());
 
     // THIRD SYNC
     $localTag->name->set('testMatchAndSyncIfEligible_FromLocal (new name)');
@@ -235,9 +229,7 @@ class TagBasicTest extends PHPUnit\Framework\TestCase implements
     self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());
     self::assertEquals(LocalRemotePair::class, get_class($savedMatch));
     self::assertNotNull($pair->getRemoteObject()->getId());
-
-    self::assertEquals('testMatchAndSyncIfEligible_FromLocal',
-      $pair->getRemoteObject()->name->get());
+    self::assertEquals($originalName, $pair->getRemoteObject()->name->get());
   }
 
   public function testMatchAndSyncIfEligible_WriteNewTwin_FromRemote() {
