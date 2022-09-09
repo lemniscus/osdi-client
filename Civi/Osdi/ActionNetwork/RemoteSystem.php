@@ -168,7 +168,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
   private function createOnRemoteSystem(RemoteObjectInterface $osdiObject) {
     $endpoint = $this->linkify($osdiObject->getUrlForCreate());
     $body = $osdiObject->getArrayForCreate();
-    print "\n\n" . json_encode($body, JSON_PRETTY_PRINT) . "\n";
+    // print "\n\n" . json_encode($body, JSON_PRETTY_PRINT) . "\n";
     return $endpoint->post([], ['body' => $osdiObject->getArrayForCreate()]);
   }
 
