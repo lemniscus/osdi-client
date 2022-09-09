@@ -130,6 +130,10 @@ todo
 
 Various lightweight classes serve to carry data between the more algorithm-heavy classes...
 
+## Tests
+
+There is a generous collection of PHPUnit tests that can (and should only) be run in a [CiviCRM Buildkit environment](https://docs.civicrm.org/dev/en/latest/tools/buildkit/) and **only against a sandbox*Action Network account*. The reason for this is that some entities in Action Network are immutable after creation; i.e. they cannot be deleted or changed. Running the tests will create junk in your sandbox Action Network account.
+
 ## Creating a custom extension for your use-case
 
 ~~If your requirements are extremely simple, you can use the built-in Syncers, Mappers, Matchers, LocalObjects and RemoteObjects. You will need to create a SyncProfile that combines these classes into a working package.~~ (work in progress)
