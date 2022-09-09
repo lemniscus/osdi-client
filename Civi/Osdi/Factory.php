@@ -17,6 +17,7 @@ class Factory {
       'osdi:people' => ActionNetwork\Object\Person::class,
       'osdi:tags' => ActionNetwork\Object\Tag::class,
       'osdi:taggings' => ActionNetwork\Object\Tagging::class,
+      'osdi:fundraising_pages' => ActionNetwork\Object\FundraisingPage::class,
     ],
     'Mapper' => [
       'Person' => ActionNetwork\Mapper\PersonBasic::class,
