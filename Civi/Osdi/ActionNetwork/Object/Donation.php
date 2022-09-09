@@ -2,7 +2,11 @@
 
 namespace Civi\Osdi\ActionNetwork\Object;
 
+use Civi\Osdi\Exception\EmptyResultException;
+use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
+use Civi\Osdi\RemoteObjectInterface;
+// use Jsor\HalClient\HalResource;
 
 class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInterface {
 
@@ -14,9 +18,13 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
   public Field $recipients;
   public Field $payment;
   public Field $recurrence;
-  public Field $donor;
-  public Field $fundraisingPageId;
+  public Field $fundraisingPageHref;
+  public Field $donorHref;
   public Field $referrerData;
+
+  protected ?Person $donor = NULL;
+
+  protected ?FundraisingPage $fundraisingPage = NULL;
 
   protected function getFieldMetadata(): array {
     return [
@@ -61,5 +69,77 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
     $data['_links']['osdi:person'] = ['href' => ''];
     return $data;
   }
-}
 
+  public function getDonor(): ?RemoteObjectInterface {
+    if (empty($this->donor)) {
+      $personResource = $this->_resource->getFirstLink('osdi:person')->get();
+      $this->donor = new Person($this->_system, $personResource);
+    }
+    return $this->donor;
+  }
+
+  // @todo discuss possible use of a Trait method for this process which is shared in various places.
+  public function setDonor(RemoteObjectInterface $person) {
+    if ('osdi:people' !== $person->getType()) {
+      throw new InvalidArgumentException();
+    }
+    $newPersonUrl = $this->setDonorWithoutSettingField($person);
+    $this->donorHref->set($newPersonUrl);
+  }
+
+  public function setDonorWithoutSettingField(RemoteObjectInterface $person): ?string {
+    $newPersonUrl = $this->getUrlIfAnyFor($person);
+
+    // is this true of Donations? @todo
+    // $currentPersonUrl = $this->donorHref->get();
+    // if ($this->_id && !empty($currentPersonUrl) && ($newPersonUrl !== $currentPersonUrl)) {
+      // throw new InvalidOperationException('Modifying an existing tagging on Action Network is not allowed');
+    // }
+
+    $this->donor = $person;
+    return $newPersonUrl;
+  }
+
+  public function getFundraisingPage(): ?RemoteObjectInterface {
+    if (empty($this->fundraisingPage)) {
+      $personResource = $this->_resource->getFirstLink('osdi:person')->get();
+      $this->fundraisingPage = new Person($this->_system, $personResource);
+    }
+    return $this->fundraisingPage;
+  }
+
+  // @todo discuss possible use of a Trait method for this process which is shared in various places.
+  public function setFundraisingPage(RemoteObjectInterface $object) {
+    if ('osdi:fundraising_page' !== $object->getType()) {
+      throw new InvalidArgumentException();
+    }
+    $newObjectUrl = $this->setFundraisingPageWithoutSettingField($object);
+    $this->fundraisingPageHref->set($newObjectUrl);
+  }
+
+  public function setFundraisingPageWithoutSettingField(RemoteObjectInterface $object): ?string {
+    $newObjectUrl = $this->getUrlIfAnyFor($object);
+
+    // is this true of Donations? @todo
+    // $currentObjectUrl = $this->fundraisingPageHref->get();
+    // if ($this->_id && !empty($currentObjectUrl) && ($newObjectUrl !== $currentObjectUrl)) {
+      // throw new InvalidOperationException('Modifying an existing tagging on Action Network is not allowed');
+    // }
+
+    $this->fundraisingPage = $object;
+    return $newObjectUrl;
+  }
+
+  private function getUrlIfAnyFor(?RemoteObjectInterface $object): ?string {
+    if (is_null($object)) {
+      return NULL;
+    }
+    try {
+      return $object->getUrlForRead();
+    }
+    catch (EmptyResultException $e) {
+      return NULL;
+    }
+  }
+
+}

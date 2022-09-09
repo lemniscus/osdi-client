@@ -25,10 +25,7 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
    */
   private static $createdEntities = [];
 
-  /**
-   * @var string FundraisingPage id.
-   */
-  private static string $fundraisingPageId = '';
+  private static FundraisingPage $fundraisingPage;
 
   /**
    * @var \Civi\Osdi\ActionNetwork\RemoteSystem
@@ -41,7 +38,7 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
 
   public static function setUpBeforeClass(): void {
     $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
-    self::$fundraisingPageId = self::getOrCreateTestFundraisingPage($system)->getId();
+    self::$fundraisingPage = self::getOrCreateTestFundraisingPage($system);
   }
 
   public function setUp(): void {
@@ -107,13 +104,12 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
 
     // We need a donor.
     $person = new Person($this->system);
-    $person->givenName->set('Generous');
-    $person->familyName->set('McTest');
+    // $person->givenName->set('Generous');
+    // $person->familyName->set('McTest');
     $person->emailAddress->set('generous@example.org');
     $personId = $person->save()->getId();
 
     $donation = new Donation($this->system);
-
     self::assertEmpty($donation->getId());
 
     // Set minimal data on donation.
@@ -122,21 +118,19 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
     $donation->payment->set(['method' => 'Credit Card', 'reference_number' => 'test_payment_1']);
     $donation->recurrence->set(['recurring' => FALSE, /* 'period' => 'Monthly' */]);
     $donation->donor->set($personId);
-    $donation->fundraisingPageId->set(self::$fundraisingPageId);
+    $donation->setFundraisingPage(self::$fundraisingPage);
+    $donation->setDonor($person);
     // $donation->referrerData->set();
     $id = $donation->save()->getId();
 
     self::assertNotEmpty($id);
 
-    $reFetchedDonation = new Donation($this->system);
-    $reFetchedDonation->setId($id);
-    $reFetchedDonation->load();
-
+    $reFetchedDonation = Donation::loadFromId($id, $this->system);
     self::assertEquals('USD', $reFetchedDonation->currency->get());
 
     // Try to delete the things we made. (we probably can't)
-    $donation->delete();
     $person->delete();
+    $donation->delete();
   }
 
 }
