@@ -28,19 +28,19 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
 
   protected function getFieldMetadata(): array {
     return [
-      'identifiers'       => ['path' => ['identifiers'], 'appendOnly' => TRUE],
-      'createdDate'       => ['path' => ['created_date'], 'readOnly' => TRUE],
-      'modifiedDate'      => ['path' => ['modified_date'], 'readOnly' => TRUE],
-      'amount'            => ['path' => ['amount'], 'readOnly' => TRUE],
-      'currency'          => ['path' => ['currency']],
-      'recipients'        => ['path' => ['recipients']],
-      'payment'           => ['path' => ['payment']],
-      'recurrence'        => ['path' => ['action_network:recurrence']],
+      'identifiers'          => ['path' => ['identifiers'], 'appendOnly' => TRUE],
+      'createdDate'          => ['path' => ['created_date'], 'readOnly' => TRUE],
+      'modifiedDate'         => ['path' => ['modified_date'], 'readOnly' => TRUE],
+      'amount'               => ['path' => ['amount'], 'readOnly' => TRUE],
+      'currency'             => ['path' => ['currency']],
+      'recipients'           => ['path' => ['recipients']],
+      'payment'              => ['path' => ['payment']],
+      'recurrence'           => ['path' => ['action_network:recurrence']],
       // 'donor'             => ['path' => ['action_network:person_id']],
       // 'fundraisingPageId' => ['path' => ['action_network:fundraising_page_id']],
-      'donor'             => ['path' => ['_links', 'osdi:person'], 'createOnly' => TRUE], // @Todo find out what createOnly does.
-      'fundraisingPage'   => ['path' => ['_links', 'osdi:fundraising_page'], 'createOnly' => TRUE],
-      'referrerData'      => ['path' => ['action_network:referrer_data']],
+      'donorHref'            => ['path' => ['_links', 'osdi:person', 'href'], 'createOnly' => TRUE], // @Todo find out what createOnly does.
+      'fundraisingPageHref'  => ['path' => ['_links', 'osdi:fundraising_page', 'href'], 'createOnly' => TRUE],
+      'referrerData'         => ['path' => ['action_network:referrer_data']],
     ];
   }
 
@@ -49,15 +49,21 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
   }
 
   public function getUrlForCreate(): string {
-    $fundraisingPageId = $this->fundraisingPageId->get();
-    if (empty($fundraisingPageId)) {
-      throw new InvalidOperationException("Cannot construct URL to create a Donation without fundraisingPageId being set.");
+    if (empty($this->fundraisingPage)) {
+      throw new InvalidOperationException("Cannot construct URL to create a Donation without fundraisingPage.");
     }
-
-    $fundraisingPage = new FundraisingPage($this->_system);
-    $fundraisingPage->setId($fundraisingPageId);
-    $fundraisingPageUrl = $fundraisingPage->getUrlForRead();
+    $fundraisingPageUrl = $this->fundraisingPage->getUrlForRead();
     return "$fundraisingPageUrl/donations";
+  }
+
+  /**
+   * Override the normal one here because for everything other than create, we can access it directly.
+   */
+  protected function constructOwnUrl(): string {
+    if (empty($id = $this->getId())) {
+      throw new EmptyResultException('Cannot calculate a url for an object that has no id');
+    }
+    return "https://actionnetwork.org/api/v2/donations/$id";
   }
 
   public function getArrayForCreate(): array {
@@ -66,7 +72,10 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
     unset($data['created_date']);
     unset($data['modified_date']);
     unset($data['amount']);
-    $data['_links']['osdi:person'] = ['href' => ''];
+
+    unset($data['payment']);
+    unset($data['action_network:recurrence']);
+    unset($data['action_network:referrer_data']);
     return $data;
   }
 
@@ -110,7 +119,7 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
 
   // @todo discuss possible use of a Trait method for this process which is shared in various places.
   public function setFundraisingPage(RemoteObjectInterface $object) {
-    if ('osdi:fundraising_page' !== $object->getType()) {
+    if ('osdi:fundraising_pages' !== $object->getType()) {
       throw new InvalidArgumentException();
     }
     $newObjectUrl = $this->setFundraisingPageWithoutSettingField($object);

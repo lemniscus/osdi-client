@@ -3,6 +3,7 @@ namespace Civi\Osdi\ActionNetwork\Object;
 
 use Civi\Osdi\ActionNetwork\Object\Donation;
 use Civi\Osdi\ActionNetwork\Object\Person;
+use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\ActionNetwork\Object\FundraisingPage;
 use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Core\HookInterface;
@@ -113,23 +114,35 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
     self::assertEmpty($donation->getId());
 
     // Set minimal data on donation.
+    // Note: setting currency in normal ISO 4217 is supported, though it gets returned in lowercase.
     $donation->currency->set('USD');
-    $donation->recipients->set(['display_name' => 'Test recipient', 'amount' => '1.00']);
-    $donation->payment->set(['method' => 'Credit Card', 'reference_number' => 'test_payment_1']);
-    $donation->recurrence->set(['recurring' => FALSE, /* 'period' => 'Monthly' */]);
-    $donation->donor->set($personId);
-    $donation->setFundraisingPage(self::$fundraisingPage);
+    $recipients = [['display_name' => 'Test recipient', 'amount' => '1.00']];
+    $donation->recipients->set($recipients);
+    // $donation->payment->set(['method' => 'Credit Card', 'reference_number' => 'test_payment_1']);
+    // $donation->recurrence->set(['recurring' => FALSE, /* 'period' => 'Monthly' */]);
     $donation->setDonor($person);
+    $donation->setFundraisingPage(self::$fundraisingPage);
     // $donation->referrerData->set();
     $id = $donation->save()->getId();
+
+    // print "new donation: $id\n";
 
     self::assertNotEmpty($id);
 
     $reFetchedDonation = Donation::loadFromId($id, $this->system);
-    self::assertEquals('USD', $reFetchedDonation->currency->get());
+    // Note ActionNetwork returns currencies like ISO 4217 but lower case.
+    self::assertEquals('usd', $reFetchedDonation->currency->get());
+    self::assertEquals( $recipients, $reFetchedDonation->recipients->get());
+    // The amount is generated from the sum of the recipients' amounts.
+    self::assertEquals('1.00', $reFetchedDonation->amount->get());
+    // Failing @todo:
+    // self::assertEquals(self::$fundraisingPage->getId(), $reFetchedDonation->fundraisingPageHref->get());
 
     // Try to delete the things we made. (we probably can't)
     $person->delete();
+
+    $this->expectException(InvalidOperationException::class);
+    $this->expectExceptionMessageMatches('/Objects of type osdi:donations cannot be deleted via the Action Network API/');
     $donation->delete();
   }
 
