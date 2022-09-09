@@ -74,13 +74,21 @@ class TaggingTest extends \PHPUnit\Framework\TestCase implements
     $tagging->setTag($tag);
     $tagging->setPerson($person);
 
-    self::expectException(\Civi\Osdi\Exception\InvalidArgumentException::class);
-    $tagging->save();
+    try {
+      $tagging->save();
+    }
+    catch (\Throwable $e1) {
+    }
+    self::assertEquals(\Civi\Osdi\Exception\InvalidArgumentException::class, get_class($e1));
 
     $person->save();
 
-    self::expectException(\Civi\Osdi\Exception\InvalidArgumentException::class);
-    $tagging->save();
+    try {
+      $tagging->save();
+    }
+    catch (\Throwable $e2) {
+    }
+    self::assertEquals(\Civi\Osdi\Exception\InvalidArgumentException::class, get_class($e2));
 
     $tag->save();
     $tagging->save();
