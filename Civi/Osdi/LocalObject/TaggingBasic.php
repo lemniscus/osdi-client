@@ -49,9 +49,10 @@ class TaggingBasic extends AbstractLocalObject implements LocalObjectInterface {
     return $this;
   }
 
-  public function loadFromArray(array $array) {
+  public function loadFromArray(array $array): self {
     parent::loadFromArray($array);
     $this->updateReferencedObjectsFromIdFields();
+    return $this;
   }
 
   public function save(): self {

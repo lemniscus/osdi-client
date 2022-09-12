@@ -2,9 +2,7 @@
 
 namespace Civi\Osdi;
 
-interface LocalObjectInterface {
-
-  public function delete(): ?\Civi\Api4\Generic\Result;
+interface LocalObjectInterface extends CrudObjectInterface {
 
   public static function fromId(string $id): self;
 
@@ -14,24 +12,6 @@ interface LocalObjectInterface {
 
   public static function getCiviEntityName(): string;
 
-  public function getId(): ?int;
-
-  public function isAltered(): bool;
-
-  public function isLoaded(): bool;
-
-  public function isTouched(): bool;
-
-  public function load(): LocalObjectInterface;
-
-  public function loadFromArray(array $array);
-
-  public function loadOnce(): LocalObjectInterface;
-
-  public function save(): LocalObjectInterface;
-
-  public function setId(int $value);
-
-  public function trySave(): \Civi\Osdi\Result\Save;
+  public function loadFromArray(array $array): self;
 
 }

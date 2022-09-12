@@ -2,10 +2,9 @@
 
 namespace Civi\Osdi;
 
-use Civi\Osdi\Result\Save as SaveResult;
 use Jsor\HalClient\HalResource;
 
-interface RemoteObjectInterface {
+interface RemoteObjectInterface extends CrudObjectInterface {
 
   public function __construct(RemoteSystemInterface $system,
                               ?HalResource $resource = NULL);
@@ -20,10 +19,6 @@ interface RemoteObjectInterface {
 
   public function getArrayForUpdate(): array;
 
-  public function setId(string $val);
-
-  public function getId(): ?string;
-
   public function getResource(): ?HalResource;
 
   public function getType(): string;
@@ -36,24 +31,8 @@ interface RemoteObjectInterface {
 
   public function getUrlForUpdate(): string;
 
-  public function isAltered(): bool;
-
-  public function isLoaded(): bool;
-
-  public function isTouched(): bool;
-
   public function isSupersetOf($otherObject, array $ignoring): bool;
 
-  public function delete();
-
-  public function load(): RemoteObjectInterface;
-
   public function loadFromArray(array $flatFields): RemoteObjectInterface;
-
-  public function loadOnce(): RemoteObjectInterface;
-
-  public function save(): RemoteObjectInterface;
-
-  public function trySave(): SaveResult;
 
 }

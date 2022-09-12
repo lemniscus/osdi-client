@@ -160,7 +160,7 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     return $this;
   }
 
-  public function loadFromArray(array $array) {
+  public function loadFromArray(array $array): self {
     $this->initializeFields();
 
     foreach ($this->getFieldMetadata() as $camelName => $fieldMetaData) {
@@ -215,7 +215,10 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     return $result;
   }
 
-  public function setId(int $value) {
+  /**
+   * @param int $value
+   */
+  public function setId($value) {
     $this->id->set($value);
   }
 

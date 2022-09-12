@@ -114,7 +114,10 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
       . 'deleted via the Action Network API', $this->getType());
   }
 
-  public function setId(string $val) {
+  /**
+   * @param string $val
+   */
+  public function setId($val) {
     $this->_id = $val;
   }
 
