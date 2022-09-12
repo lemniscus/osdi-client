@@ -8,39 +8,28 @@ use Jsor\HalClient\HalLink;
 use Jsor\HalClient\HalResource;
 
 class RemoteFindResult implements \Iterator {
-  /**
-   * @var string
-   */
-  protected $type;
+
+  protected string $type;
 
   /**
    * @var \Jsor\HalClient\HalResource[]
    */
-  protected $pages = [];
+  protected array $pages = [];
 
   /**
    * @var \Jsor\HalClient\HalResource[]
    */
-  protected $currentPageContents = [];
+  protected array $currentPageContents = [];
 
   protected int $currentPageIndex = 1;
 
   protected int $currentItemIndex = 0;
 
-  /**
-   * @var int
-   */
-  protected $resultCountRaw = 0;
+  protected int $resultCountRaw = 0;
 
-  /**
-   * @var int
-   */
-  protected $resultCountFiltered = 0;
+  protected int $resultCountFiltered = 0;
 
-  /**
-   * @var RemoteSystemInterface
-   */
-  protected $system;
+  protected RemoteSystemInterface $system;
 
   public function __construct(RemoteSystemInterface $system, string $type, HalLink $queryLink) {
     $this->system = $system;
@@ -90,8 +79,9 @@ class RemoteFindResult implements \Iterator {
     $this->pages[$pageNum] = $pageResource;
     ksort($this->pages, SORT_NUMERIC);
     try {
-      $this->resultCountRaw += count($pageResource->getResource($this->type));
-      $this->resultCountFiltered += $this->filteredCount($pageResource->getResource($this->type));
+      $resources = $pageResource->getResource($this->type);
+      $this->resultCountRaw += count($resources);
+      $this->resultCountFiltered += $this->filteredCount($resources);
     }
     catch (\Throwable $e) {
     }
