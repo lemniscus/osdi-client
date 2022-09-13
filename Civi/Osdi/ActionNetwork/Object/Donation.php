@@ -32,7 +32,7 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
   protected function getFieldMetadata(): array {
     return [
       'identifiers'          => ['path' => ['identifiers'], 'appendOnly' => TRUE],
-      'createdDate'          => ['path' => ['created_date'], 'readOnly' => TRUE],
+      'createdDate'          => ['path' => ['created_date'], 'createOnly' => TRUE],
       'modifiedDate'         => ['path' => ['modified_date'], 'readOnly' => TRUE],
       'amount'               => ['path' => ['amount'], 'readOnly' => TRUE],
       'currency'             => ['path' => ['currency']],
@@ -44,6 +44,7 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
       'donorHref'            => ['path' => ['_links', 'osdi:person'], 'createOnly' => TRUE], // @Todo find out what createOnly does.
       'fundraisingPageHref'  => ['path' => ['_links', 'osdi:fundraising_page'], 'createOnly' => TRUE],
       'referrerData'         => ['path' => ['action_network:referrer_data']],
+      // 'referrerData'         => ['path' => ['referrer_data']],
     ];
   }
 
@@ -75,14 +76,11 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
     // hash with ['href' => ...]
     $data['_links']['osdi:person'] = ['href' => $this->donorHref->get()];
     $data['_links']['osdi:fundraising_page'] = ['href' => $this->fundraisingPageHref->get()];
-    unset($data['identifiers']);
-    unset($data['created_date']);
-    unset($data['modified_date']);
-    unset($data['amount']);
-
-    unset($data['payment']);
-    unset($data['action_network:recurrence']);
-    unset($data['action_network:referrer_data']);
+    // unset($data['created_date']);
+    // unset($data['identifiers']); unset($data['modified_date']); unset($data['amount']); unset($data['payment']); unset($data['action_network:recurrence']);
+    // unset($data['action_network:referrer_data']);
+    // unset($data['referrer_data']);
+    print "\ngetArrayForCreate()\n" . json_encode($data, JSON_PRETTY_PRINT) . "\n";
     return $data;
   }
 

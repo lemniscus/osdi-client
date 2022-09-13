@@ -26,12 +26,15 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
    */
   private static $createdEntities = [];
 
-  private static FundraisingPage $fundraisingPage;
+  private static ?FundraisingPage $fundraisingPage;
+
+  private static ?Person $donor;
 
   /**
    * @var \Civi\Osdi\ActionNetwork\RemoteSystem
    */
   private $system;
+
 
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()->installMe(__DIR__)->apply();
@@ -40,6 +43,12 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
   public static function setUpBeforeClass(): void {
     $system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
     self::$fundraisingPage = self::getOrCreateTestFundraisingPage($system);
+
+    // We can re-use the same person in this test.
+    $person = new Person($system);
+    $person->emailAddress->set('generous@example.org');
+    $person->save();
+    self::$donor = $person;
   }
 
   public function setUp(): void {
@@ -61,6 +70,10 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
         ]);
       }
     }
+
+    // Delete the test person.
+    self::$donor->delete();
+    self::$donor = null;
 
     parent::tearDownAfterClass();
   }
@@ -108,41 +121,47 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
    */
   public function testNewDonation() {
 
-    // We need a donor.
-    $person = new Person($this->system);
-    // $person->givenName->set('Generous');
-    // $person->familyName->set('McTest');
-    $person->emailAddress->set('generous@example.org');
-    $personId = $person->save()->getId();
-
+    // Create a Remote Donation object -----------------------------------
+    /** @var Donation $donation */
     $donation = new Donation($this->system);
     $this->assertEmpty($donation->getId());
-
     // Set minimal data on donation.
     // Note: setting currency in normal ISO 4217 is supported, though it gets returned in lowercase.
     $donation->currency->set('USD');
-    $recipients = [['display_name' => 'Test recipient', 'amount' => '1.00']];
+    // Recipient names are CiviCRM Financial Type names. Here we deliberately use a test one.
+    $recipients = [['display_name' => 'Test recipient financial type A', 'amount' => '1.00']];
     $donation->recipients->set($recipients);
-    // ActionNetwork accepts payment info but ignores and overwrites it.
+    // ActionNetwork accepts 'payment', and 'recurrence' keys but ignores it. We test this.
     $paymentInfo = ['method' => 'EFT', 'reference_number' => 'test_payment_1'];
     $donation->payment->set($paymentInfo);
-
     $donation->recurrence->set(['recurring' => TRUE, 'period' => 'Monthly']);
-    $donation->setDonor($person);
+    // We are permitted to set the createdDate as a way to back date contributions.
+    $donation->createdDate->set('2020-03-04T05:06:07Z');
+    // Set linked resources.
+    $donation->setDonor(self::$donor);
     $donation->setFundraisingPage(static::$fundraisingPage);
-    // $donation->referrerData->set();
+    // @todo referrerData does not work as expected.
+    $referrerData = [
+      'source' => 'phpunit_source',
+      'website' => 'https://example.org/osdi-test',
+      // 'referrer' => 'phpunit_referrer',
+      //               "Must be a valid Action Network referrer code. Read-only. Corresponds to the referrers chart in this action's manage page."
+      //               Gets fixed as 'group-civi-sandbox' whatever we send.
+    ];
+    $donation->referrerData->set($referrerData);
+
+    // Save the object to Action Network ------------------------------------
     $id = $donation->save()->getId();
-
-    // print "new donation: $id\n";
-
     $this->assertNotEmpty($id);
 
+    // Fetch object back from Action Network and inspect --------------------
     /** @var Donation $reFetchedDonation */
     $reFetchedDonation = Donation::loadFromId($id, $this->system);
     // print "\nDonation made: " . $reFetchedDonation->getId() . "\n";
 
     // Note ActionNetwork returns currencies like ISO 4217 but lower case.
     $this->assertEquals('usd', $reFetchedDonation->currency->get());
+    $this->assertEquals('2020-03-04T05:06:07Z', $reFetchedDonation->createdDate->get());
     $this->assertEquals($recipients, $reFetchedDonation->recipients->get());
 
     $fetchedPaymentInfo = $reFetchedDonation->payment->get();
@@ -151,19 +170,18 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
       "For some reson, ActionNetwork should declare ALL payments submitted through API as Credit Card, even though we passed in EFT. If this test fails, their policy has changed since this code was written.");
     $this->assertNotEquals($paymentInfo['reference_number'], $fetchedPaymentInfo['reference_number'] ?? NULL,
       "For some reson, ActionNetwork should ignore our reference_number and generate its own. If this test fails, their policy has changed since this code was written.");
-    $fetchedRecurrence = $reFetchedDonation->recurrence->get();
-      $this->assertEquals(['recurring' => FALSE], $fetchedRecurrence,
-      "ActionNetwork should not allow us to record recurring contributions. If this test is failing it has changed its policy.");
+
+    $this->assertEquals(['recurring' => TRUE, 'period' => 'Monthly'], $reFetchedDonation->recurrence->get());
 
     // The amount is generated from the sum of the recipients' amounts.
     $this->assertEquals('1.00', $reFetchedDonation->amount->get());
 
     // Check the links worked.
     $this->assertEquals(static::$fundraisingPage->getUrlForRead(), $reFetchedDonation->fundraisingPageHref->get());
-    $this->assertEquals($person->getUrlForRead(), $reFetchedDonation->donorHref->get());
+    $this->assertEquals(self::$donor->getUrlForRead(), $reFetchedDonation->donorHref->get());
 
-    // Delete the person. (Interesting this is allowed, but deleting the Donation is not, presumably leaves broken FK on Donation!)
-    $person->delete();
+    $fetchedReferrerData = $reFetchedDonation->referrerData->get();
+    $this->assertEquals($referrerData, $fetchedReferrerData);
 
     // Try to delete the donation page (check this is disallowed)
     $this->expectException(InvalidOperationException::class);
