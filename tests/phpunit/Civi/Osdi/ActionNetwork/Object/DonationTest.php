@@ -88,17 +88,12 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
    * Do this once per test run.
    */
   private static function getOrCreateTestFundraisingPage(RemoteSystem $system): FundraisingPage {
-    $fundraisingPages = $system->find('osdi:fundraising_pages', []);
+    $fundraisingPages = $system->findAll('osdi:fundraising_pages');
     foreach ($fundraisingPages as $fundraisingPage) {
       if ($fundraisingPage->title->get() === self::FUNDRAISING_PAGE_NAME) {
         return $fundraisingPage;
       }
     }
-
-    // Seems submitting a query gives a 500 error; oData queries not supported.
-    // $fundraisingPages = $system->find(
-    //     'osdi:fundraising_pages',
-    //     [['name', 'eq',  'CiviCRM Contributions (TEST)']]);
 
     // Does not exist yet.
     $fundraisingPage = new FundraisingPage($system);
