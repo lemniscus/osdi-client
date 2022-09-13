@@ -181,6 +181,8 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
     $this->assertEquals(self::$donor->getUrlForRead(), $reFetchedDonation->donorHref->get());
 
     $fetchedReferrerData = $reFetchedDonation->referrerData->get();
+    // The referrer appears to be out of our control, so do not test it.
+    unset($fetchedReferrerData['referrer']);
     $this->assertEquals($referrerData, $fetchedReferrerData);
 
     // Try to delete the donation page (check this is disallowed)
