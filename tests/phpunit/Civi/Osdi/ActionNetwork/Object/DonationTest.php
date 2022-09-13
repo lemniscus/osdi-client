@@ -100,7 +100,12 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
     return $fundraisingPage;
   }
 
-  // @todo
+  /**
+   * Tests that a new donation can be recorded with Action Network.
+   *
+   * This also tests some of their policies still hold true.
+   *
+   */
   public function testNewDonation() {
 
     // We need a donor.
@@ -111,36 +116,56 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
     $personId = $person->save()->getId();
 
     $donation = new Donation($this->system);
-    self::assertEmpty($donation->getId());
+    $this->assertEmpty($donation->getId());
 
     // Set minimal data on donation.
     // Note: setting currency in normal ISO 4217 is supported, though it gets returned in lowercase.
     $donation->currency->set('USD');
     $recipients = [['display_name' => 'Test recipient', 'amount' => '1.00']];
     $donation->recipients->set($recipients);
-    // $donation->payment->set(['method' => 'Credit Card', 'reference_number' => 'test_payment_1']);
-    // $donation->recurrence->set(['recurring' => FALSE, /* 'period' => 'Monthly' */]);
+    // ActionNetwork accepts payment info but ignores and overwrites it.
+    $paymentInfo = ['method' => 'EFT', 'reference_number' => 'test_payment_1'];
+    $donation->payment->set($paymentInfo);
+
+    $donation->recurrence->set(['recurring' => TRUE, 'period' => 'Monthly']);
     $donation->setDonor($person);
-    $donation->setFundraisingPage(self::$fundraisingPage);
+    $donation->setFundraisingPage(static::$fundraisingPage);
     // $donation->referrerData->set();
     $id = $donation->save()->getId();
 
     // print "new donation: $id\n";
 
-    self::assertNotEmpty($id);
+    $this->assertNotEmpty($id);
 
+    /** @var Donation $reFetchedDonation */
     $reFetchedDonation = Donation::loadFromId($id, $this->system);
-    // Note ActionNetwork returns currencies like ISO 4217 but lower case.
-    self::assertEquals('usd', $reFetchedDonation->currency->get());
-    self::assertEquals( $recipients, $reFetchedDonation->recipients->get());
-    // The amount is generated from the sum of the recipients' amounts.
-    self::assertEquals('1.00', $reFetchedDonation->amount->get());
-    // Failing @todo:
-    // self::assertEquals(self::$fundraisingPage->getId(), $reFetchedDonation->fundraisingPageHref->get());
+    // print "\nDonation made: " . $reFetchedDonation->getId() . "\n";
 
-    // Try to delete the things we made. (we probably can't)
+    // Note ActionNetwork returns currencies like ISO 4217 but lower case.
+    $this->assertEquals('usd', $reFetchedDonation->currency->get());
+    $this->assertEquals($recipients, $reFetchedDonation->recipients->get());
+
+    $fetchedPaymentInfo = $reFetchedDonation->payment->get();
+    $this->assertIsArray($fetchedPaymentInfo);
+    $this->assertEquals('Credit Card', $fetchedPaymentInfo['method'] ?? NULL,
+      "For some reson, ActionNetwork should declare ALL payments submitted through API as Credit Card, even though we passed in EFT. If this test fails, their policy has changed since this code was written.");
+    $this->assertNotEquals($paymentInfo['reference_number'], $fetchedPaymentInfo['reference_number'] ?? NULL,
+      "For some reson, ActionNetwork should ignore our reference_number and generate its own. If this test fails, their policy has changed since this code was written.");
+    $fetchedRecurrence = $reFetchedDonation->recurrence->get();
+      $this->assertEquals(['recurring' => FALSE], $fetchedRecurrence,
+      "ActionNetwork should not allow us to record recurring contributions. If this test is failing it has changed its policy.");
+
+    // The amount is generated from the sum of the recipients' amounts.
+    $this->assertEquals('1.00', $reFetchedDonation->amount->get());
+
+    // Check the links worked.
+    $this->assertEquals(static::$fundraisingPage->getUrlForRead(), $reFetchedDonation->fundraisingPageHref->get());
+    $this->assertEquals($person->getUrlForRead(), $reFetchedDonation->donorHref->get());
+
+    // Delete the person. (Interesting this is allowed, but deleting the Donation is not, presumably leaves broken FK on Donation!)
     $person->delete();
 
+    // Try to delete the donation page (check this is disallowed)
     $this->expectException(InvalidOperationException::class);
     $this->expectExceptionMessageMatches('/Objects of type osdi:donations cannot be deleted via the Action Network API/');
     $donation->delete();
