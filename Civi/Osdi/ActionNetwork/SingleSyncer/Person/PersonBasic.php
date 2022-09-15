@@ -52,6 +52,7 @@ class PersonBasic implements SingleSyncerInterface {
       return $result;
     }
 
+    $pair->getOriginObject()->loadOnce();
     $matchResult = $this->getMatcher()->tryToFindMatchFor($pair);
 
     if ($matchResult->isError()) {
