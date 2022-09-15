@@ -4,14 +4,11 @@ namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
 use Civi\Osdi\ActionNetwork\Object\Tagging as OsdiTaggingObject;
 use Civi\Osdi\ActionNetwork\RemoteSystem;
-use Civi\Osdi\ActionNetwork\SingleSyncer\Person as PersonSyncer;
-use Civi\Osdi\ActionNetwork\SingleSyncer\TagBasic as TagSyncer;
-use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\LocalObject\TaggingBasic as LocalTaggingObject;
 use Civi\Osdi\LocalRemotePair;
+use Civi\Osdi\Result\DeletionSync as DeletionSyncResult;
 use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
-use Civi\Osdi\Result\Sync;
 use Civi\Osdi\SingleSyncerInterface;
 
 class TaggingBasic extends AbstractSingleSyncer {
@@ -21,9 +18,6 @@ class TaggingBasic extends AbstractSingleSyncer {
   protected ?SingleSyncerInterface $personSyncer = NULL;
 
   protected ?SingleSyncerInterface $tagSyncer = NULL;
-
-  const inputTypeActionNetworkTaggingObject = 'ActionNetwork:Tagging:Object';
-  const inputTypeLocalEntityTagId = 'Local:EntityTag:Id';
 
   public function __construct(RemoteSystem $remoteSystem) {
     $this->remoteSystem = $remoteSystem;
@@ -55,114 +49,25 @@ class TaggingBasic extends AbstractSingleSyncer {
     return $this->tagSyncer;
   }
 
-  private function oneWaySyncLocalById($id): Sync {
-    try {
-      $localObject = \Civi\Api4\EntityTag::get(FALSE)
-        ->addWhere('id', '=', $id)
-        ->addWhere('entity_table', '=', 'civicrm_contact')
-        ->execute()->single();
+  public function syncDeletion(LocalRemotePair $pair): DeletionSyncResult {
+    $result = new DeletionSyncResult();
+
+    $matchResult = $this->matcher->tryToFindMatchFor($pair);
+    $matchCode = $matchResult->getStatusCode();
+
+    if ($matchResult::FOUND_MATCH === $matchCode) {
+      $matchResult->getMatch()->delete();
+      $result->setStatusCode($result::DELETED);
     }
-    catch (\API_Exception $exception) {
-      return new Sync(
-        NULL,
-        NULL,
-        Sync::ERROR,
-        "Failed to retrieve local tag id '$id'", NULL,
-        $exception
-      );
+    elseif ($matchResult::NO_MATCH === $matchCode) {
+      $result->setStatusCode($result::NOTHING_TO_DELETE);
     }
-
-    $result = $this->getPersonSyncer()->getOrCreateMatchingObject(
-      PersonSyncer::inputTypeLocalContactId, $localObject['entity_id']);
-
-    if ($result->isError()) {
-      return $result;
-    }
-    /** @var \Civi\Osdi\ActionNetwork\Object\Person $remotePerson */
-    $remotePerson = $result->getRemoteObject();
-
-    $result = $this->getTagSyncer()->getOrCreateMatch(
-      TagSyncer::inputTypeLocalTagId, $localObject['tag_id']);
-
-    if ($result->isError()) {
-      return $result;
-    }
-    /** @var \Civi\Osdi\ActionNetwork\Object\Tag $remoteTag */
-    $remoteTag = $result->getRemoteObject();
-
-    $system = $this->getRemoteSystem();
-
-    $draftRemoteObject = new OsdiTaggingObject(NULL, NULL);
-    $draftRemoteObject->setPerson($remotePerson, $system);
-    $draftRemoteObject->setTag($remoteTag, $system);
-
-    $saveResult = $system->trySave($draftRemoteObject);
-    $remoteObject = $saveResult->getReturnedObject();
-
-    $this->logSyncLocalEntityTag($saveResult, $id);
-
-    if ($saveResult->isError()) {
-      return new Sync(
-        $localObject,
-        $remoteObject,
-        Sync::ERROR,
-        $saveResult->getMessage(), NULL,
-        $saveResult->getContext()
-      );
+    else {
+      $result->setStatusCode($result::ERROR);
     }
 
-    $this->saveMatch($localObject, $remoteObject);
-
-    return new Sync(
-      $localObject,
-      $remoteObject,
-      Sync::SUCCESS, NULL, NULL,
-    );
-  }
-
-  private function oneWaySyncRemoteObject(OsdiTaggingObject $remoteObject): Sync {
-
-    $remotePerson = $remoteObject->getPerson();
-    $remoteTag = $remoteObject->getTag();
-
-    if (empty($remotePerson) or empty($remoteTag)) {
-      throw new InvalidArgumentException('Invalid remote tagging object supplied to '
-        . __CLASS__ . '::' . __FUNCTION__);
-    }
-
-    $result = $this->getPersonSyncer()->getOrCreateMatchingObject(
-      PersonSyncer::inputTypeActionNetworkPersonObject, $remotePerson);
-
-    if ($result->isError()) {
-      return $result;
-    }
-    $localContact = $result->getLocalObject();
-
-    $result = $this->getTagSyncer()->getOrCreateMatch(
-      TagSyncer::inputTypeActionNetworkTagObject, $remoteTag);
-
-    if ($result->isError()) {
-      return $result;
-    }
-    $localTag = $result->getLocalObject();
-
-    $localObject = \Civi\Api4\EntityTag::create(FALSE)
-      ->addValue('entity_table', 'civicrm_contact')
-      ->addValue('entity_id', $localContact['id'])
-      ->addValue('tag_id', $localTag['id'])
-      ->execute()->single();
-
-    \Civi::log()->debug(
-      "OSDI sync attempt: remote tagging id" . $remoteObject->getId() . ": success"
-    );
-
-    $this->saveMatch($localObject, $remoteObject);
-
-    return new Sync(
-      $localObject,
-      $remoteObject,
-      Sync::SUCCESS, NULL, NULL,
-    );
+    $pair->getResultStack()->push($result);
+    return $result;
   }
 
   private function saveMatch(LocalRemotePair $pair): void {
