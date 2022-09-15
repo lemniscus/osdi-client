@@ -20,6 +20,10 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     return $this->database['osdi:people'][$id];
   }
 
+  public function findAll(string $objectType): \Civi\Osdi\ActionNetwork\RemoteFindResult {
+    // TODO: Implement findAll() method.
+  }
+
   public function makeOsdiPerson(?HalResource $resource, ?array $initData = NULL) {
     // TODO: Implement makeRemotePerson() method.
   }

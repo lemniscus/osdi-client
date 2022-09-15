@@ -2,11 +2,14 @@
 
 namespace Civi\Osdi;
 
+use Civi\Osdi\ActionNetwork\RemoteFindResult;
 use Civi\Osdi\Result\Save;
 use Jsor\HalClient\HalClientInterface;
 use Jsor\HalClient\HalResource;
 
 interface RemoteSystemInterface {
+
+  public function findAll(string $objectType): RemoteFindResult;
 
   public function getClient(): HalClientInterface;
 
