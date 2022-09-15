@@ -12,6 +12,8 @@ use Civi\Osdi\Util;
 
 class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
 
+  protected ?array $matchArray = NULL;
+
   public function __construct(RemoteSystemInterface $remoteSystem) {
     $this->remoteSystem = $remoteSystem;
   }
@@ -102,28 +104,26 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
   }
 
   private function getOrSetAllSavedMatches($replacement = NULL): array {
-    static $matchArray = NULL;
-
     if (is_array($replacement)) {
-      $matchArray = $replacement;
+      $this->matchArray = $replacement;
       \Civi::cache('long')
-        ->set('osdi-client:tag-match', $matchArray['persistable']);
+        ->set('osdi-client:tag-match', $this->matchArray['persistable']);
     }
 
-    elseif (is_null($matchArray)) {
+    elseif (is_null($this->matchArray)) {
       $idArray = \Civi::cache('long')->get('osdi-client:tag-match', []);
-      $matchArray = ['persistable' => $idArray];
+      $this->matchArray = ['persistable' => $idArray];
       foreach ($idArray as $syncProfileId => $matches) {
         foreach ($matches as $localId => $remoteId) {
           $localObject = $this->makeLocalObject($localId);
           $remoteObject = $this->makeRemoteObject($remoteId);
           $pair = new LocalRemotePair($localObject, $remoteObject);
-          $matchArray[$syncProfileId]['local'][$localId] = $pair;
-          $matchArray[$syncProfileId]['remote'][$remoteId] = $pair;
+          $this->matchArray[$syncProfileId]['local'][$localId] = $pair;
+          $this->matchArray[$syncProfileId]['remote'][$remoteId] = $pair;
         }
       }
     }
-    return $matchArray;
+    return $this->matchArray;
   }
 
 }
