@@ -83,11 +83,20 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
    * @return \Civi\Osdi\LocalRemotePair
    */
   protected function saveSyncStateIfNeeded(LocalRemotePair $pair) {
-    /** @var \Civi\Osdi\Result\FetchOldOrFindNewMatch $r */
-    $r = $pair->getResultStack()->getLastOfType(OldOrNewMatchResult::class);
+    if (empty($pair->getTargetObject()) || empty($pair->getTargetObject()->getId())) {
+      return NULL;
+    }
+
+    $resultStack = $pair->getResultStack();
+    if ($resultStack->lastIsError()) {
+      return NULL;
+    }
+
+    $r = $resultStack->getLastOfType(OldOrNewMatchResult::class);
     if ($r->isStatus($r::FETCHED_SAVED_MATCH)) {
       return $pair;
     }
+
     return $this->saveMatch($pair);
   }
 
