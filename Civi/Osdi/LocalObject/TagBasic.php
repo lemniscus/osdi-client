@@ -24,10 +24,16 @@ class TagBasic extends AbstractLocalObject implements LocalObjectInterface {
   }
 
   public function save(): self {
-    $returnedRecord = \Civi\Api4\Tag::save(FALSE)->addRecord([
-      'id' => $this->getId(),
-      'name' => $this->name->get(),
-    ])->execute()->first();
+    $id = $this->getId();
+    $name = $this->name->get();
+
+    $recordToSave = ['id' => $id, 'name' => $name];
+    if (empty($id)) {
+      $recordToSave['label'] = $name;
+    }
+
+    $returnedRecord = \Civi\Api4\Tag::save(FALSE)
+      ->setMatch(['name'])->addRecord($recordToSave)->execute()->first();
 
     $this->id->load($returnedRecord['id']);
     $this->name->load($returnedRecord['name']);
