@@ -2,6 +2,7 @@
 
 namespace Civi\Osdi\ActionNetwork\Object;
 
+use Civi\Osdi\ActionNetwork\RemoteFindResult;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\Result\Save;
 use Civi\Osdi\Result\Save as SaveResult;
@@ -166,6 +167,12 @@ class Person extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInte
     }
 
     return parent::trySave();
+  }
+
+  public function getTaggings(): RemoteFindResult {
+    $personUrl = $this->getUrlForRead();
+    $taggingsLink = $this->_system->linkify("$personUrl/taggings");
+    return new RemoteFindResult($this->_system, 'osdi:taggings', $taggingsLink);
   }
 
 }
