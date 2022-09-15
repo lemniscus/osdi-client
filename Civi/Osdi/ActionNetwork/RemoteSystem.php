@@ -272,7 +272,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     throw new EmptyResultException('Could not find url for "%s"', $objectType);
   }
 
-  private function linkify(string $url): HalLink {
+  public function linkify(string $url): HalLink {
     return new HalLink($this->getClient(), $url);
   }
 
