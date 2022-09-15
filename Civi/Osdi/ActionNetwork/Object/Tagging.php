@@ -57,12 +57,13 @@ class Tagging extends AbstractRemoteObject implements RemoteObjectInterface {
     return $this->person;
   }
 
-  public function setPerson(RemoteObjectInterface $person) {
+  public function setPerson(RemoteObjectInterface $person): self {
     if ('osdi:people' !== $person->getType()) {
       throw new InvalidArgumentException();
     }
     $newPersonUrl = $this->setPersonWithoutSettingField($person);
     $this->personHref->set($newPersonUrl);
+    return $this;
   }
 
   public function setPersonWithoutSettingField(RemoteObjectInterface $person): ?string {
@@ -85,12 +86,13 @@ class Tagging extends AbstractRemoteObject implements RemoteObjectInterface {
     return $this->tag;
   }
 
-  public function setTag(RemoteObjectInterface $tag) {
+  public function setTag(RemoteObjectInterface $tag): self {
     if ('osdi:tags' !== $tag->getType()) {
       throw new InvalidArgumentException();
     }
     $newTagUrl = $this->setTagWithoutSettingField($tag);
     $this->tagHref->set($newTagUrl);
+    return $this;
   }
 
   protected function setTagWithoutSettingField(RemoteObjectInterface $tag): ?string {
