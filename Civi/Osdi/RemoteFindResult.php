@@ -161,7 +161,7 @@ class RemoteFindResult implements \Iterator {
     }
   }
 
-  public function loadAll() {
+  public function loadAll(): self {
     $savedPageIndex = $this->currentPageIndex;
     $oldItemCount = NULL;
 
@@ -172,6 +172,7 @@ class RemoteFindResult implements \Iterator {
     }
 
     $this->currentPageIndex = $savedPageIndex;
+    return $this;
   }
 
 }
