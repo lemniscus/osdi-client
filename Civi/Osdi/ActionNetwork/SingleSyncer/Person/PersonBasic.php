@@ -35,6 +35,10 @@ class PersonBasic implements SingleSyncerInterface {
     $this->remoteSystem = $remoteSystem;
   }
 
+  public function fetchOldOrFindAndSaveNewMatch(LocalRemotePair $pair): OldOrNewMatchResult {
+    // TODO: Implement fetchOldOrFindNewAndSaveMatch() method.
+  }
+
   public function fetchOldOrFindNewMatch(LocalRemotePair $pair): OldOrNewMatchResult {
     $result = new OldOrNewMatchResult();
 

@@ -3,6 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
 use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\FetchOldOrFindNewMatch;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MapperInterface;
@@ -200,6 +201,12 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
 
     $resultStack->push($currentResult);
     return $currentResult;
+  }
+
+  public function fetchOldOrFindAndSaveNewMatch(LocalRemotePair $pair): OldOrNewMatchResult {
+    $result = $this->fetchOldOrFindNewMatch($pair);
+    $this->saveSyncStateIfNeeded($pair);
+    return $result;
   }
 
   protected function getSyncEligibility(LocalRemotePair $pair): SyncEligibility {

@@ -40,6 +40,11 @@ interface SingleSyncerInterface {
    */
   public function fetchOldOrFindNewMatch(LocalRemotePair $pair): OldOrNewMatchResult;
 
+  /**
+   * Pushes its result onto the pair's result stack in addition to returning the result.
+   */
+  public function fetchOldOrFindAndSaveNewMatch(LocalRemotePair $pair): OldOrNewMatchResult;
+
   public function makeLocalObject($id = NULL): LocalObjectInterface;
 
   public function makeRemoteObject($id = NULL): RemoteObjectInterface;
