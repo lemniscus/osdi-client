@@ -43,7 +43,6 @@ class TagBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
     if ($civiApiTagGet->count()) {
       $tagArray = $civiApiTagGet->single();
-      /** @var \Civi\Osdi\LocalObject\TagBasic $localObject */
       $localObject = new $localClass();
       $localObject->loadFromArray($tagArray);
       $result->setMatch($localObject);

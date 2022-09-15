@@ -81,7 +81,7 @@ class TaggingBasic implements \Civi\Osdi\MapperInterface {
     return $this->personSyncer;
   }
 
-  public function setPersonSyncer(?SingleSyncerInterface $personSyncer): TaggingBasic {
+  public function setPersonSyncer(?SingleSyncerInterface $personSyncer): self {
     $this->personSyncer = $personSyncer;
     return $this;
   }
@@ -93,7 +93,7 @@ class TaggingBasic implements \Civi\Osdi\MapperInterface {
     return $this->tagSyncer;
   }
 
-  public function setTagSyncer(?SingleSyncerInterface $tagSyncer): TaggingBasic {
+  public function setTagSyncer(?SingleSyncerInterface $tagSyncer): self {
     $this->tagSyncer = $tagSyncer;
     return $this;
   }
@@ -102,7 +102,7 @@ class TaggingBasic implements \Civi\Osdi\MapperInterface {
     return $this->taggingSyncer;
   }
 
-  public function setTaggingSyncer(?SingleSyncerInterface $taggingSyncer): TaggingBasic {
+  public function setTaggingSyncer(?SingleSyncerInterface $taggingSyncer): self {
     $this->taggingSyncer = $taggingSyncer;
     return $this;
   }
