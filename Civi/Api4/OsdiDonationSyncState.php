@@ -8,6 +8,6 @@ namespace Civi\Api4;
  *
  * @package Civi\Api4
  */
-class DonationSyncState extends Generic\DAOEntity {
+class OsdiDonationSyncState extends Generic\DAOEntity {
 
 }
