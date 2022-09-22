@@ -16,9 +16,9 @@ use CRM_OSDI_FixtureHttpClient;
  * @group headless
  */
 class DonationTest extends \PHPUnit\Framework\TestCase implements
-    HeadlessInterface,
-    HookInterface,
-    TransactionalInterface {
+  HeadlessInterface,
+  HookInterface,
+  TransactionalInterface {
 
   const FUNDRAISING_PAGE_NAME = 'CiviCRM Contributions (TEST)';
   /**
@@ -138,7 +138,8 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
     // @todo referrerData does not work as expected.
     $referrerData = [
       'source' => 'phpunit_source',
-      'website' => 'https://example.org/osdi-test',
+      // 'website' => 'https://example.org/osdi-test',
+      'website' => 'this is not a URL - test',
       // 'referrer' => 'phpunit_referrer',
       //               "Must be a valid Action Network referrer code. Read-only. Corresponds to the referrers chart in this action's manage page."
       //               Gets fixed as 'group-civi-sandbox' whatever we send.
@@ -160,6 +161,7 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
     $this->assertEquals($recipients, $reFetchedDonation->recipients->get());
 
     $fetchedPaymentInfo = $reFetchedDonation->payment->get();
+    print "\n" . json_encode($fetchedPaymentInfo, JSON_PRETTY_PRINT) . "\n";
     $this->assertIsArray($fetchedPaymentInfo);
     $this->assertEquals('Credit Card', $fetchedPaymentInfo['method'] ?? NULL,
       "For some reson, ActionNetwork should declare ALL payments submitted through API as Credit Card, even though we passed in EFT. If this test fails, their policy has changed since this code was written.");
@@ -178,6 +180,7 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
     $fetchedReferrerData = $reFetchedDonation->referrerData->get();
     // The referrer appears to be out of our control, so do not test it.
     unset($fetchedReferrerData['referrer']);
+    // print "\nGot referrerData:\n" . json_encode($fetchedReferrerData, JSON_PRETTY_PRINT) . "\n";
     $this->assertEquals($referrerData, $fetchedReferrerData);
 
     // Try to delete the donation page (check this is disallowed)
