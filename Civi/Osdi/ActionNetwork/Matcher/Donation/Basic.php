@@ -1,4 +1,5 @@
 <?php
+exit; // might not be needed; we're assuming one-way in each direction, with no updates.
 
 namespace Civi\Osdi\ActionNetwork\Matcher\Donation;
 
