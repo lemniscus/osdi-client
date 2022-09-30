@@ -76,11 +76,7 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
     // hash with ['href' => ...]
     $data['_links']['osdi:person'] = ['href' => $this->donorHref->get()];
     $data['_links']['osdi:fundraising_page'] = ['href' => $this->fundraisingPageHref->get()];
-    // unset($data['created_date']);
-    // unset($data['identifiers']); unset($data['modified_date']); unset($data['amount']); unset($data['payment']); unset($data['action_network:recurrence']);
-    // unset($data['action_network:referrer_data']);
-    // unset($data['referrer_data']);
-    print "\ngetArrayForCreate()\n" . json_encode($data, JSON_PRETTY_PRINT) . "\n";
+    // print "\ngetArrayForCreate()\n" . json_encode($data, JSON_PRETTY_PRINT) . "\n";
     return $data;
   }
 

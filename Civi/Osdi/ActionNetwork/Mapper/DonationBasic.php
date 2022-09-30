@@ -64,7 +64,6 @@ class DonationBasic implements MapperInterface {
   }
 
 
-  // @wip @todo
   public function mapLocalToRemote(
     LocalObjectInterface $localDonation,
     RemoteObjectInterface $remoteDonation = NULL
@@ -158,7 +157,8 @@ class DonationBasic implements MapperInterface {
     $remotePerson = $remoteDonation->getDonor();
     $personPair = new LocalRemotePair(NULL, $remotePerson);
     $personPair->setOrigin(LocalRemotePair::ORIGIN_REMOTE);
-    $matchResult = $this->personMatcher->tryToFindMatchFor($personPair);
+    $personPair->setLocalClass(LocalPerson::class);
+    $matchResult = $this->personMatcher->tryToFindMatchFor($personPair); // xxx
     if (!$matchResult->gotMatch()) {
       throw new \InvalidArgumentException("Cannot sync a donation whose Person ({$remotePerson->getId()}) has no LocalPerson match.");
     }
@@ -168,7 +168,7 @@ class DonationBasic implements MapperInterface {
     // Simple mappings
     $localDonation->amount->set($remoteDonation->amount->get());
     $localDonation->receiveDate->set($remoteDonation->createdDate->get());
-    $localDonation->currency->set($remoteDonation->currency->get());
+    $localDonation->currency->set(strtoupper($remoteDonation->currency->get()));
 
     // Find financial type
     $localDonation->financialTypeId->set($this->mapRemoteFinancialTypeToLocal($remoteDonation));
@@ -234,9 +234,10 @@ class DonationBasic implements MapperInterface {
   protected function mapRemotePaymentMethodToLocalId(string $remotePaymentMethod) :int {
     if (!isset(static::$paymentMethodsMap)) {
       static::$paymentMethodsMap = \Civi\Api4\OptionValue::get(FALSE)
-      ->addSelect('option_group_id:label')
+      ->addSelect('label')
+      ->addwhere('option_group_id:name', '=', 'payment_instrument')
       ->addWhere('is_active', '=', TRUE)
-      ->execute()->indexBy('option_group_id:label')->column('id');
+      ->execute()->indexBy('label')->column('id');
     }
     if (empty(static::$paymentMethodsMap[$remotePaymentMethod])) {
       throw new \InvalidArgumentException("Cannot sync a donation made by '{$remotePaymentMethod}' as there is no matching payment method.");

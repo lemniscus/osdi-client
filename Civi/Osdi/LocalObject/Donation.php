@@ -22,6 +22,7 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
   public Field $financialTypeLabel;
   public Field $paymentMethodLabel;
   public Field $contributionRecurFrequency;
+  public Field $trxnId;
 
   public static function getCiviEntityName(): string {
     return 'Contribution';
@@ -37,6 +38,7 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
       'paymentMethodId'     => ['select' => 'payment_method_id'], // ? from 'payment' hash?
       'contributionRecurId' => ['select' => 'contribution_recur_id'], 
       'contactId'           => ['select' => 'contact_id'],
+      'trxnId'              => ['select' => 'trxn_id'],
       // 'id' => ['select' => 'id'],
       // 'fr_page_?'             => '@todo', // xxx
       // 'referrer?'             => '@todo', // xxx

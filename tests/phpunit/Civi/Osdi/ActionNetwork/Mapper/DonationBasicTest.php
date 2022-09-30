@@ -7,6 +7,7 @@ use Civi\Test\HeadlessInterface;
 use Civi\Core\HookInterface;
 use Civi\Osdi\ActionNetwork\Mapper\DonationBasic as DonationBasicMapper;
 use Civi\Osdi\LocalObject\Donation as LocalDonation;
+use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
 use Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail as PersonMatcher;
 use Civi\Osdi\ActionNetwork\Object\FundraisingPage;
 
@@ -36,6 +37,10 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
 
   private static \Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail $personMatcher;
 
+  private static FundraisingPage $testFundraisingPage;
+
+  private static int $financialTypeId;
+
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()->installMe(__DIR__)->apply();
   }
@@ -49,9 +54,10 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public static function setUpBeforeClass(): void {
-  
     static::$system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+
     // We need a remote person that matches a local person.
+    // ... get the remote person
     $remotePerson = new Civi\Osdi\ActionNetwork\Object\Person(static::$system);
     $remotePerson->givenName->set('Wilma');
     $remotePerson->familyName->set('Flintstone');
@@ -59,6 +65,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $remotePerson->save();
     static::$testRemotePerson = $remotePerson;
 
+    // ... use sync to get local person
     $personSyncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic(static::$system);
     $personMapper = new \Civi\Osdi\ActionNetwork\Mapper\PersonBasic(static::$system);
     $personSyncer->setMapper($personMapper);
@@ -66,6 +73,9 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $personSyncer->setMatcher(static::$personMatcher);
     $syncResult = $personSyncer->syncFromRemoteIfNeeded($remotePerson);
     static::$createdEntities['Contact'] = [$syncResult->getLocalObject()->getId()];
+    $contactId = static::$createdEntities['Contact'][0];
+    // HACK: the above sometimes returns a deleted contact.
+    $neededToUndelete = \Civi\Api4\Contact::update(FALSE)->addWhere('id', '=', $contactId)->addValue('is_deleted', 0)->addWhere('is_deleted', '=', 1)->execute()->count();
 
     // Ensure we have the default fundraising page.
     $fundraisingPages = static::$system->findAll('osdi:fundraising_pages');
@@ -89,7 +99,13 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
       $fundraisingPage->origin_system->set('CiviCRM');
       $fundraisingPage->save();
     }
+    static::$testFundraisingPage = $fundraisingPage;
 
+    // Create 'Test recipient financial type'
+    static::$financialTypeId = \Civi\Api4\FinancialType::create(FALSE)
+    ->addValue('name', 'Test recipient financial type')
+    ->addValue('description', 'Used by PHPUnit test ' . __CLASS__ . '::' . __FUNCTION__)
+    ->execute()->single()['id'];
   }
 
   public function tearDown(): void {
@@ -105,6 +121,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
         civicrm_api4($type, 'delete', [
           'where' => [['id', '=', $id]],
           'checkPermissions' => FALSE,
+          'useTrash' => FALSE,
         ]);
       }
     }
@@ -112,16 +129,49 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     parent::tearDownAfterClass();
   }
 
+
   /**
    *
-   * LOCAL → REMOTE
+   * Remote → Local
+   *
+   */
+  public function testMapRemoteToNewLocal() {
+    $remoteDonation = new RemoteDonation(static::$system);
+    $remoteDonation->currency->set('USD');
+    $recipients = [['display_name' => 'Test recipient financial type', 'amount' => '2.22']];
+    $remoteDonation->recipients->set($recipients);
+    $remoteDonation->createdDate->set('2020-03-04T05:06:07Z');
+    $remoteDonation->setDonor(self::$testRemotePerson);
+    $remoteDonation->setFundraisingPage(self::$testFundraisingPage);
+    $remoteDonation->recurrence->set(['recurring' => FALSE]);
+    $referrerData = [
+      'source' => 'phpunit_source',
+      'website' => 'https://example.org/test-referrer',
+    ];
+    $remoteDonation->referrerData->set($referrerData);
+    $remoteDonation->save();
+
+    $mapper = new DonationBasicMapper(static::$system, static::$personMatcher);
+    $localDonation = $mapper->mapRemoteToLocal($remoteDonation);
+
+    $this->assertEquals(static::$createdEntities['Contact'][0], $localDonation->contactId->get());
+    // @todo fundraising page.
+    $this->assertEquals('2020-03-04T05:06:07Z', $localDonation->receiveDate->get());
+    $this->assertEquals('USD', $localDonation->currency->get());
+    $this->assertEquals(static::$financialTypeId, $localDonation->financialTypeId->get());
+    $this->assertNull($localDonation->contributionRecurId->get());
+  }
+
+  /**
+   *
+   * Local → Remote
    *
    */
   public function testMapLocalToNewRemote() {
 
+    // Create a remote donation.
     $donationId = $this->createTestContribution();
     $localDonation = new LocalDonation($donationId);
-    $localDonation->loadOnce();
     $mapper = new DonationBasicMapper(static::$system, static::$personMatcher);
     $remoteDonation = $mapper->mapLocalToRemote($localDonation);
 
@@ -132,7 +182,6 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $this->assertEquals([['display_name' => 'Donation', 'amount' => 1.23]], $remoteDonation->recipients->get());
     $this->assertEquals(['recurring' => FALSE], $remoteDonation->recurrence->get());
   }
-
   protected function createTestContribution(): int {
     $contactId = static::$createdEntities['Contact'][0];
     // Create a local Contribution.
