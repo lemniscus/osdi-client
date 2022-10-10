@@ -260,8 +260,8 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
 
     foreach ($leftVals as $fieldName => $leftVal) {
       $rightVal = $rightVals[$fieldName] ?? NULL;
-      $leftIsEmpty = in_array($leftVal, [NULL, '', []]);
-      $rightIsEmpty = in_array($rightVal, [NULL, '', []]);
+      $leftIsEmpty = in_array($leftVal, [NULL, '', []], TRUE);
+      $rightIsEmpty = in_array($rightVal, [NULL, '', []], TRUE);
 
       if ($leftIsEmpty && !$rightIsEmpty) {
         $rightOnly[] = $fieldName;
@@ -269,6 +269,9 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
       }
       if ($rightIsEmpty && !$leftIsEmpty) {
         $leftOnly[] = $fieldName;
+        continue;
+      }
+      if ($leftIsEmpty && $rightIsEmpty) {
         continue;
       }
       if ($leftVal !== $rightVal) {

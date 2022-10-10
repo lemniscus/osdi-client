@@ -119,7 +119,13 @@ class Field {
   }
 
   public function isAltered(): bool {
-    return $this->isTouched && $this->newValue !== $this->getAsLoaded();
+    if (!$this->isTouched()) {
+      return FALSE;
+    }
+    $oldRaw = $this->getAsLoaded();
+    $old = is_array($oldRaw) ? $oldRaw : (string) $oldRaw;
+    $new = is_array($this->newValue) ? $this->newValue : (string) $this->newValue;
+    return $new !== $old;
   }
 
   public function isAlteredLoose(): bool {
