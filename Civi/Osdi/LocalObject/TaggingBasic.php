@@ -55,7 +55,7 @@ class TaggingBasic extends AbstractLocalObject implements LocalObjectInterface {
     return $this;
   }
 
-  public function save(): self {
+  public function persist(): self {
     if (is_null($p = $this->person) || is_null($t = $this->tag)) {
       throw new InvalidArgumentException(
         'Unable to save %s: missing Person or Tag', __CLASS__);

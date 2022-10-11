@@ -23,7 +23,7 @@ class TagBasic extends AbstractLocalObject implements LocalObjectInterface {
     ];
   }
 
-  public function save(): self {
+  public function persist(): self {
     $id = $this->getId();
     $name = $this->name->get();
 

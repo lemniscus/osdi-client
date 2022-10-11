@@ -136,7 +136,7 @@ class PersonBasic extends AbstractLocalObject implements LocalObjectInterface {
     return $this;
   }
 
-  public function save(): self {
+  public function persist(): self {
     $cid = $this->saveCoreContactFields();
     $this->id->load($cid);
     $this->saveEmail($cid);

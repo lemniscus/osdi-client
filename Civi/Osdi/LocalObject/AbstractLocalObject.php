@@ -50,11 +50,20 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
       return NULL;
     }
 
-    /** @var \Civi\Api4\Generic\DAODeleteAction $deleteAction */
-    $deleteAction = $this->makeApi4Action('delete');
-    return $deleteAction
-      ->addWhere('id', '=', $id)
-      ->execute();
+    \Civi::$statics['osdiClient.inProgress']['delete'][] = $this;
+    $key = array_key_last(\Civi::$statics['osdiClient.inProgress']['delete']);
+
+    try {
+      /** @var \Civi\Api4\Generic\DAODeleteAction $deleteAction */
+      $deleteAction = $this->makeApi4Action('delete');
+      return $deleteAction
+        ->addWhere('id', '=', $id)
+        ->execute();
+    }
+
+    finally {
+      unset(\Civi::$statics['osdiClient.inProgress']['delete'][$key]);
+    }
   }
 
   private function initializeFields($idValue = NULL): void {
@@ -190,6 +199,19 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
   private function makeApi4Action(string $action, bool $checkPermissions = FALSE): AbstractAction {
     $api4Class = '\\Civi\\Api4\\' . static::getCiviEntityName();
     return call_user_func([$api4Class, $action], $checkPermissions);
+  }
+
+  abstract public function persist(): \Civi\Osdi\CrudObjectInterface;
+
+  public function save(): \Civi\Osdi\CrudObjectInterface {
+    \Civi::$statics['osdiClient.inProgress']['save'][] = $this;
+    $key = array_key_last(\Civi::$statics['osdiClient.inProgress']['save']);
+    try {
+      return $this->persist();
+    }
+    finally {
+      unset(\Civi::$statics['osdiClient.inProgress']['save'][$key]);
+    }
   }
 
   public function touch() {
