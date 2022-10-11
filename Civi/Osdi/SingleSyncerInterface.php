@@ -12,7 +12,7 @@ interface SingleSyncerInterface {
    *
    * @return \Civi\Osdi\LocalRemotePair
    */
-  public function matchAndSyncIfEligible($originObject): LocalRemotePair;
+  public function matchAndSyncIfEligible(CrudObjectInterface $originObject): LocalRemotePair;
 
   /**
    * Pushes its result onto the pair's result stack in addition to returning the result.
