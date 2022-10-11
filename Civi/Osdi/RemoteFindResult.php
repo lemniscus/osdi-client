@@ -137,11 +137,20 @@ class RemoteFindResult implements \Iterator {
   }
 
   protected function loadNextPage(): bool {
+    $currentPage = $this->pages[$this->currentPageIndex];
+
     try {
-      $nextLink = $this->pages[$this->currentPageIndex]->getFirstLink('next');
+      $nextLink = $currentPage->getFirstLink('next');
     }
     catch (\Jsor\HalClient\Exception\InvalidArgumentException $e) {
       return FALSE;
+    }
+
+    // sometimes the "next page" is actually the same page, ad infinitum. bug reported by email to AN, 20222-10-07
+    if ($currentPage->hasProperty('total_records')) {
+      if ($this->rawCurrentCount() >= $currentPage->getProperty('total_records')) {
+        return FALSE;
+      }
     }
 
     $pageNum = $this->addPage($nextLink->get());
