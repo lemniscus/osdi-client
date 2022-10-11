@@ -3,7 +3,6 @@
 namespace Civi\Osdi;
 
 use Civi\Osdi\ActionNetwork\RemoteFindResult;
-use Civi\Osdi\Result\Save;
 use Jsor\HalClient\HalClientInterface;
 use Jsor\HalClient\HalResource;
 
@@ -27,7 +26,5 @@ interface RemoteSystemInterface {
   ): RemoteObjectInterface;
 
   public function save(RemoteObjectInterface $osdiObject): HalResource;
-
-  public function trySave(RemoteObjectInterface $objectBeingSaved): Save;
 
 }

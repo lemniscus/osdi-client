@@ -133,60 +133,6 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
   }
 
   /**
-   * @deprecated
-   */
-  public function trySave(RemoteObjectInterface $objectBeingSaved): Save {
-    $statusCode = $statusMessage = $context = NULL;
-
-    if ('osdi:people' === $objectBeingSaved->getType()) {
-      /** @var \Civi\Osdi\ActionNetwork\Object\Person $objectBeingSaved */
-      [$statusCode, $statusMessage, $context] = $objectBeingSaved->checkForEmailAddressConflict();
-    }
-
-    if ($statusCode === Save::ERROR) {
-      return new Save($objectBeingSaved, $statusCode, $statusMessage, $context);
-    }
-
-    $objectBeforeSaving = clone $objectBeingSaved;
-    $changesBeingSaved = $objectBeingSaved->diffChanges()->toArray();
-
-    try {
-      $objectBeingSaved->save();
-      $statusCode = Save::SUCCESS;
-      $context = ['diff' => $changesBeingSaved];
-    }
-
-    catch (\Throwable $e) {
-      $statusCode = Save::ERROR;
-      $statusMessage = $e->getMessage();
-      $context = [
-        'object' => $objectBeingSaved,
-        'exception' => $e,
-      ];
-      return new Save(NULL, $statusCode, $statusMessage, $context);
-    }
-
-    if (!$objectBeingSaved->isSupersetOf(
-      $objectBeforeSaving,
-      ['identifiers', 'createdDate', 'modifiedDate']
-    )) {
-      $statusCode = Save::ERROR;
-      $statusMessage = E::ts(
-        'Some or all of the %1 object could not be saved.',
-        [1 => $objectBeforeSaving->getType()],
-      );
-      $context = [
-        'diff with left=sent, right=response' => $objectBeforeSaving::diff($objectBeforeSaving, $objectBeingSaved)->toArray(),
-        'intended changes' => $changesBeingSaved,
-        'sent' => $objectBeforeSaving->getArrayForCreate(),
-        'response' => $objectBeingSaved->getArrayForCreate(),
-      ];
-    }
-
-    return new Save($objectBeingSaved, $statusCode, $statusMessage, $context);
-  }
-
-  /**
    * @return \Jsor\HalClient\HalResource|\Psr\Http\Message\ResponseInterface
    */
   private function getRootResource() {

@@ -187,7 +187,7 @@ class PersonBasic implements SingleSyncerInterface {
       $localPerson, $remotePerson);
 
     if ($remotePerson->isAltered()) {
-      $saveResult = $this->getRemoteSystem()->trySave($remotePerson);
+      $saveResult = $remotePerson->trySave();
       $remotePerson = $saveResult->getReturnedObject();
       if (empty($remotePreSyncModifiedTime)) {
         $statusMessage = 'created new AN person';
