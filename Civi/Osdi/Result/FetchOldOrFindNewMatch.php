@@ -14,4 +14,8 @@ class FetchOldOrFindNewMatch extends AbstractResult {
 
   const NO_MATCH_FOUND = 'no match found';
 
+  public function hasMatch() {
+    return in_array($this->statusCode, [self::FETCHED_SAVED_MATCH, self::FOUND_NEW_MATCH]);
+  }
+
 }
