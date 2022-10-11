@@ -43,6 +43,14 @@ class LocalRemotePair {
     $this->resultStack = new ResultStack();
   }
 
+  public function __clone() {
+    foreach (get_object_vars($this) as $propertyName => $propertyValue) {
+      if (is_object($propertyValue)) {
+        $this->$propertyName = clone $propertyValue;
+      }
+    }
+  }
+
   public function getLocalObject(): ?LocalObjectInterface {
     return $this->localObject;
   }
