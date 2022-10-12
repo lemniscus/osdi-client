@@ -14,6 +14,7 @@ use Civi\Osdi\Result\FetchOldOrFindNewMatch as OldOrNewMatchResult;
 use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
 use Civi\Osdi\Result\Sync as SyncResult;
 use Civi\Osdi\Result\SyncEligibility;
+use Civi\Osdi\ResultInterface;
 
 abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface {
 
@@ -147,6 +148,18 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
 
   protected function getSavedMatch(LocalRemotePair $pair) {
     return NULL;
+  }
+
+  protected function pushResult(
+    LocalRemotePair $pair,
+    ResultInterface $result,
+    $statusCode = NULL
+  ): ResultInterface {
+    if (!is_null($statusCode)) {
+      $result->setStatusCode($statusCode);
+    }
+    $pair->getResultStack()->push($result);
+    return $result;
   }
 
   protected function saveSyncStateIfNeeded(LocalRemotePair $pair) {
