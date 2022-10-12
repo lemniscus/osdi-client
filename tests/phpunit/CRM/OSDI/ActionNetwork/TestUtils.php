@@ -8,19 +8,24 @@ class CRM_OSDI_ActionNetwork_TestUtils {
   public static function createRemoteSystem(): \Civi\Osdi\ActionNetwork\RemoteSystem {
     $systemProfile = new CRM_OSDI_BAO_SyncProfile();
     $systemProfile->entry_point = 'https://actionnetwork.org/api/v2/';
-    if (!defined('N2F_ACTION_NETWORK_API_TOKEN')) {
-      define(
-        'N2F_ACTION_NETWORK_API_TOKEN',
-        file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'apiToken')
-      );
-    }
-    $systemProfile->api_token = N2F_ACTION_NETWORK_API_TOKEN;
+    self::defineActionNetworkApiToken();
+    $systemProfile->api_token = ACTION_NETWORK_TEST_API_TOKEN;
+
     //    $client = new Jsor\HalClient\HalClient(
-    //      'https://actionnetwork.org/api/v2/', new CRM_OSDI_FixtureHttpClient()
-    //    );
+    //      'https://actionnetwork.org/api/v2/', new CRM_OSDI_FixtureHttpClient());
     $httpClient = new Guzzle6HttpClient(new Client(['timeout' => 27]));
     $client = new Jsor\HalClient\HalClient('https://actionnetwork.org/api/v2/', $httpClient);
-    return new Civi\Osdi\ActionNetwork\RemoteSystem($systemProfile, $client);
+
+    Civi\Osdi\Factory::register(
+      'RemoteSystem',
+      'ActionNetwork',
+      Civi\Osdi\ActionNetwork\RemoteSystem::class);
+
+    return \Civi\Osdi\Factory::singleton(
+      'RemoteSystem',
+      'ActionNetwork',
+      $systemProfile,
+      $client);
   }
 
   public static function createSyncProfile(): array {
@@ -35,6 +40,15 @@ class CRM_OSDI_ActionNetwork_TestUtils {
         'mapper',
         \Civi\Osdi\ActionNetwork\Mapper\PersonBasic::class)
       ->execute()->single();
+  }
+
+  private static function defineActionNetworkApiToken(): void {
+    if (!defined('ACTION_NETWORK_TEST_API_TOKEN')) {
+      define(
+        'ACTION_NETWORK_TEST_API_TOKEN',
+        file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'apiToken')
+      );
+    }
   }
 
 }
