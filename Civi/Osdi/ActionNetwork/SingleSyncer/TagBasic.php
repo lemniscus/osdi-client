@@ -2,8 +2,11 @@
 
 namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
+use Civi\Osdi\Factory;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
+use Civi\Osdi\MapperInterface;
+use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\FetchOldOrFindNewMatch as OldOrNewMatchResult;
@@ -16,6 +19,20 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
 
   public function __construct(RemoteSystemInterface $remoteSystem) {
     $this->remoteSystem = $remoteSystem;
+  }
+
+  public function getMapper(): MapperInterface {
+    if (empty($this->mapper)) {
+      $this->mapper = Factory::make('Mapper', 'Tag', $this->getRemoteSystem());
+    }
+    return $this->mapper;
+  }
+
+  public function getMatcher(): MatcherInterface {
+    if (empty($this->matcher)) {
+      $this->matcher = Factory::make('Matcher', 'Tag', $this->getRemoteSystem());
+    }
+    return $this->matcher;
   }
 
   public function getSavedMatch(

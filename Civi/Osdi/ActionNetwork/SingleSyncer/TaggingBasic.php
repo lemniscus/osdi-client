@@ -5,8 +5,11 @@ namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 use Civi\Osdi\ActionNetwork\Object\Tagging as OsdiTaggingObject;
 use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\Exception\InvalidOperationException;
+use Civi\Osdi\Factory;
 use Civi\Osdi\LocalObject\TaggingBasic as LocalTaggingObject;
 use Civi\Osdi\LocalRemotePair;
+use Civi\Osdi\MapperInterface;
+use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\Result\DeletionSync as DeletionSyncResult;
 use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
 use Civi\Osdi\SingleSyncerInterface;
@@ -35,16 +38,14 @@ class TaggingBasic extends AbstractSingleSyncer {
 
   public function getPersonSyncer(): SingleSyncerInterface {
     if (empty($this->personSyncer)) {
-      $personSyncerClass = $this->getSyncProfile()['SingleSyncer']['Person'];
-      $this->personSyncer = new $personSyncerClass($this->getRemoteSystem());
+      $this->personSyncer = Factory::make('SingleSyncer', 'Person', $this->getRemoteSystem());
     }
     return $this->personSyncer;
   }
 
   public function getTagSyncer(): SingleSyncerInterface {
     if (empty($this->tagSyncer)) {
-      $tagSyncerClass = $this->getSyncProfile()['SingleSyncer']['Tag'];
-      $this->tagSyncer = new $tagSyncerClass($this->getRemoteSystem());
+      $this->tagSyncer = Factory::make('SingleSyncer', 'Tag', $this->getRemoteSystem());
     }
     return $this->tagSyncer;
   }
@@ -52,7 +53,7 @@ class TaggingBasic extends AbstractSingleSyncer {
   public function syncDeletion(LocalRemotePair $pair): DeletionSyncResult {
     $result = new DeletionSyncResult();
 
-    $matchResult = $this->matcher->tryToFindMatchFor($pair);
+    $matchResult = $this->getMatcher()->tryToFindMatchFor($pair);
     $matchCode = $matchResult->getStatusCode();
 
     if ($matchResult::FOUND_MATCH === $matchCode) {
@@ -85,6 +86,20 @@ class TaggingBasic extends AbstractSingleSyncer {
       return NULL;
     }
     return self::$savedMatches[$profileId][$pair->getOrigin()][$objectId] ?? NULL;
+  }
+
+  public function getMapper(): MapperInterface {
+    if (empty($this->mapper)) {
+      $this->mapper = Factory::make('Mapper', 'Tagging', $this);
+    }
+    return $this->mapper;
+  }
+
+  public function getMatcher(): MatcherInterface {
+    if (empty($this->matcher)) {
+      $this->matcher = Factory::make('Matcher', 'Tagging', $this);
+    }
+    return $this->matcher;
   }
 
   protected function getLocalObjectClass(): string {

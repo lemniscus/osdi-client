@@ -2,6 +2,7 @@
 
 namespace Civi\Osdi\ActionNetwork\SingleSyncer\Person;
 
+use Civi\Osdi\Factory;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Logger;
@@ -431,6 +432,9 @@ class PersonBasic implements SingleSyncerInterface {
   }
 
   public function getMapper(): MapperInterface {
+    if (empty($this->mapper)) {
+      $this->mapper = Factory::make('Mapper', 'Person', $this->getRemoteSystem());
+    }
     return $this->mapper;
   }
 
@@ -440,6 +444,9 @@ class PersonBasic implements SingleSyncerInterface {
   }
 
   public function getMatcher(): MatcherInterface {
+    if (empty($this->matcher)) {
+      $this->matcher = Factory::make('Matcher', 'Person', $this->getRemoteSystem());
+    }
     return $this->matcher;
   }
 
