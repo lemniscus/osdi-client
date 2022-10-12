@@ -126,7 +126,7 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
 
     $localPerson->emailEmail->set('taggingsyncertest@test.net');
 
-    $taggingSyncer->getPersonSyncer()->syncFromLocalIfNeeded($localPerson);
+    $taggingSyncer->getPersonSyncer()->matchAndSyncIfEligible($localPerson);
     $taggingSyncer->getTagSyncer()->matchAndSyncIfEligible($localTag);
 
     $taggingSyncer->oneWayMapAndWrite($pair);
@@ -181,7 +181,7 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
 
     // SECOND SYNC -- WITH MATCH
 
-    $taggingSyncer->getPersonSyncer()->syncFromRemoteIfNeeded($remotePerson);
+    $taggingSyncer->getPersonSyncer()->matchAndSyncIfEligible($remotePerson);
     $taggingSyncer->getTagSyncer()->matchAndSyncIfEligible($remoteTag);
 
     try {

@@ -4,6 +4,11 @@ namespace Civi\Osdi\ActionNetwork\SingleSyncer\Person;
 
 use Civi;
 use Civi\Osdi\ActionNetwork\Object\Person as ANPerson;
+use Civi\Osdi\LocalRemotePair;
+use Civi\Osdi\Result\FetchOldOrFindNewMatch;
+use Civi\Osdi\Result\MapAndWrite;
+use Civi\Osdi\Result\Sync;
+use Civi\Osdi\Result\SyncEligibility;
 use CRM_OSDI_ActionNetwork_TestUtils;
 use CRM_OSDI_Fixture_PersonMatching as PersonMatchFixture;
 use CRM_OSDI_FixtureHttpClient;
@@ -73,11 +78,240 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
       ->execute();
   }
 
-  /**
-   * @noinspection PhpParamsInspection */
-  public function testConstructorRequiresRemoteSystem() {
-    $this->expectException('ArgumentCountError');
-    $syncer = new PersonBasic();
+  public function testMatchAndSyncIfEligible_WriteNewTwin_FromLocal() {
+    $syncer = self::$syncer;
+    $localPerson = new Civi\Osdi\LocalObject\PersonBasic();
+    $localPerson->firstName->set('testMatchAndSyncIfEligible_FromLocal');
+    $emailAddress = 'testMatchAndSyncIfEligible_FromLocal_' . time() . '@civicrm.org';
+    $localPerson->emailEmail->set($emailAddress);
+    $localPerson->save();
+
+    $remotePeopleWithTheEmail = self::$remoteSystem->find(
+      'osdi:people',
+      [['email', 'eq', $emailAddress]]);
+
+    if ($remotePeopleWithTheEmail->rawCurrentCount()) {
+      $remotePeopleWithTheEmail->rawFirst()->delete();
+      $remotePeopleWithTheEmail = self::$remoteSystem->find(
+        'osdi:people',
+        [['email', 'eq', $emailAddress]]);
+    }
+
+    self::assertEquals(0, $remotePeopleWithTheEmail->filteredCurrentCount());
+
+    // FIRST SYNC
+    $pair = $syncer->matchAndSyncIfEligible($localPerson);
+    $resultStack = $pair->getResultStack();
+    $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
+    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\MatchResult::class);
+    $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+    $syncResult = $resultStack->getLastOfType(Sync::class);
+    $savedMatch = $syncResult->getState();
+
+    self::assertEquals(FetchOldOrFindNewMatch::NO_MATCH_FOUND, $fetchFindMatchResult->getStatusCode());
+    self::assertEquals('No match by email, first name and last name', $matchResult->getMessage());
+    self::assertEquals(MapAndWrite::WROTE_NEW, $mapAndWriteResult->getStatusCode());
+    self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());
+    self::assertEquals(Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
+    self::assertNotNull($pair->getRemoteObject()->getId());
+
+    self::assertEquals('testMatchAndSyncIfEligible_FromLocal',
+      $pair->getRemoteObject()->givenName->get());
+
+    // SECOND SYNC
+    $pair = $syncer->matchAndSyncIfEligible($localPerson);
+    $resultStack = $pair->getResultStack();
+    $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
+    $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+    $syncResult = $resultStack->getLastOfType(Sync::class);
+    $savedMatch = $syncResult->getState();
+
+    self::assertEquals(FetchOldOrFindNewMatch::FETCHED_SAVED_MATCH, $fetchFindMatchResult->getStatusCode());
+    self::assertEquals(SyncEligibility::INELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertNull($mapAndWriteResult);
+    self::assertEquals(Sync::NO_SYNC_NEEDED, $syncResult->getStatusCode());
+    self::assertEquals(Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
+    self::assertNotNull($pair->getRemoteObject()->getId());
+
+    self::assertEquals('testMatchAndSyncIfEligible_FromLocal',
+      $pair->getLocalObject()->firstName->get());
+
+    // THIRD SYNC
+
+    /** @var \Civi\Osdi\PersonSyncState $savedMatch */
+    $savedMatch->setLocalPostSyncModifiedTime(
+      $savedMatch->getLocalPostSyncModifiedTime() - 1);
+
+    $savedMatch->save();
+    $pair = $syncer->matchAndSyncIfEligible($localPerson);
+    $resultStack = $pair->getResultStack();
+    $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
+    $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+    $syncResult = $resultStack->getLastOfType(Sync::class);
+    $savedMatch = $syncResult->getState();
+
+    self::assertEquals(FetchOldOrFindNewMatch::FETCHED_SAVED_MATCH, $fetchFindMatchResult->getStatusCode());
+    self::assertEquals(MapAndWrite::NO_CHANGES_TO_WRITE, $mapAndWriteResult->getStatusCode());
+    self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());
+    self::assertEquals(Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
+    self::assertNotNull($pair->getRemoteObject()->getId());
+
+    self::assertEquals('testMatchAndSyncIfEligible_FromLocal',
+      $pair->getRemoteObject()->givenName->get());
+
+    // FOURTH SYNC
+    $localPerson->firstName->set('testMatchAndSyncIfEligible_FromLocal (new name)');
+    $localPerson->save();
+
+    $pair = $syncer->matchAndSyncIfEligible($localPerson);
+    $resultStack = $pair->getResultStack();
+    $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
+    $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+    $syncResult = $resultStack->getLastOfType(Sync::class);
+    $savedMatch = $syncResult->getState();
+
+    self::assertEquals(FetchOldOrFindNewMatch::FETCHED_SAVED_MATCH, $fetchFindMatchResult->getStatusCode());
+    self::assertEquals(MapAndWrite::WROTE_CHANGES, $mapAndWriteResult->getStatusCode());
+    self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());
+    self::assertEquals(Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
+    self::assertNotNull($pair->getRemoteObject()->getId());
+
+    self::assertEquals('testMatchAndSyncIfEligible_FromLocal (new name)',
+      $pair->getRemoteObject()->givenName->get());
+  }
+
+  public function testMatchAndSyncIfEligible_WriteNewTwin_FromRemote() {
+    $syncer = self::$syncer;
+    $remotePerson = new ANPerson(self::$remoteSystem);
+    $remotePerson->givenName->set('testMatchAndSyncIfEligible_FromRemote');
+    $remotePerson->emailAddress->set('testMatchAndSyncIfEligible_FromRemote@test.net');
+    $remotePerson->save();
+
+    // FIRST SYNC
+    $pair = $syncer->matchAndSyncIfEligible($remotePerson);
+    $resultStack = $pair->getResultStack();
+    $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
+    $matchResult = $resultStack->getLastOfType(\Civi\Osdi\Result\MatchResult::class);
+    $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+    $syncResult = $resultStack->getLastOfType(Sync::class);
+    $savedMatch = $syncResult->getState();
+
+    self::assertEquals(FetchOldOrFindNewMatch::NO_MATCH_FOUND, $fetchFindMatchResult->getStatusCode());
+    self::assertEquals('No match by email', $matchResult->getMessage());
+    self::assertEquals(MapAndWrite::WROTE_NEW, $mapAndWriteResult->getStatusCode());
+    self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());
+    self::assertEquals(Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
+    self::assertNotNull($pair->getLocalObject()->getId());
+
+    self::assertEquals('testMatchAndSyncIfEligible_FromRemote',
+      $pair->getLocalObject()->firstName->get());
+
+    // SECOND SYNC
+    $pair = $syncer->matchAndSyncIfEligible($remotePerson);
+    $resultStack = $pair->getResultStack();
+    $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
+    $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+    $syncResult = $resultStack->getLastOfType(Sync::class);
+    $savedMatch = $syncResult->getState();
+
+    self::assertEquals(FetchOldOrFindNewMatch::FETCHED_SAVED_MATCH, $fetchFindMatchResult->getStatusCode());
+    self::assertEquals(SyncEligibility::INELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertNull($mapAndWriteResult);
+    self::assertEquals(Sync::NO_SYNC_NEEDED, $syncResult->getStatusCode());
+    self::assertEquals(Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
+    self::assertNotNull($pair->getLocalObject()->getId());
+
+    self::assertEquals('testMatchAndSyncIfEligible_FromRemote',
+      $pair->getLocalObject()->firstName->get());
+
+    // THIRD SYNC
+
+    /** @var \Civi\Osdi\PersonSyncState $savedMatch */
+    $savedMatch->setRemotePostSyncModifiedTime(
+      $savedMatch->getRemotePostSyncModifiedTime() - 1);
+
+    $savedMatch->save();
+    $pair = $syncer->matchAndSyncIfEligible($remotePerson);
+    $resultStack = $pair->getResultStack();
+    $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
+    $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+    $syncResult = $resultStack->getLastOfType(Sync::class);
+    $savedMatch = $syncResult->getState();
+
+    self::assertEquals(FetchOldOrFindNewMatch::FETCHED_SAVED_MATCH, $fetchFindMatchResult->getStatusCode());
+    self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertEquals(MapAndWrite::NO_CHANGES_TO_WRITE, $mapAndWriteResult->getStatusCode());
+    self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());
+    self::assertEquals(Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
+    self::assertNotNull($pair->getLocalObject()->getId());
+
+    self::assertEquals('testMatchAndSyncIfEligible_FromRemote',
+      $pair->getLocalObject()->firstName->get());
+
+    // FOURTH SYNC
+    $remotePerson->givenName->set('testMatchAndSyncIfEligible_FromRemote (new name)');
+    $remotePerson->save();
+
+    $pair = $syncer->matchAndSyncIfEligible($remotePerson);
+    $resultStack = $pair->getResultStack();
+    $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
+    $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+    $syncResult = $resultStack->getLastOfType(Sync::class);
+    $savedMatch = $syncResult->getState();
+
+    self::assertEquals(FetchOldOrFindNewMatch::FETCHED_SAVED_MATCH, $fetchFindMatchResult->getStatusCode());
+    self::assertEquals(MapAndWrite::WROTE_CHANGES, $mapAndWriteResult->getStatusCode());
+    self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());
+    self::assertEquals(Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
+    self::assertNotNull($pair->getLocalObject()->getId());
+
+    self::assertEquals('testMatchAndSyncIfEligible_FromRemote (new name)',
+      $pair->getLocalObject()->firstName->get());
+  }
+
+  public function testDeletedPersonDoesNotGetRecreated() {
+    $localPerson = new Civi\Osdi\LocalObject\PersonBasic();
+    $localPerson->firstName->set('Cheese');
+    $localPerson->emailEmail->set('bitz@bop.com');
+    $localPerson->save();
+    $civiToAnPair = self::$syncer->matchAndSyncIfEligible($localPerson);
+    $remotePerson = $civiToAnPair->getRemoteObject();
+
+    self::assertFalse($civiToAnPair->isError());
+    self::assertNotNull($remotePerson->getId());
+    self::assertEquals('bitz@bop.com', $remotePerson->emailAddress->get());
+
+    self::$syncer->syncDeletion($civiToAnPair);
+
+    $anToCiviPair = self::$syncer->matchAndSyncIfEligible($remotePerson);
+
+    $resultStack = $anToCiviPair->getResultStack();
+    $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
+    $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+    $syncResult = $resultStack->getLastOfType(Sync::class);
+    $savedMatch = $syncResult->getState();
+
+    self::assertEquals(FetchOldOrFindNewMatch::FETCHED_SAVED_MATCH, $fetchFindMatchResult->getStatusCode());
+    self::assertEquals(SyncEligibility::INELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertNull($mapAndWriteResult);
+    self::assertEquals(Sync::NO_SYNC_NEEDED, $syncResult->getStatusCode());
+    self::assertEquals(Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
+    self::assertEquals(
+      $civiToAnPair->getLocalObject()->getId(), $anToCiviPair->getLocalObject()->getId());
   }
 
   public function testRemoteSystemIsSettable() {
@@ -226,12 +460,24 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     $this->createdContacts[] = $contactId;
     $originalContact = PersonMatchFixture::civiApi4GetSingleContactById($contactId);
 
+    // TEST PROPER
+
+    $syncResult = self::$syncer->syncFromRemoteIfNeeded($originalRemotePerson);
+
+    self::assertEquals(\Civi\Osdi\Result\Sync::NO_SYNC_NEEDED, $syncResult->getStatusCode());
+
     $syncState = $syncResult->getState();
     $syncState->setRemotePostSyncModifiedTime(
-        $syncState->getRemotePostSyncModifiedTime() - 1);
+      $syncState->getRemotePostSyncModifiedTime() - 1);
     $syncState->save();
 
-    // TEST PROPER
+    $syncResult = self::$syncer->syncFromRemoteIfNeeded($originalRemotePerson);
+
+    self::assertEquals(\Civi\Osdi\Result\Sync::SUCCESS, $syncResult->getStatusCode());
+
+    $syncState->setRemotePostSyncModifiedTime(
+      $syncState->getRemotePostSyncModifiedTime() - 1);
+    $syncState->save();
 
     $changedRemotePerson = clone $originalRemotePerson;
     $changedFirstName = $originalRemotePerson->givenName->get() . ' plus this';
