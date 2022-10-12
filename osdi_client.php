@@ -23,12 +23,18 @@ function osdi_client_civicrm_searchKitTasks(array &$tasks, bool $checkPermission
   ];
 }
 
-/**
- * Implements hook_civicrm_config().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_config/
- */
 function osdi_client_civicrm_config(&$config) {
+  if (isset(Civi::$statics[__FUNCTION__])) {
+    return;
+  }
+  Civi::$statics[__FUNCTION__] = 1;
+
+  Civi::dispatcher()->addListener('civi.dao.preDelete', ['\Civi\Osdi\CrmEventDispatch', 'daoPreDelete']);
+  Civi::dispatcher()->addListener('civi.dao.preUpdate', ['\Civi\Osdi\CrmEventDispatch', 'daoPreUpdate']);
+  Civi::dispatcher()->addListener('&hook_civicrm_merge', ['\Civi\Osdi\CrmEventDispatch', 'merge']);
+  Civi::dispatcher()->addListener('&hook_civicrm_pre', ['\Civi\Osdi\CrmEventDispatch', 'pre']);
+  Civi::dispatcher()->addListener('&hook_civicrm_postCommit', ['\Civi\Osdi\CrmEventDispatch', 'postCommit']);
+
   _osdi_client_civix_civicrm_config($config);
 }
 
