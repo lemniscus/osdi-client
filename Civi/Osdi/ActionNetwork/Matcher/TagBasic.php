@@ -17,7 +17,7 @@ class TagBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
   protected function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult {
     $result = new MatchResult(MatchResult::ORIGIN_LOCAL);
 
-    $nameToMatch = $pair->getLocalObject()->name->get();
+    $nameToMatch = $pair->getLocalObject()->loadOnce()->name->get();
 
     $allTags = $this->system->findAll('osdi:tags');
     foreach ($allTags as $remoteTag) {
