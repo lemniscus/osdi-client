@@ -3,6 +3,8 @@
 namespace Civi\Osdi;
 
 use Civi\Osdi\Exception\InvalidArgumentException;
+use GuzzleHttp\Client;
+use Jsor\HalClient\HttpClient\Guzzle6HttpClient;
 
 class Factory {
 
@@ -32,6 +34,7 @@ class Factory {
       'Tagging' => ActionNetwork\SingleSyncer\TaggingBasic::class,
     ],
     'BatchSyncer' => [
+      'Person' => ActionNetwork\BatchSyncer\PersonBasic::class,
       'Tagging' => ActionNetwork\BatchSyncer\TaggingBasic::class,
     ],
     'CrmEventResponder' => [
@@ -66,6 +69,25 @@ class Factory {
       $singletons[$category][$key] = $singleton;
     }
     return $singleton;
+  }
+
+  public static function initializeRemoteSystem(string $apiToken) {
+    $systemProfile = new \CRM_OSDI_BAO_SyncProfile();
+    $systemProfile->entry_point = 'https://actionnetwork.org/api/v2/';
+    $systemProfile->api_token = $apiToken;
+    $httpClient = new Guzzle6HttpClient(new Client(['timeout' => 27]));
+    $client = new \Jsor\HalClient\HalClient('https://actionnetwork.org/api/v2/', $httpClient);
+
+    self::register(
+      'RemoteSystem',
+      'ActionNetwork',
+      \Civi\Osdi\ActionNetwork\RemoteSystem::class);
+
+    return self::singleton(
+      'RemoteSystem',
+      'ActionNetwork',
+      $systemProfile,
+      $client);
   }
 
 }
