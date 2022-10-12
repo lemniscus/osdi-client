@@ -2,8 +2,8 @@
 
 namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
+use Civi\Osdi\CrudObjectInterface;
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\FetchOldOrFindNewMatch;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MapperInterface;
@@ -70,7 +70,7 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     return $this;
   }
 
-  public function matchAndSyncIfEligible($originObject): LocalRemotePair {
+  public function matchAndSyncIfEligible(CrudObjectInterface $originObject): LocalRemotePair {
     if (is_a($originObject, LocalObjectInterface::class)) {
       $pair = $this->toLocalRemotePair($originObject)
         ->setOrigin(LocalRemotePair::ORIGIN_LOCAL);
