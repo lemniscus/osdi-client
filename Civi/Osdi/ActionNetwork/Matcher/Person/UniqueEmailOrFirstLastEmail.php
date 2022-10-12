@@ -230,7 +230,7 @@ class UniqueEmailOrFirstLastEmail extends AbstractMatcher implements MatcherInte
         MatchResult::ORIGIN_LOCAL,
         $localPerson,
         $collection->rawFirst(),
-        NULL,
+        MatchResult::FOUND_MATCH,
         $message);
     }
     catch (EmptyResultException $e) {
