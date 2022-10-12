@@ -439,13 +439,22 @@ class PersonTest extends \PHPUnit\Framework\TestCase implements
     //$this->assertContains($savedPerson1->getId(), $resultIds,
     //'This test assumes an empty(ish) Action Network sandbox and may not work otherwise.');
 
-    $searchResults = $system->find('osdi:people', [
-      [
-        'modified_date',
-        'gt',
-        $savedPerson2ModTime,
-      ],
-    ]);
+    for ($i = 0; $i < 5; $i++) {
+      $searchResults = $system->find('osdi:people', [
+        [
+          'modified_date',
+          'gt',
+          $savedPerson2ModTime,
+        ],
+      ]);
+      if ($searchResults->rawCurrentCount()) {
+        break;
+      }
+      sleep(1);
+    }
+
+    self::assertGreaterThan(0, $searchResults->rawCurrentCount());
+
     foreach ($searchResults as $foundPerson) {
       $this->assertGreaterThan(
         strtotime($savedPerson2ModTime),
