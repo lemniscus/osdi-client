@@ -179,9 +179,17 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     }
 
     foreach ($array as $key => $val) {
-      if ($fieldCamelName = $selects[$key] ?? FALSE) {
-        $this->{$fieldCamelName}->load($val);
+      if (array_key_exists($key, $this->getFieldMetadata())) {
+        $fieldCamelName = $key;
       }
+      elseif (array_key_exists($key, $selects)) {
+        $fieldCamelName = $selects[$key];
+      }
+      else {
+        continue;
+      }
+
+      $this->{$fieldCamelName}->load($val);
     }
 
     $this->isTouched = FALSE;
