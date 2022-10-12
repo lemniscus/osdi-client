@@ -17,14 +17,36 @@
 
 SET FOREIGN_KEY_CHECKS=0;
 
+DROP TABLE IF EXISTS `civicrm_osdi_deletion`;
 DROP TABLE IF EXISTS `civicrm_osdi_person_sync_state`;
 DROP TABLE IF EXISTS `civicrm_osdi_sync_profile`;
 
+SET FOREIGN_KEY_CHECKS=1;
 -- /*******************************************************
 -- *
 -- * Create new tables
 -- *
 -- *******************************************************/
+
+-- /*******************************************************
+-- *
+-- * civicrm_osdi_sync_profile
+-- *
+-- * OSDI Sync configurations
+-- *
+-- *******************************************************/
+CREATE TABLE `civicrm_osdi_sync_profile` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiSyncProfile ID',
+  `is_default` tinyint DEFAULT 0 COMMENT 'Is this default OSDI SyncProfile?',
+  `label` varchar(128) COMMENT 'User-friendly label for the sync configuration',
+  `entry_point` varchar(1023) COMMENT 'API entry point (AEP) URL',
+  `api_token` varchar(1023) COMMENT 'API token',
+  `remote_system` varchar(127) COMMENT 'class name of Remote System',
+  `matcher` varchar(127) COMMENT 'class name of Matcher',
+  `mapper` varchar(127) COMMENT 'class name of Mapper',
+  PRIMARY KEY (`id`)
+)
+ENGINE=InnoDB;
 
 -- /*******************************************************
 -- *
@@ -60,25 +82,20 @@ CREATE TABLE `civicrm_osdi_person_sync_state` (
 )
 ENGINE=InnoDB;
 
-
 -- /*******************************************************
 -- *
--- * civicrm_osdi_sync_profile
+-- * civicrm_osdi_deletion
 -- *
--- * OSDI Sync configurations
+-- * Data about deletions synced from Civi to an OSDI remote system
 -- *
 -- *******************************************************/
-CREATE TABLE `civicrm_osdi_sync_profile` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiSyncProfile ID',
-  `is_default` tinyint DEFAULT 0 COMMENT 'Is this default OSDI SyncProfile?',
-  `label` varchar(128) COMMENT 'User-friendly label for the sync configuration',
-  `entry_point` varchar(1023) COMMENT 'API entry point (AEP) URL',
-  `api_token` varchar(1023) COMMENT 'API token',
-  `remote_system` varchar(127) COMMENT 'class name of Remote System',
-  `matcher` varchar(127) COMMENT 'class name of Matcher',
-  `mapper` varchar(127) COMMENT 'class name of Mapper',
-  PRIMARY KEY (`id`)
+CREATE TABLE `civicrm_osdi_deletion` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiDeletion ID',
+  `sync_profile_id` int unsigned COMMENT 'FK to OSDI Sync Profile',
+  `remote_object_id` varchar(255) DEFAULT NULL COMMENT 'FK to identifier field on remote system',
+  PRIMARY KEY (`id`),
+  INDEX `index_sync_profile_id`(sync_profile_id),
+  INDEX `index_remote_object_id`(remote_object_id),
+  CONSTRAINT FK_civicrm_osdi_deletion_sync_profile_id FOREIGN KEY (`sync_profile_id`) REFERENCES `civicrm_osdi_sync_profile`(`id`) ON DELETE CASCADE
 )
 ENGINE=InnoDB;
-
-SET FOREIGN_KEY_CHECKS=1;

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+
+<table>
+  <base>CRM/OSDI</base>
+  <class>Deletion</class>
+  <name>civicrm_osdi_deletion</name>
+  <comment>Data about deletions synced from Civi to an OSDI remote system</comment>
+  <log>true</log>
+
+  <field>
+    <name>id</name>
+    <type>int unsigned</type>
+    <required>true</required>
+    <comment>Unique OsdiDeletion ID</comment>
+    <html>
+      <type>Number</type>
+    </html>
+  </field>
+  <primaryKey>
+    <name>id</name>
+    <autoincrement>true</autoincrement>
+  </primaryKey>
+
+  <field>
+    <name>sync_profile_id</name>
+    <title>OSDI Sync Profile ID</title>
+    <type>int unsigned</type>
+    <comment>FK to OSDI Sync Profile</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+  <index>
+    <name>index_sync_profile_id</name>
+    <fieldName>sync_profile_id</fieldName>
+  </index>
+  <foreignKey>
+    <name>sync_profile_id</name>
+    <table>civicrm_osdi_sync_profile</table>
+    <key>id</key>
+    <onDelete>CASCADE</onDelete>
+  </foreignKey>
+
+  <field>
+    <name>remote_object_id</name>
+    <title>Remote Entity Identifier</title>
+    <type>varchar</type>
+    <length>255</length>
+    <default>NULL</default>
+    <comment>FK to identifier field on remote system</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+  <index>
+    <name>index_remote_object_id</name>
+    <fieldName>remote_object_id</fieldName>
+  </index>
+
+</table>

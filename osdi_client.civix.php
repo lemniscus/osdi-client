@@ -450,15 +450,20 @@ function _osdi_client_civix_civicrm_alterSettingsFolders(&$metaDataFolders = NUL
  */
 function _osdi_client_civix_civicrm_entityTypes(&$entityTypes) {
   $entityTypes = array_merge($entityTypes, [
-    'CRM_OSDI_DAO_PersonSyncState' => [
-      'name' => 'OsdiPersonSyncState',
-      'class' => 'CRM_OSDI_DAO_PersonSyncState',
-      'table' => 'civicrm_osdi_person_sync_state',
+    'CRM_OSDI_DAO_Deletion' => [
+      'name' => 'OsdiDeletion',
+      'class' => 'CRM_OSDI_DAO_Deletion',
+      'table' => 'civicrm_osdi_deletion',
     ],
     'CRM_OSDI_DAO_SyncProfile' => [
       'name' => 'OsdiSyncProfile',
       'class' => 'CRM_OSDI_DAO_SyncProfile',
       'table' => 'civicrm_osdi_sync_profile',
+    ],
+    'CRM_OSDI_DAO_PersonSyncState' => [
+      'name' => 'OsdiPersonSyncState',
+      'class' => 'CRM_OSDI_DAO_PersonSyncState',
+      'table' => 'civicrm_osdi_person_sync_state',
     ],
   ]);
 }
