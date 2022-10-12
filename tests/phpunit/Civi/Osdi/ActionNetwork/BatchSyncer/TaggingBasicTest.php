@@ -4,6 +4,7 @@ namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 
 use Civi;
 use Civi\Api4\EntityTag;
+use Civi\Osdi\Factory;
 use CRM_OSDI_ActionNetwork_TestUtils;
 use PHPUnit;
 
@@ -85,6 +86,21 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
     $localPerson->firstName->set($givenName);
     $localPerson->save();
     return [$localPerson, $remotePerson];
+  }
+
+  public function testBatchSyncFromANDoesNotRunConcurrently() {
+    Civi::settings()->add([
+      'osdiClient.syncJobProcessId' => getmypid(),
+      'osdiClient.syncJobEndTime' => NULL,
+    ]);
+
+    $singleSyncer = Factory::singleton('SingleSyncer', 'Tagging', self::$remoteSystem);
+    /** @var \Civi\Osdi\ActionNetwork\BatchSyncer\TaggingBasic $batchSyncer */
+    $batchSyncer = Factory::singleton('BatchSyncer', 'Tagging', $singleSyncer);
+
+    $taggingCount = $batchSyncer->batchSyncFromRemote();
+    self::assertNull($taggingCount);
+    self::assertNull(Civi::settings()->get('osdiClient.syncJobEndTime'));
   }
 
   public function testBatchSyncFromRemote() {
