@@ -41,4 +41,30 @@ class FactoryTest extends PHPUnit\Framework\TestCase implements
     self::assertEquals(CRM_OSDI_ActionNetwork_TestUtils::class, get_class($obj));
   }
 
+  public function testCanMake() {
+    self::assertFalse(Factory::canMake('gobStopper', 'Everlasting'));
+    Factory::register('gobStopper', 'Everlasting', __CLASS__);
+    self::assertTrue(Factory::canMake('gobStopper', 'Everlasting'));
+  }
+
+  public function testSingleton() {
+    $system = self::$system;
+
+    /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic $s1 */
+    $s1 = Factory::make('SingleSyncer', 'Person', $system);
+    $s2 = Factory::make('SingleSyncer', 'Person', $system);
+
+    $s1->setSyncProfile(['foo']);
+    $s1->setSyncProfile(['bar']);
+    self::assertNotEquals($s1, $s2);
+
+    $s3 = Factory::singleton('SingleSyncer', 'Person', $system);
+    $s4 = Factory::singleton('SingleSyncer', 'Person', $system);
+    $s4->setSyncProfile(['baz']);
+
+    self::assertIsObject($s3);
+    self::assertNotEquals($s1, $s3);
+    self::assertEquals($s3, $s4);
+  }
+
 }
