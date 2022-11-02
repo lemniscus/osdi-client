@@ -173,14 +173,18 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
    */
   public function testMapLocalToNewRemote() {
 
-    // Create a remote donation.
+    // Create fixture: create a local donation.
     $donationId = $this->createTestContribution();
     $localDonation = new LocalDonation($donationId);
+
+    // Call system under test
     $mapper = new DonationBasicMapper(static::$system, static::$personMatcher);
     $remoteDonation = $mapper->mapLocalToRemote($localDonation);
 
+    // Check expectations
     $this->assertNotEmpty($remoteDonation->donorHref->get());
     $this->assertNotEmpty($remoteDonation->fundraisingPageHref->get());
+    $this->assertEquals(DonationBasicMapper::FUNDRAISING_PAGE_NAME, $remoteDonation->getFundraisingPage()->title->get());
     $this->assertEquals('2022-03-04', substr($remoteDonation->createdDate->get(), 0, 10));
     $this->assertEquals('USD', $remoteDonation->currency->get());
     $this->assertEquals([['display_name' => 'Donation', 'amount' => 1.23]], $remoteDonation->recipients->get());
