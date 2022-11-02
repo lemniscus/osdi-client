@@ -28,6 +28,12 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
     return 'Contribution';
   }
 
+  public function persist(): \Civi\Osdi\CrudObjectInterface {
+    throw new \RuntimeException("persist called, but not programmed");
+
+    return $this;
+  }
+
   protected function getFieldMetadata() {
     return [
       'id'                  => ['select' => 'id'],
