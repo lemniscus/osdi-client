@@ -16,7 +16,7 @@ use \Civi\Osdi\ActionNetwork\RemoteFindResult;
 
 class DonationBasic implements MapperInterface {
 
-  const FUNDRAISING_PAGE_NAME = 'Contributions from CiviCRM';
+  const FUNDRAISING_PAGE_NAME = 'CiviCRM';
 
   private RemoteSystemInterface $remoteSystem;
 
