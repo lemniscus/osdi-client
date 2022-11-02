@@ -136,6 +136,8 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
    *
    */
   public function testMapRemoteToNewLocal() {
+
+    // Create fixture
     $remoteDonation = new RemoteDonation(static::$system);
     $remoteDonation->currency->set('USD');
     $recipients = [['display_name' => 'Test recipient financial type', 'amount' => '2.22']];
@@ -151,15 +153,17 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $remoteDonation->referrerData->set($referrerData);
     $remoteDonation->save();
 
+    // Call system under test
     $mapper = new DonationBasicMapper(static::$system, static::$personMatcher);
     $localDonation = $mapper->mapRemoteToLocal($remoteDonation);
 
+    // Check expectations
     $this->assertEquals(static::$createdEntities['Contact'][0], $localDonation->contactId->get());
-    // @todo fundraising page.
     $this->assertEquals('2020-03-04T05:06:07Z', $localDonation->receiveDate->get());
     $this->assertEquals('USD', $localDonation->currency->get());
     $this->assertEquals(static::$financialTypeId, $localDonation->financialTypeId->get());
     $this->assertNull($localDonation->contributionRecurId->get());
+    $this->assertEquals(self::$testFundraisingPage->title->get(), $localDonation->source->get());
   }
 
   /**

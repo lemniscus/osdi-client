@@ -23,6 +23,7 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
   public Field $paymentMethodLabel;
   public Field $contributionRecurFrequency;
   public Field $trxnId;
+  public Field $source;
 
   public static function getCiviEntityName(): string {
     return 'Contribution';
@@ -45,6 +46,7 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
       'contributionRecurId' => ['select' => 'contribution_recur_id'], 
       'contactId'           => ['select' => 'contact_id'],
       'trxnId'              => ['select' => 'trxn_id'],
+      'source'              => ['select' => 'source'],
       // 'id' => ['select' => 'id'],
       // 'fr_page_?'             => '@todo', // xxx
       // 'referrer?'             => '@todo', // xxx
@@ -68,6 +70,7 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
       'payment_method_id'     => $this->paymentMethodId->get(),
       'contribution_recur_id' => $this->contributionRecurId->get(),
       'contact_id'            => $this->contactId->get(),
+      'source'                => $this->source->get(),
       // 'total_amount'       => $this->amount->get(),
       'line_items' => [
         [
@@ -81,7 +84,6 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
         ]
       ],
       // @todo referrer?
-      // @todo fundraising page?
     ];
     $contributionId = (int) civicrm_api3('Order', 'create', $orderCreateParams)['id'];
 
@@ -105,6 +107,7 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
    * We can't do this here without a local sync state table.
    */
   public function getFundraisingPageHref() {
+    throw new \RuntimeException(__CLASS__ . '::' . __FUNCTION__ . ' not implemented');
   }
 
   /**

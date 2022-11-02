@@ -188,13 +188,29 @@ class DonationBasic implements MapperInterface {
     // @todo possibly use a prefix?
     $localDonation->trxnId->set($remoteTrxnId);
 
-    // Fundraising page
-    // @todo client request to store this in custom field
-    // $remoteFundraisingPage = $remoteDonation->getFundraisingPage();
+    $this->mapRemoteFundraisingPageToLocal($remoteDonation, $localDonation);
 
     // @todo $remoteDonation->referrerData 
 
     return $localDonation;
+  }
+
+  /**
+   * This basic implementation stores the remote fundraising page title in the local Contribution's source field.
+   *
+   * Other implementations might wish to store this elsewhere, e.g. a custom field.
+   */
+  protected function mapRemoteFundraisingPageToLocal(
+    RemoteObjectInterface $remoteDonation,
+    LocalObjectInterface $localDonation
+  ): void {
+
+    if (!($remoteDonation instanceof RemoteDonation)) {
+      throw new \InvalidArgumentException(__CLASS__ . " requires the remote donation to be an ActionNetwork remote donation, received " . get_class($remoteDonation));
+    }
+
+    /** @var RemoteDonation $remoteDonation */
+    $localDonation->source->set($remoteDonation->getFundraisingPage()->title->get());
   }
 
   /**
