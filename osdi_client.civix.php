@@ -450,6 +450,11 @@ function _osdi_client_civix_civicrm_alterSettingsFolders(&$metaDataFolders = NUL
  */
 function _osdi_client_civix_civicrm_entityTypes(&$entityTypes) {
   $entityTypes = array_merge($entityTypes, [
+    'CRM_OSDI_DAO_DonationSyncState' => [
+      'name' => 'OsdiDonationSyncState',
+      'class' => 'CRM_OSDI_DAO_DonationSyncState',
+      'table' => 'civicrm_osdi_donation_sync_state',
+    ],
     'CRM_OSDI_DAO_Deletion' => [
       'name' => 'OsdiDeletion',
       'class' => 'CRM_OSDI_DAO_Deletion',

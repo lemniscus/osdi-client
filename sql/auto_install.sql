@@ -18,7 +18,6 @@
 SET FOREIGN_KEY_CHECKS=0;
 
 DROP TABLE IF EXISTS `civicrm_osdi_deletion`;
-DROP TABLE IF EXISTS `civicrm_osdi_person_sync_state`;
 DROP TABLE IF EXISTS `civicrm_osdi_sync_profile`;
 DROP TABLE IF EXISTS `civicrm_osdi_person_sync_state`;
 
@@ -28,26 +27,6 @@ SET FOREIGN_KEY_CHECKS=1;
 -- * Create new tables
 -- *
 -- *******************************************************/
-
--- /*******************************************************
--- *
--- * civicrm_osdi_sync_profile
--- *
--- * OSDI Sync configurations
--- *
--- *******************************************************/
-CREATE TABLE `civicrm_osdi_sync_profile` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiSyncProfile ID',
-  `is_default` tinyint DEFAULT 0 COMMENT 'Is this default OSDI SyncProfile?',
-  `label` varchar(128) COMMENT 'User-friendly label for the sync configuration',
-  `entry_point` varchar(1023) COMMENT 'API entry point (AEP) URL',
-  `api_token` varchar(1023) COMMENT 'API token',
-  `remote_system` varchar(127) COMMENT 'class name of Remote System',
-  `matcher` varchar(127) COMMENT 'class name of Matcher',
-  `mapper` varchar(127) COMMENT 'class name of Mapper',
-  PRIMARY KEY (`id`)
-)
-ENGINE=InnoDB;
 
 -- /*******************************************************
 -- *
@@ -80,6 +59,26 @@ CREATE TABLE `civicrm_osdi_person_sync_state` (
   INDEX `index_sync_status`(sync_status),
   CONSTRAINT FK_civicrm_osdi_person_sync_state_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE CASCADE,
   CONSTRAINT FK_civicrm_osdi_person_sync_state_sync_profile_id FOREIGN KEY (`sync_profile_id`) REFERENCES `civicrm_osdi_sync_profile`(`id`) ON DELETE CASCADE
+)
+ENGINE=InnoDB;
+
+-- /*******************************************************
+-- *
+-- * civicrm_osdi_sync_profile
+-- *
+-- * OSDI Sync configurations
+-- *
+-- *******************************************************/
+CREATE TABLE `civicrm_osdi_sync_profile` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiSyncProfile ID',
+  `is_default` tinyint DEFAULT 0 COMMENT 'Is this default OSDI SyncProfile?',
+  `label` varchar(128) COMMENT 'User-friendly label for the sync configuration',
+  `entry_point` varchar(1023) COMMENT 'API entry point (AEP) URL',
+  `api_token` varchar(1023) COMMENT 'API token',
+  `remote_system` varchar(127) COMMENT 'class name of Remote System',
+  `matcher` varchar(127) COMMENT 'class name of Matcher',
+  `mapper` varchar(127) COMMENT 'class name of Mapper',
+  PRIMARY KEY (`id`)
 )
 ENGINE=InnoDB;
 
