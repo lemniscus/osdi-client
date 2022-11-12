@@ -272,7 +272,7 @@ class PersonTest extends \PHPUnit\Framework\TestCase implements
     self::assertNotEquals(NULL, $savedPerson->familyName->get());
     self::assertNotEquals('en', $savedPerson->languageSpoken->get());
     self::assertNotEquals(NULL, $savedPerson->postalStreet->get());
-    self::assertNotEquals(NULL, $savedPerson->postalLocality->get());
+    self::assertNotEquals(NULL, $savedPerson->postalLocality->get(), print_r($savedPerson->getArrayForUpdate(), TRUE));
     self::assertNotEquals(NULL, $savedPerson->postalCode->get());
     self::assertNotEquals('KS', $savedPerson->postalRegion->get());
 
@@ -289,7 +289,7 @@ class PersonTest extends \PHPUnit\Framework\TestCase implements
     self::assertEquals(NULL, $fetchedPerson->postalStreet->get());
     self::assertEquals(NULL, $fetchedPerson->postalLocality->get());
     self::assertEquals(NULL, $fetchedPerson->postalCode->get());
-    self::assertEquals('KS', $fetchedPerson->postalRegion->get());
+    self::assertEquals('KS', $fetchedPerson->postalRegion->get(), print_r($fetchedPerson->getArrayForUpdate(), TRUE));
     self::assertEquals('US', $fetchedPerson->postalCountry->get());
 
     $remotePeopleWithTheEmail = self::$system->find(

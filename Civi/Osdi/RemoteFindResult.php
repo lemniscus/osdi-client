@@ -38,11 +38,13 @@ class RemoteFindResult implements \Iterator {
     $this->addPage($resource);
   }
 
+  #[\ReturnTypeWillChange]
   public function current() {
     $halResource = $this->currentPageContents[$this->currentItemIndex];
     return $this->system->makeOsdiObject($this->type, $halResource);
   }
 
+  #[\ReturnTypeWillChange]
   public function next() {
     $this->currentItemIndex++;
 
@@ -58,14 +60,17 @@ class RemoteFindResult implements \Iterator {
     }
   }
 
+  #[\ReturnTypeWillChange]
   public function key() {
     return [$this->currentPageIndex, $this->currentItemIndex];
   }
 
+  #[\ReturnTypeWillChange]
   public function valid() {
     return array_key_exists($this->currentItemIndex, $this->currentPageContents);
   }
 
+  #[\ReturnTypeWillChange]
   public function rewind() {
     $this->currentPageIndex = 1;
     $this->currentItemIndex = 0;

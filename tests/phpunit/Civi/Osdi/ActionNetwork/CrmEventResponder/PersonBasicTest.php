@@ -9,12 +9,12 @@ use PHPUnit;
 /**
  * @group headless
  */
-class TaggingTest extends PHPUnit\Framework\TestCase implements
+class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     \Civi\Test\HeadlessInterface {
 
   private static array $objectsToDelete = [];
 
-  private static \Civi\Osdi\ActionNetwork\RemoteSystem $remoteSystem;
+  private static \Civi\Osdi\ActionNetwork\RemoteSystem $system;
 
   public function setUpHeadless() {
     return \Civi\Test::headless()->installMe(__DIR__)->apply();
@@ -25,19 +25,12 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
   }
 
   protected function setUp(): void {
-    self::$remoteSystem = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    self::$system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
     Civi\Osdi\Queue::getQueue(TRUE);
-
-    \CRM_Core_DAO::singleValueQuery('DELETE FROM civicrm_contact
-       WHERE sort_name IN ("Test Tagging Sync 1", "Test Tagging Sync 2")');
-
     parent::setUp();
   }
 
   protected function tearDown(): void {
-    Civi::cache('long')->delete('osdi-client:tag-match');
-    Civi::cache('short')->delete('osdi-client:tagging-match');
-
     foreach (self::$objectsToDelete as $object) {
       try {
         if ('Contact' === $object::getCiviEntityName()) {
@@ -59,60 +52,7 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
   }
 
   public static function tearDownAfterClass(): void {
-  }
-
-  private function deleteAllTaggingsOnRemotePeople(array $remotePeople) {
-    foreach ($remotePeople as $remotePerson) {
-      /** @var \Civi\Osdi\ActionNetwork\Object\Person $remotePerson */
-      $remoteTaggingCollection = $remotePerson->getTaggings()->loadAll();
-      foreach ($remoteTaggingCollection as $remoteTagging) {
-        /** @var \Civi\Osdi\ActionNetwork\Object\Tagging $remoteTagging */
-        $remoteTagging->delete();
-      }
-      $remoteTaggingCollection = $remotePerson->getTaggings()->loadAll();
-      self::assertEquals(0, $remoteTaggingCollection->rawCurrentCount());
-    }
-  }
-
-  private function listTaggings(array $remotePeople): array {
-    $actual = [];
-
-    foreach ($remotePeople as $remotePerson) {
-      /** @var \Civi\Osdi\ActionNetwork\Object\Person $remotePerson */
-      $personNumber = substr($remotePerson->givenName->get(), -1);
-      $remoteTaggingCollection = $remotePerson->getTaggings()->loadAll();
-
-      foreach ($remoteTaggingCollection as $remoteTagging) {
-        /** @var \Civi\Osdi\ActionNetwork\Object\Tagging $remoteTagging */
-        $tagName = $remoteTagging->getTag()->loadOnce()->name->get();
-        $tagLetter = substr($tagName, -1);
-        $taggingCode = "$personNumber$tagLetter";
-        $actual[$taggingCode] = $taggingCode;
-      }
-    }
-    return $actual;
-  }
-
-  /**
-   * @return array{0: \Civi\Osdi\LocalObject\TagBasic[], 1: \Civi\Osdi\ActionNetwork\Object\Tag[]}
-   * @throws \Civi\Osdi\Exception\InvalidOperationException
-   */
-  private function makeSameTagsOnBothSides(): array {
-    $remoteTags = $localTags = [];
-    foreach (['a', 'b', 'c'] as $index) {
-      $tagName = "test tagging sync $index";
-
-      $remoteTag = new \Civi\Osdi\ActionNetwork\Object\Tag(self::$remoteSystem);
-      $remoteTag->name->set($tagName);
-      $remoteTag->save();
-      $remoteTags[$index] = $remoteTag;
-
-      $localTag = new \Civi\Osdi\LocalObject\TagBasic();
-      $localTag->name->set($tagName);
-      $localTag->save();
-      $localTags[$index] = $localTag;
-    }
-    return [$localTags, $remoteTags];
+    parent::tearDownAfterClass();
   }
 
   /**
@@ -122,10 +62,10 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
    * @throws \Civi\Osdi\Exception\InvalidOperationException
    */
   private function makeSamePersonOnBothSides(string $index): array {
-    $email = "taggingtest$index@test.net";
-    $givenName = "Test Tagging Sync $index";
+    $email = "contactEventResponderTest$index@test.net";
+    $givenName = "Test Contact Event Responder $index";
 
-    $remotePerson = new Civi\Osdi\ActionNetwork\Object\Person(self::$remoteSystem);
+    $remotePerson = new Civi\Osdi\ActionNetwork\Object\Person(self::$system);
     $remotePerson->emailAddress->set($email);
     $remotePerson->givenName->set($givenName);
     $remotePerson->save();
@@ -138,24 +78,19 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
   }
 
   public function testCreationAndUpdateAndDeletionByOsdiClientIsIgnored() {
-    [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
-    [$localPerson, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
+    [$localPerson, $remotePerson] = $this->makeSamePersonOnBothSides(1);
 
-    array_push(self::$objectsToDelete,
-      $localTags['a'], $localTags['b'], $localPerson);
-
-    $localTagging = new Civi\Osdi\LocalObject\TaggingBasic();
-    $localTagging->setPerson($localPerson);
-    $localTagging->setTag($localTags['a'])->save();
-    $localTagging->setTag($localTags['b'])->save();
-    $localTagging->delete();
+    $localPerson->addressStreetAddress->set(__FUNCTION__);
+    $localPerson->save();
+    $localPerson->delete();
 
     $queue = Civi\Osdi\Queue::getQueue();
 
-    self::assertEquals(0, $queue->numberOfItems());
+    self::assertEquals(0, $queue->getStatistic('total'));
   }
 
   public function testCreationAndUpdateAreAddedToQueue() {
+    self::markTestIncomplete('todo');
     [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
     [$localPerson, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
 
@@ -211,32 +146,50 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     self::assertEquals("Sync creation of EntityTag with tag id $tagBId, contact id $contactId", $task->title);
   }
 
-  public function testDeletionIsAddedToQueue() {
-    [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
+  public function testSoftDeletionIsAddedToQueue() {
     [$localPerson1, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
-
-    $localTagging1a = new Civi\Osdi\LocalObject\TaggingBasic();
-    $localTagging1a->setPerson($localPerson1)->setTag($localTags['a'])->save();
-
-    array_push(self::$objectsToDelete,
-      $localTags['a'], $localTags['b'], $localPerson1);
 
     $queue = Civi\Osdi\Queue::getQueue(TRUE);
 
-    Civi\Api4\EntityTag::delete(FALSE)
-      ->addWhere('id', '=', $localTagging1a->getId())
+    self::assertEquals(0, $queue->getStatistic('ready'));
+
+    Civi\Api4\Contact::delete(FALSE)
+      ->addWhere('id', '=', $localPerson1->getId())
+      ->setUseTrash(TRUE)
       ->execute();
 
     /** @var \CRM_Queue_Task $task */
-    self::assertGreaterThan(0, $queue->numberOfItems());
+    self::assertGreaterThan(0, $queue->getStatistic('ready'));
     $task = $queue->claimItem()->data;
 
     self::assertEquals(\CRM_Queue_Task::class, get_class($task));
-    self::assertEquals('Sync deletion of EntityTag with tag id ' .
-      $localTags['a']->getId() . ', contact id ' . $localPerson1->getId(), $task->title);
+    self::assertEquals('Sync soft deletion of Contact id ' . $localPerson1->getId(),
+      $task->title);
+  }
+
+  public function testHardDeletionIsAddedToQueue() {
+    [$localPerson1, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
+
+    $queue = Civi\Osdi\Queue::getQueue(TRUE);
+
+    self::assertEquals(0, $queue->getStatistic('ready'));
+
+    Civi\Api4\Contact::delete(FALSE)
+      ->addWhere('id', '=', $localPerson1->getId())
+      ->setUseTrash(FALSE)
+      ->execute();
+
+    /** @var \CRM_Queue_Task $task */
+    self::assertGreaterThan(0, $queue->getStatistic('ready'));
+    $task = $queue->claimItem()->data;
+
+    self::assertEquals(\CRM_Queue_Task::class, get_class($task));
+    self::assertEquals('Sync hard deletion of Contact id ' . $localPerson1->getId(),
+      $task->title);
   }
 
   public function testMergesAreAddedToQueue() {
+    self::markTestIncomplete('todo');
     [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
     [$localPerson1, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
     [$localPerson2, $remotePerson2] = $this->makeSamePersonOnBothSides(2);
@@ -261,7 +214,6 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     $queue = Civi\Osdi\Queue::getQueue();
     $expectedTitles = [
       "Sync merge of Contact id $toRemoveId into id $toKeepId",
-      "Sync soft deletion of Contact id $toRemoveId",
       "Sync all taggings of Contact id $toKeepId",
     ];
 
@@ -281,65 +233,36 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
   }
 
   public function testDeleteMoreThanOne() {
-    [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
     [$localPerson1, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
     [$localPerson2, $remotePerson2] = $this->makeSamePersonOnBothSides(2);
+    $localPeopleIds = [$localPerson1->getId(), $localPerson2->getId()];
+    $remotePeople = [$remotePerson1, $remotePerson2];
 
-    $localTagging1a = new Civi\Osdi\LocalObject\TaggingBasic();
-    $localTagging1a->setPerson($localPerson1)->setTag($localTags['a'])->save();
+    foreach ($remotePeople as $remotePerson) {
+      $remotePerson->load();
+      self::assertNotNull($remotePerson->getId());
+      self::assertNotNull($remotePerson->givenName->get());
+    }
 
-    $localTagging2a = new Civi\Osdi\LocalObject\TaggingBasic();
-    $localTagging2a->setPerson($localPerson2)->setTag($localTags['a'])->save();
-
-    $localTagging2b = new Civi\Osdi\LocalObject\TaggingBasic();
-    $localTagging2b->setPerson($localPerson2)->setTag($localTags['b'])->save();
-
-    array_push(self::$objectsToDelete,
-      $localTags['a'], $localTags['b'], $localPerson1, $localPerson2);
-
-    $remoteTagging1a = new Civi\Osdi\ActionNetwork\Object\Tagging(self::$remoteSystem);
-    $remoteTagging1a->setPerson($remotePerson1)->setTag($remoteTags['a'])->save();
-
-    $remoteTagging2a = new Civi\Osdi\ActionNetwork\Object\Tagging(self::$remoteSystem);
-    $remoteTagging2a->setPerson($remotePerson2)->setTag($remoteTags['a'])->save();
-
-    $remoteTagging2b = new Civi\Osdi\ActionNetwork\Object\Tagging(self::$remoteSystem);
-    $remoteTagging2b->setPerson($remotePerson2)->setTag($remoteTags['b'])->save();
-
-    self::assertNotNull($remoteTagging1a->getId());
-    self::assertNotNull($remoteTagging2a->getId());
-    self::assertNotNull($remoteTagging2b->getId());
-
-    Civi\Api4\EntityTag::delete(FALSE)
-      ->addWhere('id', 'IN', [$localTagging1a->getId()])
+    Civi\Api4\Contact::delete(FALSE)
+      ->addWhere('id', 'IN', $localPeopleIds)
+      ->setUseTrash(FALSE)
       ->execute();
-
-    $idsOfEntitiesToRemoveFromTag = [$localPerson2->getId()];
-    \CRM_Core_BAO_EntityTag::removeEntitiesFromTag(
-      $idsOfEntitiesToRemoveFromTag,
-      $localTags['b']->getId(),
-      'civicrm_contact',
-      FALSE
-    );
 
     $result = civicrm_api3('Job', 'osdiclientprocessqueue',
       ['debug' => 1, 'api_token' => ACTION_NETWORK_TEST_API_TOKEN]);
 
     self::assertEquals(0, $result['is_error']);
 
-    foreach ([$remoteTagging1a, $remoteTagging2b] as $taggingThatShouldBeDeleted) {
+    foreach ($remotePeople as $personThatShouldBeDeleted) {
       $e = NULL;
-      try {
-        $taggingThatShouldBeDeleted->load();
-        self::fail('Tagging should have been deleted, so loading it should fail');
-      }
-      catch (Civi\Osdi\Exception\EmptyResultException $e) {
-      }
-      self::assertNotNull($e);
+      $personThatShouldBeDeleted->load();
+      self::assertNull($personThatShouldBeDeleted->givenName->get());
     }
   }
 
   public function testCreateMoreThanOne() {
+    self::markTestIncomplete('todo');
     [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
     [$localPerson1, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
     [$localPerson2, $remotePerson2] = $this->makeSamePersonOnBothSides(2);
@@ -379,6 +302,7 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
   }
 
   public function testUpdateMoreThanOne() {
+    self::markTestIncomplete('todo');
     [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
     [$localPerson1, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
     [$localPerson2, $remotePerson2] = $this->makeSamePersonOnBothSides(2);
@@ -394,10 +318,10 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     $localTagging2a = new Civi\Osdi\LocalObject\TaggingBasic();
     $localTagging2a->setPerson($localPerson2)->setTag($localTags['a'])->save();
 
-    $remoteTagging1a = new Civi\Osdi\ActionNetwork\Object\Tagging(self::$remoteSystem);
+    $remoteTagging1a = new Civi\Osdi\ActionNetwork\Object\Tagging(self::$system);
     $remoteTagging1a->setPerson($remotePerson1)->setTag($remoteTags['a'])->save();
 
-    $remoteTagging2a = new Civi\Osdi\ActionNetwork\Object\Tagging(self::$remoteSystem);
+    $remoteTagging2a = new Civi\Osdi\ActionNetwork\Object\Tagging(self::$system);
     $remoteTagging2a->setPerson($remotePerson2)->setTag($remoteTags['a'])->save();
 
     //xdebug_break();
@@ -422,6 +346,7 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
   }
 
   public function testUpdateDueToContactMerge_DifferentEmails() {
+    self::markTestIncomplete('todo');
     [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
     [$localPerson1, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
     [$localPerson2, $remotePerson2] = $this->makeSamePersonOnBothSides(2);

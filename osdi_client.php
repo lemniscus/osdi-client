@@ -34,6 +34,7 @@ function osdi_client_civicrm_config(&$config) {
   Civi::dispatcher()->addListener('&hook_civicrm_merge', ['\Civi\Osdi\CrmEventDispatch', 'merge']);
   Civi::dispatcher()->addListener('&hook_civicrm_pre', ['\Civi\Osdi\CrmEventDispatch', 'pre']);
   Civi::dispatcher()->addListener('&hook_civicrm_postCommit', ['\Civi\Osdi\CrmEventDispatch', 'postCommit']);
+  Civi::dispatcher()->addListener('&hook_civicrm_queueRun_osdiclient', ['\Civi\Osdi\Queue', 'runQueue']);
 
   _osdi_client_civix_civicrm_config($config);
 }

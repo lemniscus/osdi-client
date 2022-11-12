@@ -55,6 +55,7 @@ class ResultStack extends \ArrayIterator implements \Iterator {
   /**
    * Iterator implementation
    */
+  #[\ReturnTypeWillChange]
   public function current() {
     return $this->stack[$this->position];
   }
@@ -62,6 +63,7 @@ class ResultStack extends \ArrayIterator implements \Iterator {
   /**
    * Iterator implementation
    */
+  #[\ReturnTypeWillChange]
   public function key(): int {
     return $this->position;
   }
@@ -69,6 +71,7 @@ class ResultStack extends \ArrayIterator implements \Iterator {
   /**
    * Iterator implementation
    */
+  #[\ReturnTypeWillChange]
   public function next(): void {
     --$this->position;
   }
@@ -76,6 +79,7 @@ class ResultStack extends \ArrayIterator implements \Iterator {
   /**
    * Iterator implementation
    */
+  #[\ReturnTypeWillChange]
   public function valid(): bool {
     return isset($this->stack[$this->position]);
   }

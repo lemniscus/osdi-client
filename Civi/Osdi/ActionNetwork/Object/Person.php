@@ -98,6 +98,7 @@ class Person extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInte
     $this->languageSpoken->set('en');
     $this->postalStreet->set(NULL);
     $this->postalCode->set(NULL);
+    $this->postalLocality->set(NULL);
     $this->postalRegion->set(NULL);
     $this->postalCountry->set(NULL);
 

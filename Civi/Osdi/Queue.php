@@ -2,6 +2,8 @@
 
 namespace Civi\Osdi;
 
+use Symfony\Component\EventDispatcher\Event;
+
 class Queue {
 
   public static function getQueue(bool $reset = FALSE): \CRM_Queue_Queue_Sql {
@@ -20,6 +22,16 @@ class Queue {
       \Civi::$statics['osdiClient.queue'] = $queue;
     }
     return $queue;
+  }
+
+  public static function runQueue(Event $e) {
+    //CRM_Queue_Queue $queue, array $items, array &$outcomes
+    foreach ($items as $itemPos => $item) {
+      Logger::logDebug('Running queued task: ' . $item->data->title);
+      $outcome = (new \CRM_Queue_TaskRunner())->run($queue, $item);
+      $outcomes[$itemPos] = $outcome;
+      Logger::logDebug("Queued task result: $outcome");
+    }
   }
 
 }

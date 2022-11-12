@@ -28,7 +28,7 @@ class TaggingBasic {
 
     $task = new \CRM_Queue_Task(
       [static::class, 'syncDeletionFromQueue'],
-      ['tagging' => $preUpdateLocalObjectArray],
+      ['serializedTagging' => $preUpdateLocalObjectArray],
       E::ts('Sync update of EntityTag id %1: delete old version',
         [1 => $preUpdateLocalObjectArray['id']])
     );
@@ -53,7 +53,7 @@ class TaggingBasic {
 
     $task = new \CRM_Queue_Task(
       [static::class, 'syncDeletionFromQueue'],
-      ['tagging' => $taggingAsArray],
+      ['serializedTagging' => $taggingAsArray],
       E::ts('Sync deletion of EntityTag with tag id %1, contact id %2',
         [1 => $taggingAsArray['tagId'], 2 => $taggingAsArray['contactId']])
     );
@@ -88,7 +88,7 @@ class TaggingBasic {
 
       $task = new \CRM_Queue_Task(
         [static::class, 'syncCreationFromQueue'],
-        ['tagging' => $taggingAsArray],
+        ['serializedTagging' => $taggingAsArray],
         E::ts('Sync creation of EntityTag with tag id %1, contact id %2',
           [1 => $tagId, 2 => $contactId])
       );
