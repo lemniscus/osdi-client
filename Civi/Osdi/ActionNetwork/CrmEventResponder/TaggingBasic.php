@@ -3,6 +3,8 @@
 namespace Civi\Osdi\ActionNetwork\CrmEventResponder;
 
 use Civi\Api4\EntityTag;
+use Civi\Core\DAO\Event\PreDelete;
+use Civi\Core\DAO\Event\PreUpdate;
 use Civi\Osdi\Factory;
 use Civi\Osdi\LocalRemotePair;
 use CRM_OSDI_ExtensionUtil as E;
@@ -10,7 +12,7 @@ use Symfony\Component\EventDispatcher\Event;
 
 class TaggingBasic {
 
-  public function daoPreUpdate(Event $event) {
+  public function daoPreUpdate(PreUpdate $event) {
     /** @var \CRM_Core_DAO_EntityTag $dao */
     $dao = $event->object;
 
@@ -37,7 +39,7 @@ class TaggingBasic {
     $queue->createItem($task);
   }
 
-  public function daoPreDelete(Event $event) {
+  public function daoPreDelete(PreDelete $event) {
     /** @var \CRM_Core_DAO_EntityTag $dao */
     $dao = $event->object;
 

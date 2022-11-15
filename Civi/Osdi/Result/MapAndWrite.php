@@ -37,6 +37,13 @@ class MapAndWrite extends AbstractResult implements ResultInterface {
     ];
   }
 
+  public function isError(): bool {
+    return in_array($this->statusCode, [
+      self::ERROR,
+      self::SAVE_ERROR,
+    ]);
+  }
+
   public function getPairBefore(): ?LocalRemotePair {
     return $this->pairBefore;
   }

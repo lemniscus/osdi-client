@@ -7,6 +7,10 @@ use CRM_OSDI_ActionNetwork_TestUtils;
 use PHPUnit;
 
 /**
+ * This class does NOT implement TransactionalInterface, because it tests
+ * behavior involving transactions. Therefore it must take care of its own
+ * cleanup.
+ *
  * @group headless
  */
 class TaggingTest extends PHPUnit\Framework\TestCase implements
@@ -21,7 +25,7 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
   }
 
   public static function setUpBeforeClass(): void {
-    parent::setUpBeforeClass();;
+    parent::setUpBeforeClass();
   }
 
   protected function setUp(): void {
@@ -400,7 +404,6 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     $remoteTagging2a = new Civi\Osdi\ActionNetwork\Object\Tagging(self::$remoteSystem);
     $remoteTagging2a->setPerson($remotePerson2)->setTag($remoteTags['a'])->save();
 
-    //xdebug_break();
     foreach ([$localTagging1a, $localTagging2a] as $tagging) {
       Civi\Api4\EntityTag::update(FALSE)
         ->addWhere('id', 'IN', [$tagging->getId()])

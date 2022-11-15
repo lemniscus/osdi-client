@@ -15,7 +15,7 @@ use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\DeletionSync as DeletionSyncResult;
 use Civi\Osdi\Result\FetchOldOrFindNewMatch as OldOrNewMatchResult;
-use Civi\Osdi\Result\MapAndWrite;
+use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
 use Civi\Osdi\Result\MatchResult as MatchResult;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\Result\SyncEligibility;
@@ -64,7 +64,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     }
 
     else {
-      $pair->setTargetObject($matchResult->getMatch());
+      $pair->setTargetObject($matchResult->getMatch()->loadOnce());
       $result->setStatusCode($result::FOUND_NEW_MATCH);
     }
 
@@ -87,6 +87,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     if ($pair->isOriginLocal()) {
       $pair->getLocalObject()->loadOnce();
     }
+
     $modTimeAfterLastSync = $pair->isOriginLocal() ?
       $syncState->getLocalPostSyncModifiedTime() :
       $syncState->getRemotePostSyncModifiedTime();
@@ -115,175 +116,11 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     return $person;
   }
 
-  public function oneWayMapAndWrite(LocalRemotePair $pair): MapAndWrite {
+  public function oneWayMapAndWrite(LocalRemotePair $pair): MapAndWriteResult {
     $pairBeforeMapAndWrite = clone $pair;
     $result = parent::oneWayMapAndWrite($pair);
     $result->setPairBefore($pairBeforeMapAndWrite);
     return $result;
-  }
-
-  /**
-   * @deprecated
-   *
-   * @param \Civi\Osdi\LocalRemotePair $localRemotePair
-   *
-   * @return \Civi\Osdi\Result\Sync
-   */
-  public function oneWayWriteFromRemote(LocalRemotePair $localRemotePair): Sync {
-    $remotePerson = $this->typeCheckRemotePerson(
-      $localRemotePair->getRemoteObject());
-
-    $syncState = $localRemotePair->getPersonSyncState() ??
-      PersonSyncState::getForRemotePerson($remotePerson, $this->syncProfileId);
-    $this->fillLocalRemotePairFromSyncState($localRemotePair, $syncState);
-
-    if (empty($localPerson = $localRemotePair->getLocalObject())) {
-      $localPersonClass = $this->getLocalObjectClass();
-      $localPerson = new $localPersonClass();
-      if ($contactId = $syncState->getContactId()) {
-        $localPerson->setId($contactId);
-        $localPerson->loadOnce();
-      }
-    }
-    else {
-      $localPerson->loadOnce();
-    }
-    $localPerson = $this->typeCheckLocalPerson($localPerson);
-
-    $remoteModifiedTime = $this->modTimeAsUnixTimestamp($remotePerson);
-    $localPreSyncModifiedTime = $this->modTimeAsUnixTimestamp($localPerson);
-
-    $localPerson = $this->getMapper()->mapRemoteToLocal(
-      $remotePerson, $localPerson);
-
-    try {
-      if ($localPerson->isAltered()) {
-        $localPerson->save();
-        $statusMessage = empty($localPreSyncModifiedTime)
-          ? 'created new Civi contact'
-          : 'altered existing Civi contact';
-        $localPostSyncModifiedTime = $this->modTimeAsUnixTimestamp($localPerson);
-      }
-      else {
-        $statusMessage = 'no changes made to Civi contact';
-        $localPostSyncModifiedTime = $localPreSyncModifiedTime;
-      }
-      $statusCode = Sync::SUCCESS;
-    }
-    catch (\API_Exception $exception) {
-      $statusCode = Sync::ERROR;
-      $statusMessage = 'exception when saving local contact';
-      Logger::logError("OSDI Client sync error: $statusMessage", [
-        'remote person id' => $remotePerson->getId(),
-        'exception' => $exception,
-      ]);
-    }
-
-    $syncState->setSyncProfileId($this->syncProfileId);
-    $syncState->setSyncOrigin(PersonSyncState::ORIGIN_REMOTE);
-    $syncState->setSyncTime(time());
-    $syncState->setContactId($localPerson->getId());
-    $syncState->setRemotePersonId($remotePerson->getId());
-    $syncState->setRemotePreSyncModifiedTime($remoteModifiedTime);
-    $syncState->setRemotePostSyncModifiedTime($remoteModifiedTime);
-    $syncState->setLocalPreSyncModifiedTime($localPreSyncModifiedTime);
-    $syncState->setLocalPostSyncModifiedTime($localPostSyncModifiedTime ?? NULL);
-    $syncState->setSyncStatus($statusCode);
-    $syncState->save();
-
-    return new Sync(
-      $localPerson,
-      $remotePerson,
-      $statusCode,
-      $statusMessage,
-      $syncState
-    );
-  }
-
-  /**
-   * @deprecated
-   *
-   * @param \Civi\Osdi\LocalRemotePair $localRemotePair
-   *
-   * @return \Civi\Osdi\Result\Sync
-   */
-  public function oneWayWriteFromLocal(LocalRemotePair $localRemotePair): Sync {
-    $localPerson = $this->typeCheckLocalPerson(
-      $localRemotePair->getLocalObject()->loadOnce());
-
-    $syncState = $localRemotePair->getPersonSyncState() ??
-      PersonSyncState::getForLocalPerson($localPerson, $this->syncProfileId);
-    $this->fillLocalRemotePairFromSyncState($localRemotePair, $syncState);
-
-    if (empty($remotePerson = $localRemotePair->getRemoteObject())) {
-      $remotePersonClass = $this->getRemoteObjectClass();
-      $remotePerson = new $remotePersonClass($this->getRemoteSystem());
-      if ($remotePersonId = $syncState->getRemotePersonId()) {
-        $remotePerson->setId($remotePersonId);
-        $remotePerson->loadOnce();
-      }
-    }
-    else {
-      $remotePerson->loadOnce();
-    }
-    $remotePerson = $this->typeCheckRemotePerson($remotePerson);
-
-    $localModifiedTime = $this->modTimeAsUnixTimestamp($localPerson);
-    $remotePreSyncModifiedTime = $this->modTimeAsUnixTimestamp($remotePerson);
-
-    $remotePerson = $this->getMapper()->mapLocalToRemote(
-      $localPerson, $remotePerson);
-
-    if ($remotePerson->isAltered()) {
-      $saveResult = $remotePerson->trySave();
-      $remotePerson = $saveResult->getReturnedObject();
-      if (empty($remotePreSyncModifiedTime)) {
-        $statusMessage = 'created new AN person';
-      }
-      else {
-        $statusMessage = 'altered existing AN person';
-        $context = $saveResult->getContext();
-      }
-      $remotePostSyncModifiedTime = $this->modTimeAsUnixTimestamp($remotePerson);
-    }
-    else {
-      $statusMessage = 'no changes made to Action Network person';
-      $remotePostSyncModifiedTime = $remotePreSyncModifiedTime;
-    }
-
-    $statusCode = Sync::SUCCESS;
-
-    if (isset($saveResult) && $saveResult->isError()) {
-      $statusCode = Sync::ERROR;
-      $statusMessage = 'problem when saving Action Network person: '
-        . $saveResult->getMessage();
-
-      $context = $saveResult->getContext();
-      $context = is_array($context) ? $context : [$context];
-      $context['contact id'] = $localPerson->getId();
-      Logger::logError("OSDI Client sync error: $statusMessage", $context);
-    }
-
-    $syncState->setSyncProfileId($this->syncProfileId);
-    $syncState->setSyncOrigin(PersonSyncState::ORIGIN_LOCAL);
-    $syncState->setSyncTime(time());
-    $syncState->setContactId($localPerson->getId());
-    $syncState->setRemotePersonId($remotePerson->getId());
-    $syncState->setRemotePreSyncModifiedTime($remotePreSyncModifiedTime);
-    $syncState->setRemotePostSyncModifiedTime($remotePostSyncModifiedTime);
-    $syncState->setLocalPreSyncModifiedTime($localModifiedTime);
-    $syncState->setLocalPostSyncModifiedTime($localModifiedTime);
-    $syncState->setSyncStatus($statusCode);
-    $syncState->save();
-
-    return new Sync(
-      $localPerson,
-      $remotePerson,
-      $statusCode,
-      $statusMessage,
-      $syncState,
-      $context ?? NULL
-    );
   }
 
   protected function saveMatch(LocalRemotePair $pairAfter): PersonSyncState {
@@ -291,7 +128,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     $remotePersonAfter = $pairAfter->getRemoteObject();
 
     $lastMapAndWriteResult = $pairAfter->getResultStack()
-      ->getLastOfType(MapAndWrite::class);
+      ->getLastOfType(MapAndWriteResult::class);
 
     $pairBefore = $lastMapAndWriteResult->getPairBefore();
 
@@ -349,116 +186,18 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     }
 
     $resultStack = $pair->getResultStack();
-    if ($resultStack->lastIsError()) {
-      return NULL;
+
+    $r = $resultStack->getLastOfType(MapAndWriteResult::class);
+    if ($r) {
+      return $this->saveMatch($pair);
     }
 
     $r = $resultStack->getLastOfType(OldOrNewMatchResult::class);
-    /** @var ?\Civi\Osdi\Result\FetchOldOrFindNewMatch $r */
     if ($r && $r->isStatus($r::FETCHED_SAVED_MATCH)) {
       return $r->getSavedMatch();
     }
 
-    return $this->saveMatch($pair);
-  }
-
-  /**
-   * @deprecated
-   *
-   * @param \Civi\Osdi\RemoteObjectInterface $remoteObject
-   *
-   * @return \Civi\Osdi\Result\Sync
-   */
-  public function syncFromRemoteIfNeeded(RemoteObjectInterface $remoteObject): Sync {
-    $pair = $this->getOrCreateLocalRemotePairFromRemote($remoteObject);
-    if ('created matching object' === $pair->getMessage()) {
-      return $pair->getSyncResult();
-    }
-
-    if ('error finding match' === $pair->getMessage()) {
-      $matchResult = $pair->getResultStack()->getLastOfType(MatchResult::class);
-      return new Sync(
-        NULL,
-        $remoteObject,
-        Sync::ERROR,
-        'Match error: ' . $matchResult->getMessage(),
-        NULL,
-        $matchResult->getContext()
-      );
-    }
-
-    if ($pair->isError()) {
-      return new Sync(
-        NULL,
-        $remoteObject,
-        Sync::ERROR,
-        'Error: ' . $pair->getMessage(),
-        NULL,
-        $pair
-      );
-    }
-
-    if (empty($syncState = $pair->getPersonSyncState())) {
-      $syncState = PersonSyncState::getForRemotePerson($remoteObject, $this->syncProfileId);
-    }
-
-    $noPreviousSync = empty($postSyncModTime = $syncState->getRemotePostSyncModifiedTime());
-    $modifiedSinceLastSync = $postSyncModTime < $this->modTimeAsUnixTimestamp($remoteObject);
-    if ($noPreviousSync || $modifiedSinceLastSync) {
-      return $this->oneWayWriteFromRemote($pair);
-    }
-
-    return new Sync(
-      NULL,
-      $remoteObject,
-      Sync::NO_SYNC_NEEDED,
-      'Sync is already up to date',
-      $syncState
-    );
-  }
-
-  /**
-   * @deprecated
-   *
-   * @param \Civi\Osdi\LocalObjectInterface $localObject
-   *
-   * @return \Civi\Osdi\Result\Sync
-   * @throws \Civi\Osdi\Exception\InvalidArgumentException
-   */
-  public function syncFromLocalIfNeeded(LocalObjectInterface $localObject): Sync {
-    $localPersonClass = $this->getLocalObjectClass();
-    $remotePersonClass = $this->getRemoteObjectClass();
-
-    \Civi\Osdi\Util::assertClass($localObject, $localPersonClass);
-
-    $pair = $this->getOrCreateLocalRemotePairFromLocal($localObject);
-
-    if ('person has no qualifying email or phone' == $pair->getMessage()) {
-      return $pair->getSyncResult();
-    }
-
-    if ('created matching object' == $pair->getMessage()) {
-      return $pair->getSyncResult();
-    }
-
-    if (empty($syncState = $pair->getPersonSyncState())) {
-      $syncState = PersonSyncState::getForLocalPerson($localObject, $this->syncProfileId);
-    }
-    $pair->setPersonSyncState($syncState);
-
-    $noPreviousSync = empty($postSyncModTime = $syncState->getLocalPostSyncModifiedTime());
-    $modifiedSinceLastSync = $postSyncModTime < $this->modTimeAsUnixTimestamp($localObject->loadOnce());
-    if ($noPreviousSync || $modifiedSinceLastSync) {
-      return $this->oneWayWriteFromLocal($pair);
-    }
-
-    return new Sync(
-      $localObject,
-      NULL,
-      Sync::NO_SYNC_NEEDED,
-      'Sync is already up to date',
-      $syncState
-    );
+    return NULL;
   }
 
   public function syncDeletion(LocalRemotePair $pair): DeletionSyncResult {
@@ -488,65 +227,6 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     return $result;
   }
 
-  protected function getOrCreateLocalRemotePairFromLocal(LocalObjectInterface $localPerson): LocalRemotePair {
-    $pair = (new LocalRemotePair())
-      ->setLocalObject($localPerson)
-      ->setLocalClass($this->getLocalObjectClass())
-      ->setRemoteClass($this->getRemoteObjectClass());
-
-    $syncState = PersonSyncState::getForLocalPerson($localPerson, $this->syncProfileId);
-    if ($this->fillLocalRemotePairFromSyncState($pair, $syncState)) {
-      return $pair;
-    }
-
-    $pair->setMatchResult($matchResult = $this->getMatcher()
-      ->tryToFindMatchForLocalObject($pair));
-
-    if ($matchResult->isError()) {
-      return $pair->setIsError(TRUE)->setMessage('error finding match');
-    }
-
-    elseif (MatchResult::NO_MATCH == $matchResult->getStatusCode()) {
-      if (!$this->newRemoteShouldBeCreatedForLocal($pair)) {
-        return $pair;
-      }
-      $syncResult = $this->oneWayWriteFromLocal($pair);
-      return $this->fillLocalRemotePairFromSyncResult($syncResult, $pair);
-    }
-
-    else {
-      return $this->fillLocalRemotePairFromNewfoundMatch($matchResult, $pair);
-    }
-  }
-
-  protected function getOrCreateLocalRemotePairFromRemote(RemoteObjectInterface $remotePerson): LocalRemotePair {
-    $pair = (new LocalRemotePair())
-      ->setRemoteObject($remotePerson)
-      ->setLocalClass($this->getLocalObjectClass())
-      ->setRemoteClass($this->getRemoteObjectClass());
-
-    $syncState = PersonSyncState::getForRemotePerson($remotePerson, $this->syncProfileId);
-    if ($this->fillLocalRemotePairFromSyncState($pair, $syncState)) {
-      return $pair;
-    }
-
-    $pair->setMatchResult($matchResult = $this->getMatcher()
-      ->tryToFindMatchForRemoteObject($pair));
-
-    if ($matchResult->isError()) {
-      return $pair->setIsError(TRUE)->setMessage('error finding match');
-    }
-
-    elseif (MatchResult::NO_MATCH == $matchResult->getStatusCode()) {
-      $syncResult = $this->oneWayWriteFromRemote($pair);
-      return $this->fillLocalRemotePairFromSyncResult($syncResult, $pair);
-    }
-
-    else {
-      return $this->fillLocalRemotePairFromNewfoundMatch($matchResult, $pair);
-    }
-  }
-  
   public function makeLocalRemotePair(
     LocalObjectInterface $localObject = NULL,
     RemoteObjectInterface $remoteObject = NULL
@@ -571,13 +251,13 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     return TRUE;
   }
 
-  protected function typeCheckLocalPerson(LocalObjectInterface $object): \Civi\Osdi\LocalObject\PersonBasic {
+  private function typeCheckLocalPerson(LocalObjectInterface $object): \Civi\Osdi\LocalObject\PersonBasic {
     Util::assertClass($object, \Civi\Osdi\LocalObject\PersonBasic::class);
     /** @var \Civi\Osdi\LocalObject\PersonBasic $object */
     return $object;
   }
 
-  protected function typeCheckRemotePerson(RemoteObjectInterface $object): \Civi\Osdi\ActionNetwork\Object\Person {
+  private function typeCheckRemotePerson(RemoteObjectInterface $object): \Civi\Osdi\ActionNetwork\Object\Person {
     Util::assertClass($object, \Civi\Osdi\ActionNetwork\Object\Person::class);
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $object */
     return $object;

@@ -2,7 +2,6 @@
 
 namespace Civi\Osdi\LocalObject;
 
-use Civi\Api4\Address;
 use Civi\Api4\Contact;
 use Civi\Api4\Email;
 use Civi\Api4\Phone;
@@ -204,36 +203,30 @@ class PersonBasic extends AbstractLocalObject implements LocalObjectInterface {
       return;
     };
 
-    if (!$this->addressId->get()) {
-      $addressMatchGet = Address::get(FALSE)
-        ->addWhere('contact_id', '=', $cid);
+    $createValues = [
+      'id' => $this->addressId->get(),
+      'contact_id' => $cid,
+      'street_address' => $this->addressStreetAddress->get(),
+      'city' => $this->addressCity->get(),
+      'postal_code' => $this->addressPostalCode->get(),
+      'state_province_id' => $this->addressStateProvinceId->get(),
+      'country_id' => $this->addressCountryId->get(),
+      'is_primary' => TRUE,
+    ];
 
-      $matchFields = [
-        'addressStreetAddress',
-        'addressCity',
-        'addressPostalCode',
-        'addressStateProvinceId',
-      ];
-      foreach ($matchFields as $name) {
-        $val = $this->$name->get();
-        $op = is_null($val) ? 'IS NULL' : '=';
-        $dbName = substr($this->getFieldMetadata()[$name]['select'], 8);
-        $addressMatchGet->addWhere($dbName, $op, $val);
-      }
-
-      $this->addressId->set($addressMatchGet->execute()->last()['id'] ?? NULL);
-    }
-
-    Address::save(FALSE)
-      ->addRecord([
-        'id' => $this->addressId->get(),
-        'contact_id' => $cid,
-        'street_address' => $this->addressStreetAddress->get(),
-        'city' => $this->addressCity->get(),
-        'postal_code' => $this->addressPostalCode->get(),
-        'state_province_id' => $this->addressStateProvinceId->get(),
-        'country_id' => $this->addressCountryId->get(),
-      ])->execute();
+    /**
+     * ADDRESSPATCHED CAN BE CHANGED TO ADDRESS ONCE https://github.com/civicrm/civicrm-core/pull/24971
+     * IS RELEASED -- UPDATE THE REQUIRED CIVI VERSION OF THIS EXTENSION
+     */
+    \Civi\Api4\Patch\Address::save(FALSE)
+      ->setRecords([$createValues])
+      ->setMatch([
+        'street_address',
+        'city',
+        'postal_code',
+        'state_province_id',
+      ])
+      ->execute();
   }
 
   public function updateStateAbbreviation(Field $stateIdField) {

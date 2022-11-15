@@ -129,7 +129,7 @@ class LocalRemotePair {
    *
    * @return $this
    */
-  public function setTargetObject($object): self {
+  public function setTargetObject(CrudObjectInterface $object): self {
     if ($this->isOriginLocal()) {
       return $this->setRemoteObject($object);
     }

@@ -3,6 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\Object;
 
 use Civi\Osdi\ActionNetwork\RemoteFindResult;
+use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\Result\Save;
 use Civi\Osdi\Result\Save as SaveResult;
@@ -148,17 +149,33 @@ class Person extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInte
 
       case 'emailAddress':
       case 'postalLocality':
-        return strtolower($this->$fieldName->get());
+        return strtolower($this->$fieldName->get() ?? '');
     }
     return $this->$fieldName->get();
   }
 
   public static function normalizePhoneNumber(?string $phoneNumber = ''): string {
-    $phoneNumber = preg_replace('/[^0-9]/', '', $phoneNumber);
+    $phoneNumber = preg_replace('/[^0-9]/', '', $phoneNumber ?? '');
     $phoneNumber = preg_replace('/^1(\d{10})$/', '$1', $phoneNumber);
     $phoneNumber = preg_replace('/^(\d{3})(\d{3})(\d{4})$/', '($1) $2-$3', $phoneNumber);
     return $phoneNumber;
   }
+
+/*  public function save(): self {
+    $desired = [
+      $this->postalLocality->get() ?? '',
+      $this->postalRegion->get() ?? '',
+    ];
+    $result = parent::save();
+    $actual = [
+      $result->postalLocality->get() ?? '',
+      $result->postalRegion->get() ?? '',
+    ];
+    if ($actual === $desired) {
+      return $result;
+    }
+    return parent::save();
+  }*/
 
   public function trySave(): Save {
     [$statusCode, $statusMessage, $context] = $this->checkForEmailAddressConflict();
