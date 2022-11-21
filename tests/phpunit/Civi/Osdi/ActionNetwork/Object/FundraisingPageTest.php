@@ -45,7 +45,7 @@ class FundraisingPageTest extends \PHPUnit\Framework\TestCase implements
     $maxSuffix = 0;
 
     // Ensure the test page does not exist.
-    $fundraisingPages = $this->system->find('osdi:fundraising_pages', []);
+    $fundraisingPages = $this->system->findAll('osdi:fundraising_pages');
     foreach ($fundraisingPages as $fundraisingPage) {
       if (preg_match("/$prefix(\d+)$/", $fundraisingPage->title->get(), $matches)) {
         $suffix = (int) $matches[1];
