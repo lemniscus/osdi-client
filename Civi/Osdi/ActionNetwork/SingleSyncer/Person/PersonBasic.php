@@ -76,11 +76,13 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     $result = new SyncEligibility();
 
     if ($pair->isOriginRemote() && $this->wasDeletedByUs($pair)) {
+      $result->setMessage('it was deleted by us');
       return $this->pushResult($pair, $result, $result::INELIGIBLE);
     }
 
     $syncState = $pair->getPersonSyncState();
     if (empty($syncState)) {
+      $result->setMessage('no previous sync history');
       return $this->pushResult($pair, $result, $result::ELIGIBLE);
     }
 
@@ -96,6 +98,8 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     $isModifiedSinceLastSync = $currentModTime > $modTimeAfterLastSync;
 
     if ($noPreviousSync || $isModifiedSinceLastSync) {
+      $result->setMessage(trim(($noPreviousSync ? 'no previous sync history. ' : '') .
+        ($isModifiedSinceLastSync ? 'modified since last sync.' : '')));
       return $this->pushResult($pair, $result, $result::ELIGIBLE);
     }
 
@@ -203,20 +207,41 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
   public function syncDeletion(LocalRemotePair $pair): DeletionSyncResult {
     $result = new DeletionSyncResult();
 
-    $matchResult = $this->getMatcher()->tryToFindMatchFor($pair);
-    $matchCode = $matchResult->getStatusCode();
+    /*
+        $matchResult = $this->getMatcher()->tryToFindMatchFor($pair);
+        $matchCode = $matchResult->getStatusCode();
 
-    if ($matchResult::FOUND_MATCH === $matchCode) {
-      $matchResult->getMatch()->delete();
+        if ($matchResult::FOUND_MATCH === $matchCode) {
+          $matchResult->getMatch()->delete();
+          if ($pair->isOriginLocal()) {
+            \Civi\Api4\OsdiDeletion::create(FALSE)
+              ->addValue('sync_profile_id', $this->syncProfileId)
+              ->addValue('remote_object_id', $matchResult->getMatch()->getId())
+              ->execute();
+          }
+          $result->setStatusCode($result::DELETED);
+        }
+    */
+    $oldOrNewMatch = $this->fetchOldOrFindNewMatch($pair);
+
+    if (
+      $oldOrNewMatch->isStatus($oldOrNewMatch::FETCHED_SAVED_MATCH)
+      || $oldOrNewMatch->isStatus($oldOrNewMatch::FOUND_NEW_MATCH)
+    ) {
+      $pair->getTargetObject()->delete();
       if ($pair->isOriginLocal()) {
-        \Civi\Api4\OsdiDeletion::create(FALSE)
+        \Civi\Api4\OsdiDeletion::save(FALSE)
+          ->setMatch(['sync_profile_id', 'remote_object_id'])
           ->addValue('sync_profile_id', $this->syncProfileId)
-          ->addValue('remote_object_id', $matchResult->getMatch()->getId())
+          ->addValue('remote_object_id', $pair->getTargetObject()->getId())
           ->execute();
       }
       $result->setStatusCode($result::DELETED);
     }
-    elseif ($matchResult::NO_MATCH === $matchCode) {
+    /*
+        elseif ($matchResult::NO_MATCH === $matchCode) {
+    */
+    elseif ($oldOrNewMatch->isStatus($oldOrNewMatch::NO_MATCH_FOUND)) {
       $result->setStatusCode($result::NOTHING_TO_DELETE);
     }
     else {
@@ -328,8 +353,13 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
       return FALSE;
     }
 
+    $syncProfileClause =
+      empty($this->syncProfileId)
+        ? ['sync_profile_id', 'IS EMPTY']
+        : ['sync_profile_id', '=', $this->syncProfileId];
+
     $deletionRecords = OsdiDeletion::get(FALSE)
-      ->addWhere('sync_profile_id', '=', $this->syncProfileId)
+      ->addWhere(...$syncProfileClause)
       ->addWhere('remote_object_id', '=', $remoteId)
       ->selectRowCount()->execute();
 

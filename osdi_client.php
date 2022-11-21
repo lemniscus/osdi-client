@@ -31,6 +31,7 @@ function osdi_client_civicrm_config(&$config) {
 
   Civi::dispatcher()->addListener('civi.dao.preDelete', ['\Civi\Osdi\CrmEventDispatch', 'daoPreDelete']);
   Civi::dispatcher()->addListener('civi.dao.preUpdate', ['\Civi\Osdi\CrmEventDispatch', 'daoPreUpdate']);
+  Civi::dispatcher()->addListener('&hook_civicrm_alterLocationMergeData', ['\Civi\Osdi\CrmEventDispatch', 'alterLocationMergeData']);
   Civi::dispatcher()->addListener('&hook_civicrm_merge', ['\Civi\Osdi\CrmEventDispatch', 'merge']);
   Civi::dispatcher()->addListener('&hook_civicrm_pre', ['\Civi\Osdi\CrmEventDispatch', 'pre']);
   Civi::dispatcher()->addListener('&hook_civicrm_postCommit', ['\Civi\Osdi\CrmEventDispatch', 'postCommit']);

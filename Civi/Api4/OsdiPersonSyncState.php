@@ -2,7 +2,7 @@
 
 namespace Civi\Api4;
 
-use Civi\Api4\Action\DAOSaveActionPatched;
+use Civi\Api4\Patch\DAOSaveAction;
 
 /**
  * OsdiPersonSyncState entity.
@@ -22,7 +22,7 @@ class OsdiPersonSyncState extends Generic\DAOEntity {
    * IS RELEASED -- UPDATE THE REQUIRED CIVI VERSION OF THIS EXTENSION
    */
   public static function save($checkPermissions = TRUE) {
-    return (new DAOSaveActionPatched(static::getEntityName(), __FUNCTION__))
+    return (new DAOSaveAction(static::getEntityName(), __FUNCTION__))
       ->setCheckPermissions($checkPermissions);
   }
 

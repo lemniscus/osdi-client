@@ -3,6 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\CrmEventResponder;
 
 use Civi\Api4\Contact;
+use Civi\Api4\Email;
 use Civi\Api4\OsdiPersonSyncState;
 use Civi\Core\DAO\Event\PreDelete;
 use Civi\Core\DAO\Event\PreUpdate;
@@ -11,9 +12,27 @@ use Civi\Osdi\Factory;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\SingleSyncerInterface;
 use CRM_OSDI_ExtensionUtil as E;
-use Symfony\Component\EventDispatcher\Event;
 
 class PersonBasic {
+
+  public function alterLocationMergeData(&$blocksDAO, $mainId, $otherId, $migrationInfo) {
+    $emailsBeingUpdated = $blocksDAO['email']['update'] ?? NULL;
+    $emailIds = [];
+    foreach ($emailsBeingUpdated as $emailDAO) {
+      $emailIds[] = $emailDAO->id;
+    }
+    if (!$emailIds) {
+      return;
+    }
+    $emailGetResult = Email::get(FALSE)
+      ->addWhere('id', 'IN', $emailIds)
+      ->addWhere('is_primary', '=', TRUE)
+      ->execute()->first();
+    // this gets us the email that is being transferred to contact ID $mainId
+    // -- we need to compare it to contact ID $mainId's current primary email
+    // to determine whether primary email is changing
+    $e = $emailGetResult;
+  }
 
   public function daoPreDelete(PreDelete $event) {
     /** @var \CRM_Contact_DAO_Contact $dao */
@@ -40,7 +59,7 @@ class PersonBasic {
     /** @var \CRM_Contact_DAO_Contact $dao */
     $dao = $event->object;
 
-    return $this->respondToDaoPreUpdateSoftDelete($dao);
+    $this->respondToDaoPreUpdateSoftDelete($dao);
   }
 
   public function merge(int $idBeingKept, int $idBeingDeleted) {
@@ -49,6 +68,30 @@ class PersonBasic {
       ->execute();
 
     $queue = \Civi\Osdi\Queue::getQueue();
+
+    //$localPersonArray =
+    //  Factory::make('LocalObject', 'Person', $idBeingDeleted)
+    //    ->loadOnce()
+    //    ->getAll();
+    //$task = new \CRM_Queue_Task(
+    //  [static::class, 'syncDeletionFromQueue'],
+    //  ['serializedPerson' => $localPersonArray],
+    //  E::ts('Sync merge deletion of Contact id %1',
+    //    [1 => $localPersonArray['id']])
+    //);
+    //$queue->createItem($task, ['weight' => -15]);
+    //
+    //$localPersonArray =
+    //  Factory::make('LocalObject', 'Person', $idBeingKept)
+    //    ->loadOnce()
+    //    ->getAll();
+    //$task = new \CRM_Queue_Task(
+    //  [static::class, 'syncDeletionFromQueue'],
+    //  ['serializedPerson' => $localPersonArray],
+    //  E::ts('Sync merge deletion of Contact id %1',
+    //    [1 => $localPersonArray['id']])
+    //);
+    //$queue->createItem($task, ['weight' => -15]);
 
     $task = new \CRM_Queue_Task(
       [static::class, 'syncCreationFromQueue'],
@@ -107,7 +150,10 @@ class PersonBasic {
     $syncer->syncTaggingsFromLocalPerson($localPerson);
   }
 
-  protected function getContactAsArray(int|string $id) {
+  /**
+   * @param int|string $id
+   */
+  protected function getContactAsArray($id) {
     return Contact::get(FALSE)
       ->addWhere('id', '=', $id)->execute()->single();
   }

@@ -10,7 +10,8 @@ use PHPUnit;
  * @group headless
  */
 class PersonBasicTest extends PHPUnit\Framework\TestCase implements
-    \Civi\Test\HeadlessInterface {
+    \Civi\Test\HeadlessInterface,
+    \Civi\Test\HookInterface {
 
   private static array $objectsToDelete = [];
 
@@ -31,6 +32,8 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
   }
 
   protected function tearDown(): void {
+    \CRM_Core_DAO::singleValueQuery('DELETE FROM civicrm_osdi_deletion');
+
     foreach (self::$objectsToDelete as $object) {
       try {
         if ('Contact' === $object::getCiviEntityName()) {
@@ -55,6 +58,22 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     parent::tearDownAfterClass();
   }
 
+  private function makeLocalPerson(string $index): Civi\Osdi\LocalObject\PersonBasic {
+    $localPerson = new \Civi\Osdi\LocalObject\PersonBasic();
+    $localPerson->emailEmail->set("contactEventResponderTest$index@test.net");
+    $localPerson->firstName->set("Test Contact Event Responder $index");
+    $localPerson->save();
+    return $localPerson;
+  }
+
+  private function makeRemotePerson(string $index): Civi\Osdi\ActionNetwork\Object\Person {
+    $remotePerson = new Civi\Osdi\ActionNetwork\Object\Person(self::$system);
+    $remotePerson->emailAddress->set("contactEventResponderTest$index@test.net");
+    $remotePerson->givenName->set("Test Contact Event Responder $index");
+    $remotePerson->save();
+    return $remotePerson;
+  }
+
   /**
    * @param string $index
    *
@@ -62,23 +81,13 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
    * @throws \Civi\Osdi\Exception\InvalidOperationException
    */
   private function makeSamePersonOnBothSides(string $index): array {
-    $email = "contactEventResponderTest$index@test.net";
-    $givenName = "Test Contact Event Responder $index";
-
-    $remotePerson = new Civi\Osdi\ActionNetwork\Object\Person(self::$system);
-    $remotePerson->emailAddress->set($email);
-    $remotePerson->givenName->set($givenName);
-    $remotePerson->save();
-
-    $localPerson = new \Civi\Osdi\LocalObject\PersonBasic();
-    $localPerson->emailEmail->set($email);
-    $localPerson->firstName->set($givenName);
-    $localPerson->save();
+    $localPerson = $this->makeLocalPerson($index);
+    $remotePerson = $this->makeRemotePerson($index);
     return [$localPerson, $remotePerson];
   }
 
   public function testCreationAndUpdateAndDeletionByOsdiClientIsIgnored() {
-    [$localPerson, $remotePerson] = $this->makeSamePersonOnBothSides(1);
+    $localPerson = $this->makeLocalPerson(1);
 
     $localPerson->addressStreetAddress->set(__FUNCTION__);
     $localPerson->save();
@@ -91,8 +100,7 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
 
   public function testCreationAndUpdateAreAddedToQueue() {
     self::markTestIncomplete('todo');
-    [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
-    [$localPerson, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
+    $localPerson = $this->makeLocalPerson(1);
 
     array_push(self::$objectsToDelete,
       $localTags['a'], $localTags['b'], $localPerson);
@@ -189,19 +197,10 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
   }
 
   public function testMergesAreAddedToQueue() {
-    self::markTestIncomplete('todo');
-    [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
     [$localPerson1, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
     [$localPerson2, $remotePerson2] = $this->makeSamePersonOnBothSides(2);
 
-    $localTagging1a = new Civi\Osdi\LocalObject\TaggingBasic();
-    $localTagging1a->setPerson($localPerson1)->setTag($localTags['a'])->save();
-
-    $localTagging2b = new Civi\Osdi\LocalObject\TaggingBasic();
-    $localTagging2b->setPerson($localPerson2)->setTag($localTags['b'])->save();
-
-    array_push(self::$objectsToDelete,
-      $localTags['a'], $localTags['b'], $localPerson1, $localPerson2);
+    array_push(self::$objectsToDelete, $localPerson1, $localPerson2);
 
     $toRemoveId = $localPerson1->getId();
     $toKeepId = $localPerson2->getId();
@@ -214,6 +213,7 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     $queue = Civi\Osdi\Queue::getQueue();
     $expectedTitles = [
       "Sync merge of Contact id $toRemoveId into id $toKeepId",
+      "Sync soft deletion of Contact id $toRemoveId",
       "Sync all taggings of Contact id $toKeepId",
     ];
 
@@ -345,38 +345,97 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     self::assertEquals($expected, $actual);
   }
 
-  public function testUpdateDueToContactMerge_DifferentEmails() {
-    self::markTestIncomplete('todo');
-    [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
+  public static function hook_civicrm_merge_forTest($type, &$data, $mainId = NULL, $otherId = NULL, $tables = NULL) {
+    if ($type === 'batch') {
+      $data['fields_in_conflict']['move_location_email_0'] = TRUE;
+      // '2' means 'overwrite': https://github.com/civicrm/civicrm-core/blob/master/CRM/Dedupe/MergeHandler.php#L186
+      $data['migration_info']['location_blocks']['email'][0]['operation'] = 2;
+      $data['migration_info']['location_blocks']['email'][0]['mainContactBlockId'] =
+        $data['migration_info']['main_details']['location_blocks']['email'][0]['id'];
+    }
+  }
+
+  public function testUpdateDueToContactMerge_OverwriteEmail() {
     [$localPerson1, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
     [$localPerson2, $remotePerson2] = $this->makeSamePersonOnBothSides(2);
 
-    $localTagging1a = new Civi\Osdi\LocalObject\TaggingBasic();
-    $localTagging1a->setPerson($localPerson1)->setTag($localTags['a'])->save();
+    array_push(self::$objectsToDelete, $localPerson1, $localPerson2);
 
-    $localTagging2b = new Civi\Osdi\LocalObject\TaggingBasic();
-    $localTagging2b->setPerson($localPerson2)->setTag($localTags['b'])->save();
+    self::assertNotEmpty($remotePerson1->givenName->get());
+    self::assertNotEmpty($remotePerson2->givenName->get());
 
-    array_push(self::$objectsToDelete,
-      $localTags['a'], $localTags['b'], $localPerson1, $localPerson2);
+    // Person 2's Civi record will be kept in the merge, including its name,
+    // and Person 1 will be deleted,
+    // but Person 1's email will be transferred to Person 2.
+    // We control this via hook_civicrm_merge.
+
+    Civi::dispatcher()->addListener(
+      '&hook_civicrm_merge', [__CLASS__, 'hook_civicrm_merge_forTest']);
+
+    $toKeepId = $localPerson2->getId();
+    $toKeepName = $localPerson2->firstName->get();
+    $toKeepEmail = $localPerson1->emailEmail->get();
 
     $toRemoveId = $localPerson1->getId();
-    $toKeepId = $localPerson2->getId();
+    $toRemoveName = $localPerson1->firstName->get();
+    $toRemoveEmail = $localPerson2->emailEmail->get();
+
     civicrm_api3('Contact', 'merge', [
       'to_remove_id' => $toRemoveId,
       'to_keep_id' => $toKeepId,
-      'mode' => "aggressive",
+      'mode' => 'aggressive',
     ]);
 
-    $result = civicrm_api3('Job', 'osdiclientprocessqueue',
+    $queueJobResult = civicrm_api3('Job', 'osdiclientprocessqueue',
       ['debug' => 1, 'api_token' => ACTION_NETWORK_TEST_API_TOKEN]);
 
-    self::assertEquals(0, $result['is_error']);
+    self::assertEquals(0, $queueJobResult['is_error']);
 
-    $expected = ['2a' => '2a', '2b' => '2b'];
-    $actual = $this->listTaggings([$remotePerson2]);
+    $mergedLocalPerson = new Civi\Osdi\LocalObject\PersonBasic($toKeepId);
+    $mergedLocalPerson->load();
 
-    self::assertEquals($expected, $actual);
+    self::assertEquals(
+      $toKeepEmail,
+      $mergedLocalPerson->emailEmail->get());
+
+    $reFetchedRemotePerson1 = Civi\Osdi\ActionNetwork\Object\Person::loadFromId(
+      $remotePerson1->getId(), self::$system);
+
+    $reFetchedRemotePerson2 = Civi\Osdi\ActionNetwork\Object\Person::loadFromId(
+      $remotePerson2->getId(), self::$system);
+
+    // The twin of the merged record contains the merged name. The twin of the
+    // removed record ALSO still has that name (it is unchanged)
+
+    self::assertEquals($remotePerson1->emailAddress->get(),
+      $reFetchedRemotePerson1->emailAddress->get());
+
+    self::assertEquals($toKeepName,
+      $reFetchedRemotePerson1->givenName->get());
+
+    self::assertEquals($remotePerson2->emailAddress->get(),
+      $reFetchedRemotePerson2->emailAddress->get());
+
+    self::assertEquals($toKeepName,
+      $reFetchedRemotePerson2->givenName->get());
+
+    // The PersonSyncState for the kept Civi contact indicates an error.
+    // An OsdiDeletion exists for the deleted person, even though their AN record is intact.
+
+    $deletionRecord = Civi\Api4\OsdiDeletion::get(FALSE)
+      ->addWhere('remote_object_id', '=', $remotePerson1->getId())
+      ->execute()->single();
+
+    $deletedPersonSyncState = Civi\Osdi\PersonSyncState::getForRemotePerson(
+      $remotePerson1, NULL);
+    // uh oh -- no osdideletion was created because the syncer couldn't find a match without an email
+
+    $keptPersonSyncState = Civi\Osdi\PersonSyncState::getForRemotePerson(
+      $remotePerson2, NULL);
+
+    self::assertEmpty($deletedPersonSyncState->getId());
+    self::assertStringContainsString('error', $keptPersonSyncState->getSyncStatus());
+    self::assertArrayHasKey('error', $deletionRecord);
   }
 
   public function testHandleErrorDuringQueueRun() {

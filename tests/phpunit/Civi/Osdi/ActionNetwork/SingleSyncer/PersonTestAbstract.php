@@ -84,10 +84,10 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
       $pair->getLocalObject()->firstName->get());
 
     // THIRD SYNC
-
-    /** @var \Civi\Osdi\PersonSyncState $savedMatch */
+    // Spoof a situation in which the remote person has been modified since the last sync
     $savedMatch->setLocalPostSyncModifiedTime(
       $savedMatch->getLocalPostSyncModifiedTime() - 1);
+    $savedMatch->save();
 
     $savedMatch->save();
     $pair = $syncer->matchAndSyncIfEligible($localPerson);
@@ -109,6 +109,11 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
       $pair->getRemoteObject()->givenName->get());
 
     // FOURTH SYNC
+    // Spoof a situation in which the remote person has been modified since the last sync
+    $savedMatch->setLocalPostSyncModifiedTime(
+      $savedMatch->getLocalPostSyncModifiedTime() - 1);
+    $savedMatch->save();
+
     $localPerson->firstName->set('testMatchAndSyncIfEligible_FromLocal (new name)');
     $localPerson->save();
 
@@ -121,8 +126,8 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     $savedMatch = $syncResult->getState();
 
     self::assertEquals(FetchOldOrFindNewMatch::FETCHED_SAVED_MATCH, $fetchFindMatchResult->getStatusCode());
+    self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode(), $syncEligibleResult->getMessage());
     self::assertEquals(MapAndWrite::WROTE_CHANGES, $mapAndWriteResult->getStatusCode());
-    self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
     self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());
     self::assertEquals(\Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
     self::assertNotNull($pair->getRemoteObject()->getId());
@@ -180,11 +185,11 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     // THIRD SYNC
 
-    /** @var \Civi\Osdi\PersonSyncState $savedMatch */
+    // Spoof a situation in which the remote person has been modified since the last sync
     $savedMatch->setRemotePostSyncModifiedTime(
       $savedMatch->getRemotePostSyncModifiedTime() - 1);
-
     $savedMatch->save();
+
     $pair = $syncer->matchAndSyncIfEligible($remotePerson);
     $resultStack = $pair->getResultStack();
     $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
@@ -204,6 +209,11 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
       $pair->getLocalObject()->firstName->get());
 
     // FOURTH SYNC
+    // Spoof a situation in which the remote person has been modified since the last sync
+    $savedMatch->setRemotePostSyncModifiedTime(
+      $savedMatch->getRemotePostSyncModifiedTime() - 1);
+    $savedMatch->save();
+
     $remotePerson->givenName->set('testMatchAndSyncIfEligible_FromRemote (new name)');
     $remotePerson->save();
 
@@ -216,8 +226,8 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     $savedMatch = $syncResult->getState();
 
     self::assertEquals(FetchOldOrFindNewMatch::FETCHED_SAVED_MATCH, $fetchFindMatchResult->getStatusCode());
+    self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode(), $syncEligibleResult->getMessage());
     self::assertEquals(MapAndWrite::WROTE_CHANGES, $mapAndWriteResult->getStatusCode());
-    self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
     self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());
     self::assertEquals(\Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
     self::assertNotNull($pair->getLocalObject()->getId());
@@ -226,21 +236,37 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
       $pair->getLocalObject()->firstName->get());
   }
 
-  public function testDeletedPersonDoesNotGetRecreated() {
+  public function dataProviderDeletedPersonDoesNotGetRecreated() {
+    return [
+      [TRUE],
+      [FALSE],
+    ];
+  }
+
+  /**
+   * @dataProvider dataProviderDeletedPersonDoesNotGetRecreated
+   */
+  public function testDeletedPersonDoesNotGetRecreated($useSyncProfile) {
+    $syncerClass = get_class(self::$syncer);
+    $syncer = new $syncerClass(self::$remoteSystem);
+    if ($useSyncProfile) {
+      $syncer->setSyncProfile(self::$syncer->getSyncProfile());
+    }
+
     $localPerson = Factory::make('LocalObject', 'Person');
     $localPerson->firstName->set('Cheese');
     $localPerson->emailEmail->set('bitz@bop.com');
     $localPerson->save();
-    $civiToAnPair = self::$syncer->matchAndSyncIfEligible($localPerson);
+    $civiToAnPair = $syncer->matchAndSyncIfEligible($localPerson);
     $remotePerson = $civiToAnPair->getRemoteObject();
 
     self::assertFalse($civiToAnPair->isError());
     self::assertNotNull($remotePerson->getId());
     self::assertEquals('bitz@bop.com', $remotePerson->emailAddress->get());
 
-    self::$syncer->syncDeletion($civiToAnPair);
+    $syncer->syncDeletion($civiToAnPair);
 
-    $anToCiviPair = self::$syncer->matchAndSyncIfEligible($remotePerson);
+    $anToCiviPair = $syncer->matchAndSyncIfEligible($remotePerson);
 
     $resultStack = $anToCiviPair->getResultStack();
     $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);

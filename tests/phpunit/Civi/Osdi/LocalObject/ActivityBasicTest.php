@@ -26,7 +26,7 @@ class ActivityBasicTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public function testCreate_Save_RequiresSavedComponents() {
-      // CREATE
+    // CREATE
     $unsavedPerson = new PersonBasic();
     $unsavedPerson->emailEmail->set('unsaved@dio.de');
 
@@ -47,7 +47,7 @@ class ActivityBasicTest extends \PHPUnit\Framework\TestCase implements
     }
     catch (\Throwable $e) {
       self::assertEquals(\Civi\Osdi\Exception\InvalidArgumentException::class,
-        get_class($e));
+        get_class($e), print_r($e, TRUE));
     }
 
     $activity->setSourcePerson($savedPerson);

@@ -93,16 +93,17 @@ class ActivityBasic extends AbstractLocalObject implements LocalObjectInterface 
   }
 
   public function persist(): self {
-    if (is_null($p = $this->person) || is_null($t = $this->tag)) {
+    if (is_null($p = $this->sourcePerson)) {
       throw new InvalidArgumentException(
-        'Unable to save %s: missing Person or Tag', __CLASS__);
+        'Unable to save %s: missing source person', __CLASS__);
     }
-    if (empty($contactId = $p->getId()) || empty($tagId = $t->getId())) {
+    if (empty($contactId = $p->getId())) {
       throw new InvalidArgumentException(
-        'Person and Tag must both be saved before saving %s', __CLASS__);
+        'Source person must be saved before saving %s', __CLASS__);
     }
 
-    $returnedRecord = \Civi\Api4\EntityTag::save(FALSE)->addRecord([
+    throw new \Exception('TODO');
+    $returnedRecord = \Civi\Api4\Activity::save(FALSE)->addRecord([
       'id' => $this->getId(),
       'entity_table' => 'civicrm_contact',
       'entity_id' => $contactId,
@@ -125,10 +126,11 @@ class ActivityBasic extends AbstractLocalObject implements LocalObjectInterface 
 
 
   public function setSourcePerson(LocalObjectInterface $localPerson): self {
-    if ('Person' !== $localPerson->getCiviEntityName()) {
-      throw new InvalidArgumentException();
+    if ('Contact' !== $localPerson->getCiviEntityName()) {
+      throw new InvalidArgumentException('Expecting Civi entity type Contact, got %s',
+      $localPerson->getCiviEntityName());
     }
-    $this->person = $localPerson;
+    $this->sourcePerson = $localPerson;
     $this->touch();
     return $this;
   }

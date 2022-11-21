@@ -15,6 +15,14 @@ class CrmEventDispatch {
     return FALSE;
   }
 
+  public static function alterLocationMergeData(&$blocksDAO, $mainId, $otherId, $migrationInfo) {
+    $responder = static::getResponder('Contact', 'alterLocationMergeData');
+    if ($responder) {
+      // mainId is the one being kept; otherId belongs to the contact being deleted
+      $responder->alterLocationMergeData($blocksDAO, $mainId, $otherId, $migrationInfo);
+    }
+  }
+
   public static function daoPreDelete($event): void {
     $objectName = \_civicrm_api_get_entity_name_from_dao($event->object);
     $responder = static::getResponder($objectName, 'daoPreDelete');
@@ -32,12 +40,6 @@ class CrmEventDispatch {
   }
 
   public static function merge($type, &$data, $mainId = NULL, $otherId = NULL, $tables = NULL): void {
-    //  // not used anywhere
-    //  if ('eidRefs' === $type) {
-    //    \Civi::dispatcher()->dispatch('civi.osdi.contactmerge.tablemap',
-    //      \Civi\Core\Event\GenericHookEvent::create(['tableMap' => &$data]));
-    //  }
-
     if ('sqls' !== $type) {
       return;
     }

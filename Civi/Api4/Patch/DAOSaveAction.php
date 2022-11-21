@@ -1,6 +1,6 @@
 <?php
 
-namespace Civi\Api4\Action;
+namespace Civi\Api4\Patch;
 
 use Civi\Api4\Utils\CoreUtil;
 
@@ -8,7 +8,7 @@ use Civi\Api4\Utils\CoreUtil;
  * CAN BE REMOVED ONCE https://github.com/civicrm/civicrm-core/pull/24971
  * IS RELEASED -- UPDATE THE REQUIRED CIVI VERSION OF THIS EXTENSION
  */
-class DAOSaveActionPatched extends \Civi\Api4\Generic\DAOSaveAction {
+class DAOSaveAction extends \Civi\Api4\Generic\DAOSaveAction {
 
   protected function matchExisting(&$record) {
     $primaryKey = CoreUtil::getIdFieldName($this->getEntityName());
