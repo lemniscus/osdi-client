@@ -88,7 +88,7 @@
       <multiple>0</multiple>
     </html>
     <pseudoconstant>
-      <callback>\Civi\Api4\OsdiFlag::statusPseudoConstant</callback>
+      <callback>CRM_OSDI_BAO_Flag::statusPseudoConstant</callback>
       <prefetch>true</prefetch>
     </pseudoconstant>
     <import>true</import>

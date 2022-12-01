@@ -14,11 +14,4 @@ class OsdiFlag extends Generic\DAOEntity {
 
   const STATUS_RESOLVED = 'resolved';
 
-  public static function statusPseudoConstant(): array {
-    return [
-      self::STATUS_ERROR => ts('Error'),
-      self::STATUS_RESOLVED => ts('Resolved'),
-    ];
-  }
-
 }
