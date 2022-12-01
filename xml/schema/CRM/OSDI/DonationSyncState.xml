@@ -3,7 +3,7 @@
 <table>
   <base>CRM/OSDI</base>
   <class>DonationSyncState</class>
-  <name>civicrm_osdi_person_sync_state</name>
+  <name>civicrm_osdi_donation_sync_state</name>
   <comment>Linkages between CiviCRM Contributions and their counterparts on remote OSDI systems</comment>
   <log>true</log>
 
@@ -70,12 +70,13 @@
     <name>index_remote_donation_id</name>
     <fieldName>remote_donation_id</fieldName>
   </index>
+
   <field>
-    <name>local_pre_sync_modified_time</name>
-    <title>Local Pre-Sync Mod Time</title>
-    <type>int unsigned</type>
-    <default>NULL</default>
-    <comment>Modification date and time of the local Contribution record as of the beginning of the last sync, in unix timestamp format</comment>
+    <name>source</name>
+    <title>Source</title>
+    <type>varchar</type>
+    <default></default>
+    <comment>Whether the donation source was local (CiviCRM) or remote</comment>
     <import>true</import>
     <export>true</export>
   </field>

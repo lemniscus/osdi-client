@@ -123,7 +123,7 @@ class DonationBasic implements MapperInterface {
     // object by name.
     $found = NULL;
     foreach ($this->getRemoteFundraisingPages() as $fundraisingPage) {
-      if ($fundraisingPage->title->get() === self::FUNDRAISING_PAGE_NAME) {
+      if ($fundraisingPage->title->get() === static::FUNDRAISING_PAGE_NAME) {
         $found = $fundraisingPage;
         break;
       }

@@ -54,6 +54,7 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
       'financialTypeLabel'   => ['select' => 'financial_type_id:label', 'readOnly' => TRUE],
       'paymentMethodLabel'   => ['select' => 'payment_method_id:label', 'readOnly' => TRUE],
       'contributionRecurFrequency' => ['select' => 'contribution_recur_id.frequency_unit:name', 'readOnly' => TRUE], 
+      'tceFundraisingPage'  => ['select' => '']
     ];
   }
 
@@ -63,7 +64,28 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
   public function save(): self {
 
     // Create the Contribution
-    $orderCreateParams = [
+    $orderCreateParams = $this->getOrderCreateParamsForSave();
+    $contributionId = (int) civicrm_api3('Order', 'create', $orderCreateParams)['id'];
+
+    // Add the payment.
+    civicrm_api3('Payment', 'create', [
+      'contribution_id'   => $contributionId,
+      'total_amount'      => $this->amount->get(),
+      'trxn_date'         => $this->receiveDate->get(),
+      'payment_method_id' => $this->paymentMethodId->get(),
+    ]);
+
+    $this->id->load($contributionId);
+    $this->isLoaded = TRUE;
+
+    return $this;
+  }
+
+  /**
+   * Returns the Order.create API call params.
+   */
+  public function getOrderCreateParamsForSave(): array {
+    return [
       'receive_date'          => $this->receiveDate->get(),
       'currency'              => $this->currency->get(),
       'financial_type_id'     => $this->financialTypeId->get(),
@@ -85,20 +107,6 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
       ],
       // @todo referrer?
     ];
-    $contributionId = (int) civicrm_api3('Order', 'create', $orderCreateParams)['id'];
-
-    // Add the payment.
-    civicrm_api3('Payment', 'create', [
-      'contribution_id'   => $contributionId,
-      'total_amount'      => $this->amount->get(),
-      'trxn_date'         => $this->receiveDate->get(),
-      'payment_method_id' => $this->paymentMethodId->get(),
-    ]);
-
-    $this->id->load($contributionId);
-    $this->isLoaded = TRUE;
-
-    return $this;
   }
 
   /**
