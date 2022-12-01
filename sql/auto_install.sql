@@ -40,6 +40,7 @@ CREATE TABLE `civicrm_osdi_flag` (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiFlag ID',
   `contact_id` int unsigned COMMENT 'FK to Contact',
   `remote_object_id` varchar(255) DEFAULT NULL COMMENT 'FK to identifier field on remote system',
+  `flag_type` varchar(255) DEFAULT NULL,
   `status` varchar(255) DEFAULT NULL COMMENT 'Status code',
   `message` varchar(511) DEFAULT NULL COMMENT 'Description of the issue',
   `context` text DEFAULT NULL COMMENT 'Structured data to help understand the issue',
@@ -48,6 +49,7 @@ CREATE TABLE `civicrm_osdi_flag` (
   PRIMARY KEY (`id`),
   INDEX `index_contact_id`(contact_id),
   INDEX `index_remote_object_id`(remote_object_id),
+  INDEX `index_flag_type`(flag_type),
   INDEX `index_status`(status),
   CONSTRAINT FK_civicrm_osdi_flag_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL
 )

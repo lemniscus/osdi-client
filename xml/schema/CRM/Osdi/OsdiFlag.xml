@@ -56,6 +56,27 @@
   </index>
 
   <field>
+    <name>flag_type</name>
+    <title>Flag Type</title>
+    <type>varchar</type>
+    <length>255</length>
+    <default>NULL</default>
+    <html>
+      <type>Radio</type>
+      <multiple>0</multiple>
+    </html>
+    <pseudoconstant>
+      <optionGroupName>osdi_flag_type</optionGroupName>
+    </pseudoconstant>
+    <import>true</import>
+    <export>true</export>
+  </field>
+  <index>
+    <name>index_flag_type</name>
+    <fieldName>flag_type</fieldName>
+  </index>
+
+  <field>
     <name>status</name>
     <title>Status</title>
     <type>varchar</type>
