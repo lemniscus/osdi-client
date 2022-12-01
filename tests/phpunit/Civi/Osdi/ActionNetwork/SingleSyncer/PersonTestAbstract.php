@@ -238,8 +238,8 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
   public function dataProviderDeletedPersonDoesNotGetRecreated() {
     return [
-      [TRUE],
-      [FALSE],
+      ['use SyncProfile' => TRUE],
+      ['use SyncProfile' => FALSE],
     ];
   }
 
@@ -282,6 +282,47 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     self::assertEquals(\Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
     self::assertEquals(
       $civiToAnPair->getLocalObject()->getId(), $anToCiviPair->getLocalObject()->getId());
+  }
+
+  public function testMatchAndSyncIfEligible_MatchError_SyncResultIsError() {
+    $emailAddressSharedBy2People = 'testNoSyncOnMatchError@civicrm.org';
+
+    $syncer = self::$syncer;
+    $localPerson1 = Factory::make('LocalObject', 'Person');
+    $localPerson1->firstName->set('testNoSyncOnMatchError');
+    $localPerson1->emailEmail->set($emailAddressSharedBy2People);
+    $localPerson1->save();
+
+    $pair1 = $syncer->matchAndSyncIfEligible($localPerson1);
+    $resultStack = $pair1->getResultStack();
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+    $syncResult = $resultStack->getLastOfType(Sync::class);
+    $savedMatch = $syncResult->getState();
+
+    self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());
+    self::assertEquals(\Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
+    self::assertNotNull($pair1->getRemoteObject()->getId());
+
+    $localPerson2 = Factory::make('LocalObject', 'Person');
+    $localPerson2->firstName->set('testNoSyncOnMatchError');
+    $localPerson2->emailEmail->set($emailAddressSharedBy2People);
+    $localPerson2->save();
+
+    $pair2 = $syncer->matchAndSyncIfEligible($localPerson2);
+    $resultStack = $pair2->getResultStack();
+    $fetchFindMatchResult = $resultStack->getLastOfType(FetchOldOrFindNewMatch::class);
+    $mapAndWriteResult = $resultStack->getLastOfType(MapAndWrite::class);
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+    $syncResult = $resultStack->getLastOfType(Sync::class);
+    $savedMatch = $syncResult->getState();
+
+    self::assertEquals(FetchOldOrFindNewMatch::ERROR, $fetchFindMatchResult->getStatusCode());
+    self::assertNull($syncEligibleResult);
+    self::assertNull($mapAndWriteResult);
+    self::assertEquals(Sync::ERROR, $syncResult->getStatusCode());
+    self::assertEquals(\Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
+    self::assertNull($pair2->getRemoteObject());
   }
 
   public function testRemoteSystemIsSettable() {

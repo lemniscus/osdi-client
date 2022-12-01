@@ -271,7 +271,6 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     $queue = Civi\Osdi\Queue::getQueue();
     $expectedTitles = [
       "Sync merge of Contact id $toRemoveId into id $toKeepId",
-      "Sync soft deletion of Contact id $toRemoveId",
       "Sync all taggings of Contact id $toKeepId",
     ];
 
@@ -287,7 +286,8 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
       $queue->deleteItem($item);
     }
 
-    self::assertEquals(0, $queue->numberOfItems());
+    self::assertEquals(0, $queue->numberOfItems(),
+      print_r($queue->claimItem()->data, TRUE));
   }
 
   public function testDeleteMoreThanOne() {

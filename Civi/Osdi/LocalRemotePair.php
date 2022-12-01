@@ -19,6 +19,10 @@ class LocalRemotePair {
   private ?string $remoteClass = NULL;
   private ResultStack $resultStack;
 
+  /**
+   * @var bool
+   * @deprecated
+   */
   private bool $isError;
 
   private ?string $message;
@@ -136,17 +140,20 @@ class LocalRemotePair {
     return $this->setLocalObject($object);
   }
 
+  public function getLastResult(): ?ResultInterface {
+    foreach ($this->getResultStack() as $lastResult) {
+      return $lastResult;
+    }
+    return NULL;
+  }
+
   public function getResultStack(): ResultStack {
     return $this->resultStack;
   }
 
   public function isError(): bool {
-    return $this->isError;
-  }
-
-  public function setIsError(bool $isError): self {
-    $this->isError = $isError;
-    return $this;
+    $lastResult = $this->getLastResult();
+    return $lastResult ? $lastResult->isError() : FALSE;
   }
 
   public function getMessage(): ?string {
@@ -164,20 +171,6 @@ class LocalRemotePair {
 
   public function setPersonSyncState($personSyncState) {
     $this->personSyncState = $personSyncState;
-    return $this;
-  }
-
-  public function setMatchResult(?MatchResult $matchResult): self {
-    $this->matchResult = $matchResult;
-    return $this;
-  }
-
-  public function getSyncResult(): ?Sync {
-    return $this->syncResult;
-  }
-
-  public function setSyncResult(?Sync $syncResult): self {
-    $this->syncResult = $syncResult;
     return $this;
   }
 

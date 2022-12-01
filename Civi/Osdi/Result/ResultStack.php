@@ -45,6 +45,13 @@ class ResultStack extends \ArrayIterator implements \Iterator {
     $this->lastByType[$item->getType() ?? 'NULL'] = $item;
   }
 
+  public function toArray() {
+    $toArray = function (ResultInterface $result) {
+      return $result->toArray();
+    };
+    return array_map($toArray, $this->stack);
+  }
+
   /**
    * Iterator implementation
    */

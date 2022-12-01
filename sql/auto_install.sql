@@ -20,6 +20,7 @@ SET FOREIGN_KEY_CHECKS=0;
 DROP TABLE IF EXISTS `civicrm_osdi_deletion`;
 DROP TABLE IF EXISTS `civicrm_osdi_person_sync_state`;
 DROP TABLE IF EXISTS `civicrm_osdi_sync_profile`;
+DROP TABLE IF EXISTS `civicrm_osdi_flag`;
 
 SET FOREIGN_KEY_CHECKS=1;
 -- /*******************************************************
@@ -27,6 +28,30 @@ SET FOREIGN_KEY_CHECKS=1;
 -- * Create new tables
 -- *
 -- *******************************************************/
+
+-- /*******************************************************
+-- *
+-- * civicrm_osdi_flag
+-- *
+-- * Information about OSDI sync problems
+-- *
+-- *******************************************************/
+CREATE TABLE `civicrm_osdi_flag` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiFlag ID',
+  `contact_id` int unsigned COMMENT 'FK to Contact',
+  `remote_object_id` varchar(255) DEFAULT NULL COMMENT 'FK to identifier field on remote system',
+  `status` varchar(255) DEFAULT NULL COMMENT 'Status code',
+  `message` varchar(511) DEFAULT NULL COMMENT 'Description of the issue',
+  `context` text DEFAULT NULL COMMENT 'Structured data to help understand the issue',
+  `created_date` timestamp DEFAULT CURRENT_TIMESTAMP COMMENT 'When the flag was created',
+  `modified_date` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the client was created or modified.',
+  PRIMARY KEY (`id`),
+  INDEX `index_contact_id`(contact_id),
+  INDEX `index_remote_object_id`(remote_object_id),
+  INDEX `index_status`(status),
+  CONSTRAINT FK_civicrm_osdi_flag_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL
+)
+ENGINE=InnoDB;
 
 -- /*******************************************************
 -- *
@@ -56,7 +81,7 @@ ENGINE=InnoDB;
 -- *
 -- *******************************************************/
 CREATE TABLE `civicrm_osdi_person_sync_state` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiSyncState ID',
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique PersonSyncState ID',
   `contact_id` int unsigned COMMENT 'FK to Contact',
   `sync_profile_id` int unsigned COMMENT 'FK to OSDI Sync Profile',
   `remote_person_id` varchar(255) DEFAULT NULL COMMENT 'FK to identifier field on remote system',

@@ -34,6 +34,7 @@ function osdi_client_civicrm_config(&$config) {
   Civi::dispatcher()->addListener('&hook_civicrm_alterLocationMergeData', ['\Civi\Osdi\CrmEventDispatch', 'alterLocationMergeData']);
   Civi::dispatcher()->addListener('&hook_civicrm_merge', ['\Civi\Osdi\CrmEventDispatch', 'merge']);
   Civi::dispatcher()->addListener('&hook_civicrm_pre', ['\Civi\Osdi\CrmEventDispatch', 'pre']);
+  Civi::dispatcher()->addListener('&hook_civicrm_post', ['\Civi\Osdi\CrmEventDispatch', 'post']);
   Civi::dispatcher()->addListener('&hook_civicrm_postCommit', ['\Civi\Osdi\CrmEventDispatch', 'postCommit']);
   Civi::dispatcher()->addListener('&hook_civicrm_queueRun_osdiclient', ['\Civi\Osdi\Queue', 'runQueue']);
 
@@ -78,15 +79,6 @@ function osdi_client_civicrm_check(&$messages, $statusNames, $includeDisabled) {
       'fa-hourglass'
     );
   }
-}
-
-/**
- * Implements hook_civicrm_xmlMenu().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_xmlMenu
- */
-function osdi_client_civicrm_xmlMenu(&$files) {
-  _osdi_client_civix_civicrm_xmlMenu($files);
 }
 
 /**
@@ -144,54 +136,6 @@ function osdi_client_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
 }
 
 /**
- * Implements hook_civicrm_managed().
- *
- * Generate a list of entities to create/deactivate/delete when this module
- * is installed, disabled, uninstalled.
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_managed
- */
-function osdi_client_civicrm_managed(&$entities) {
-  _osdi_client_civix_civicrm_managed($entities);
-}
-
-/**
- * Implements hook_civicrm_caseTypes().
- *
- * Generate a list of case-types.
- *
- * Note: This hook only runs in CiviCRM 4.4+.
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_caseTypes
- */
-function osdi_client_civicrm_caseTypes(&$caseTypes) {
-  _osdi_client_civix_civicrm_caseTypes($caseTypes);
-}
-
-/**
- * Implements hook_civicrm_angularModules().
- *
- * Generate a list of Angular modules.
- *
- * Note: This hook only runs in CiviCRM 4.5+. It may
- * use features only available in v4.6+.
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_angularModules
- */
-function osdi_client_civicrm_angularModules(&$angularModules) {
-  _osdi_client_civix_civicrm_angularModules($angularModules);
-}
-
-/**
- * Implements hook_civicrm_alterSettingsFolders().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_alterSettingsFolders
- */
-function osdi_client_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
-  _osdi_client_civix_civicrm_alterSettingsFolders($metaDataFolders);
-}
-
-/**
  * Implements hook_civicrm_entityTypes().
  *
  * Declare entity types provided by this module.
@@ -200,13 +144,6 @@ function osdi_client_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
  */
 function osdi_client_civicrm_entityTypes(&$entityTypes) {
   _osdi_client_civix_civicrm_entityTypes($entityTypes);
-}
-
-/**
- * Implements hook_civicrm_thems().
- */
-function osdi_client_civicrm_themes(&$themes) {
-  _osdi_client_civix_civicrm_themes($themes);
 }
 
 // --- Functions below this ship commented out. Uncomment as required. ---

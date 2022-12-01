@@ -58,6 +58,13 @@ class CrmEventDispatch {
     }
   }
 
+  public static function post(string $op, string $objectName, int $objectId, &$objectRef): void {
+    $responder = static::getResponder($objectName, 'post');
+    if ($responder) {
+      $responder->post($op, $objectName, $objectId, $objectRef);
+    }
+  }
+
   public static function postCommit($op, $objectName, $objectId, &$objectRef): void {
     $responder = static::getResponder($objectName, 'postCommit');
     if ($responder) {
