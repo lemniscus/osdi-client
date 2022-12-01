@@ -15,7 +15,7 @@ class Factory {
       'Tagging' => LocalObject\TaggingBasic::class,
     ],
     'OsdiObject' => [
-      'osdi:donation' => ActionNetwork\Object\Donation::class,
+      'osdi:donations' => ActionNetwork\Object\Donation::class,
       'osdi:fundraising_pages' => ActionNetwork\Object\FundraisingPage::class,
       'osdi:people' => ActionNetwork\Object\Person::class,
       'osdi:tags' => ActionNetwork\Object\Tag::class,
@@ -58,7 +58,7 @@ class Factory {
   public static function make(string $category, string $key, ...$constructorParams) {
     $class = self::$registry[$category][$key] ?? NULL;
     if (is_null($class)) {
-      throw new InvalidArgumentException();
+      throw new InvalidArgumentException("Factory cannot make '$category', '$key'");
     }
     return new $class(...$constructorParams);
   }

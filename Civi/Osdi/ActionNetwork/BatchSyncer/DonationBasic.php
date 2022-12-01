@@ -26,8 +26,6 @@ class DonationBasic implements BatchSyncerInterface {
     $this->singleSyncer = $singleSyncer;
   }
 
-  // @todo there's a lot in here copied from the person batch syncer.
-  // if that turns out to be a good pattern, it should be extracted for code reuse.
   public function batchSyncFromRemote(): ?int {
 
     $syncStartTime = time();
@@ -42,7 +40,11 @@ class DonationBasic implements BatchSyncerInterface {
   }
 
   /**
+   * Return a date 1 week before the last Contribution that was synced in the given direction.
    *
+   * Defaults to 1 week ago today, if none.
+   *
+   * @return string Y-m-d format date.
    */
   protected function getCutOff(string $source): string {
     if (!in_array($source, ['remote', 'local'])) {
@@ -81,6 +83,7 @@ class DonationBasic implements BatchSyncerInterface {
         ', mod ' . $remoteDonation->modifiedDate->get());
 
       try {
+        // artfulrobot: @todo all cases are eligible unless I were to implement getSyncEligibility
         $pair = $this->singleSyncer->matchAndSyncIfEligible($remoteDonation);
         $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
       }

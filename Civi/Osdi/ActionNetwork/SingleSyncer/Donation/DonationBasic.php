@@ -34,7 +34,7 @@ class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterfac
 
   public function makeRemoteObject($id = NULL): RemoteObjectInterface {
     $system = $this->getRemoteSystem();
-    $donation = Factory::make('OsdiObject', 'osdi:donation', $system);
+    $donation = Factory::make('OsdiObject', 'osdi:donations', $system);
     if (!is_null($id)) {
       $donation->setId($id);
     }

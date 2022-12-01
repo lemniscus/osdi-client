@@ -1,15 +1,23 @@
 <?php
-exit; // might not be needed; we're assuming one-way in each direction, with no updates.
-
 namespace Civi\Osdi\ActionNetwork\Matcher\Donation;
 
 use Civi\Osdi\ActionNetwork\Matcher\AbstractMatcher;
 use Civi\Osdi\LocalRemotePair;
-use Civi\Osdi\Result\Match as MatchResult;
+use Civi\Osdi\Result\MatchResult as MatchResult;
+// use Civi\Osdi\ActionNetwork\RemoteFindResult;
+// use Civi\Osdi\ActionNetwork\RemoteSystem;
+// use Civi\Osdi\Exception\AmbiguousResultException;
+// use Civi\Osdi\Exception\EmptyResultException;
+// use Civi\Osdi\Exception\InvalidArgumentException;
+// use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
+// use Civi\Osdi\LocalObjectInterface;
+// use Civi\Osdi\MatcherInterface;
+// use Civi\Osdi\RemoteObjectInterface;
 
 class Basic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
   protected function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult {
+    throw new \Exception( "code not written");
     $result = new MatchResult($pair->getOrigin());
     $result->setStatusCode($result::NO_MATCH);
     $result->setMessage('Finding tags on Action Network is not implemented');
@@ -18,23 +26,23 @@ class Basic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
   protected function tryToFindMatchForRemoteObject(LocalRemotePair $pair): MatchResult {
     $result = new MatchResult($pair->getOrigin());
-    $localClass = $pair->getLocalClass();
 
-    $civiApiTagGet = \Civi\Api4\Tag::get(FALSE)
-      ->addWhere('name', '=', $pair->getRemoteObject()->name->get())
-      ->execute();
+    $syncState = \Civi\Api4\OsdiDonationSyncState::get(FALSE)
+    ->addWhere('remote_donation_id', '=', $pair->getRemoteObject()->getId())
+    // @todo limit by sync profile too?
+    ->execute()->first();
 
-    if ($civiApiTagGet->count()) {
-      $tagArray = $civiApiTagGet->single();
-      /** @var \Civi\Osdi\LocalObject\Tag $localObject */
-      $localObject = new $localClass();
-      $localObject->loadFromArray($tagArray);
+    if ($syncState) {
+      $localClass = $pair->getLocalClass();
+      /** @var \Civi\Osdi\LocalObject\Donation */
+      $localObject = $localClass::fromId($syncState['contribution_id']);
       $result->setLocalObject($localObject);
       $result->setStatusCode($result::FOUND_MATCH);
-      return $result;
+    }
+    else {
+      $result->setStatusCode($result::NO_MATCH);
     }
 
-    $result->setStatusCode($result::NO_MATCH);
     return $result;
   }
 

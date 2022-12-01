@@ -97,11 +97,13 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
       'line_items' => [
         [
           'line_item' => [
-            'price_field_id'       => 1,
-            'price_field_value_id' => 1,
-            'line_total'           => $this->amount->get(),
-            'unit_price'           => $this->amount->get(),
-            'qty'                  => 1,
+            [
+              'price_field_id'       => 1,
+              'price_field_value_id' => 1,
+              'line_total'           => $this->amount->get(),
+              'unit_price'           => $this->amount->get(),
+              'qty'                  => 1,
+            ]
           ]
         ]
       ],

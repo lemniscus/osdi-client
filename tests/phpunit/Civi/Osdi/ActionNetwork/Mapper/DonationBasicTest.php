@@ -2,17 +2,15 @@
 
 namespace Civi\Osdi\ActionNetwork\Mapper;
 
-use Civi;
 use Civi\Test\HeadlessInterface;
 use Civi\Core\HookInterface;
 use Civi\Osdi\ActionNetwork\Mapper\DonationBasic as DonationBasicMapper;
 use Civi\Osdi\LocalObject\Donation as LocalDonation;
-use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
 use Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail as PersonMatcher;
-use Civi\Osdi\ActionNetwork\Object\FundraisingPage;
+use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
+use Civi\Osdi\ActionNetwork\DonationHelperTrait;
 
 use Civi\Test\TransactionalInterface;
-use CRM_OSDI_ActionNetwork_TestUtils;
 use CRM_OSDI_FixtureHttpClient;
 
 /**
@@ -25,21 +23,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
   HookInterface,
   TransactionalInterface {
 
-  /**
-   * @var array{Contact: array, OptionGroup: array, OptionValue: array,
-   *   CustomGroup: array, CustomField: array}
-   */
-  private static $createdEntities = [];
-
-  private static Civi\Osdi\ActionNetwork\RemoteSystem $system;
-
-  private static Civi\Osdi\ActionNetwork\Object\Person $testRemotePerson;
-
-  private static \Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail $personMatcher;
-
-  private static FundraisingPage $testFundraisingPage;
-
-  private static int $financialTypeId;
+  use DonationHelperTrait;
 
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()->installMe(__DIR__)->apply();
@@ -53,82 +37,9 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     parent::setUp();
   }
 
-  public static function setUpBeforeClass(): void {
-    static::$system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
-
-    // We need a remote person that matches a local person.
-    // ... get the remote person
-    $remotePerson = new Civi\Osdi\ActionNetwork\Object\Person(static::$system);
-    $remotePerson->givenName->set('Wilma');
-    $remotePerson->familyName->set('Flintstone');
-    $remotePerson->emailAddress->set('wilma@example.org');
-    $remotePerson->save();
-    static::$testRemotePerson = $remotePerson;
-
-    // ... use sync to get local person
-    $personSyncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic(static::$system);
-    $personMapper = new \Civi\Osdi\ActionNetwork\Mapper\PersonBasic(static::$system);
-    $personSyncer->setMapper($personMapper);
-    static::$personMatcher = new \Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail(static::$system);
-    $personSyncer->setMatcher(static::$personMatcher);
-    $syncResult = $personSyncer->syncFromRemoteIfNeeded($remotePerson);
-    static::$createdEntities['Contact'] = [$syncResult->getLocalObject()->getId()];
-    $contactId = static::$createdEntities['Contact'][0];
-    // HACK: the above sometimes returns a deleted contact.
-    $neededToUndelete = \Civi\Api4\Contact::update(FALSE)->addWhere('id', '=', $contactId)->addValue('is_deleted', 0)->addWhere('is_deleted', '=', 1)->execute()->count();
-
-    // Ensure we have the default fundraising page.
-    $fundraisingPages = static::$system->findAll('osdi:fundraising_pages');
-    $found = FALSE;
-    foreach ($fundraisingPages as $fundraisingPage) {
-      if ($fundraisingPage->title->get() === DonationBasicMapper::FUNDRAISING_PAGE_NAME) {
-        $found = $fundraisingPage;
-        break;
-      }
-    }
-    if (!$found) {
-      // Create the default fundraising page now.
-      // @Todo expect this code to change.
-      
-      $fundraisingPage = new FundraisingPage(static::$system);
-      $fundraisingPage->name->set(DonationBasicMapper::FUNDRAISING_PAGE_NAME);
-      // Nb. title is the public title and is required according to the API,
-      // even though there should not be a public page for API-created
-      // fundraising pages.
-      $fundraisingPage->title->set(DonationBasicMapper::FUNDRAISING_PAGE_NAME);
-      $fundraisingPage->origin_system->set('CiviCRM');
-      $fundraisingPage->save();
-    }
-    static::$testFundraisingPage = $fundraisingPage;
-
-    // Create 'Test recipient financial type'
-    static::$financialTypeId = \Civi\Api4\FinancialType::create(FALSE)
-    ->addValue('name', 'Test recipient financial type')
-    ->addValue('description', 'Used by PHPUnit test ' . __CLASS__ . '::' . __FUNCTION__)
-    ->execute()->single()['id'];
-  }
-
   public function tearDown(): void {
     parent::tearDown();
   }
-
-  public static function tearDownAfterClass(): void {
-
-    static::$testRemotePerson->delete();
-
-    foreach (self::$createdEntities as $type => $ids) {
-      foreach ($ids as $id) {
-        civicrm_api4($type, 'delete', [
-          'where' => [['id', '=', $id]],
-          'checkPermissions' => FALSE,
-          'useTrash' => FALSE,
-        ]);
-      }
-    }
-
-    parent::tearDownAfterClass();
-  }
-
 
   /**
    *

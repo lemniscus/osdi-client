@@ -83,7 +83,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
    *   where $operator is 'eq', 'lt', or 'gt'
    */
   public function find(string $objectType, array $criteria): RemoteFindResult {
-    $entitiesThatSupportOData = ['osdi:people', 'osdi:signatures', 'osdi:outreaches'];
+    $entitiesThatSupportOData = ['osdi:people', 'osdi:signatures', 'osdi:outreaches', 'osdi:donations'];
     if (!in_array($objectType, $entitiesThatSupportOData)) {
       throw new InvalidArgumentException(
         '%s is an unsupported object type for find', $objectType);
