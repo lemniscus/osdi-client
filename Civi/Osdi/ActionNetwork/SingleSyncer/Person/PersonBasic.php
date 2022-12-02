@@ -3,6 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\SingleSyncer\Person;
 
 use Civi\Api4\OsdiDeletion;
+use Civi\Api4\OsdiFlag;
 use Civi\Osdi\ActionNetwork\SingleSyncer\AbstractSingleSyncer;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
@@ -77,8 +78,13 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
   protected function getSyncEligibility(LocalRemotePair $pair): SyncEligibility {
     $result = new SyncEligibility();
 
+    if ($this->originHasErrorFlags($pair)) {
+      $result->setMessage('origin record was flagged with an error');
+      return $this->pushResult($pair, $result, $result::INELIGIBLE);
+    }
+
     if ($pair->isOriginRemote() && $this->wasDeletedByUs($pair)) {
-      $result->setMessage('it was deleted by us');
+      $result->setMessage('origin record was deleted by us');
       return $this->pushResult($pair, $result, $result::INELIGIBLE);
     }
 
@@ -106,7 +112,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     }
 
     $result->setMessage('Sync is already up to date');
-    return $this->pushResult($pair, $result, $result::INELIGIBLE);
+    return $this->pushResult($pair, $result, $result::NOT_NEEDED);
   }
 
   public function makeLocalObject($id = NULL): LocalObjectInterface {
@@ -290,6 +296,19 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
 
   protected function newRemoteShouldBeCreatedForLocal(LocalRemotePair $pair): bool {
     return TRUE;
+  }
+
+  private function originHasErrorFlags(LocalRemotePair $pair): int {
+    $flags = OsdiFlag::get(FALSE)
+      ->selectRowCount()
+      ->addWhere('status', '=', OsdiFlag::STATUS_ERROR)
+      ->addWhere(
+        $pair->isOriginLocal() ? 'contact_id' : 'remote_object_id',
+        '=',
+        $pair->getOriginObject()->getId())
+      ->execute();
+
+    return $flags->count();
   }
 
   private function typeCheckLocalPerson(LocalObjectInterface $object): \Civi\Osdi\LocalObject\PersonBasic {

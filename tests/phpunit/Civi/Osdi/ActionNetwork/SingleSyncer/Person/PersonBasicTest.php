@@ -18,7 +18,7 @@ class PersonBasicTest extends PersonTestAbstract implements
     return \Civi\Test::headless()->installMe(__DIR__)->apply();
   }
 
-  public static function setUpBeforeClass(): void {
+  public function setUp(): void {
     self::$remoteSystem = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
 
     PersonMatchFixture::$personClass = ANPerson::class;
@@ -27,9 +27,7 @@ class PersonBasicTest extends PersonTestAbstract implements
     self::$syncer = new PersonBasic(self::$remoteSystem);
     self::$syncer->setSyncProfile(CRM_OSDI_ActionNetwork_TestUtils::createSyncProfile());
 
-    \Civi\Api4\OsdiPersonSyncState::delete(FALSE)
-      ->addWhere('id', '>', 0)
-      ->execute();
+    parent::setUp();;
   }
 
 }

@@ -40,14 +40,10 @@ class CrmEventDispatch {
   }
 
   public static function merge($type, &$data, $mainId = NULL, $otherId = NULL, $tables = NULL): void {
-    if ('sqls' !== $type) {
-      return;
-    }
-
     $responder = static::getResponder('Contact', 'merge');
     if ($responder) {
       // mainId is the one being kept; otherId belongs to the contact being deleted
-      $responder->merge($mainId, $otherId);
+      $responder->merge($type, $data, $mainId, $otherId, $tables);
     }
   }
 

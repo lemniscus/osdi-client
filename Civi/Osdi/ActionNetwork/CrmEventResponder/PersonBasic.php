@@ -4,6 +4,7 @@ namespace Civi\Osdi\ActionNetwork\CrmEventResponder;
 
 use Civi\Api4\Contact;
 use Civi\Api4\Email;
+use Civi\Api4\OsdiFlag;
 use Civi\Api4\OsdiPersonSyncState;
 use Civi\Core\DAO\Event\PreDelete;
 use Civi\Core\DAO\Event\PreUpdate;
@@ -15,58 +16,56 @@ use CRM_OSDI_ExtensionUtil as E;
 
 class PersonBasic {
 
+  /**
+   * This hook comes early enough in the merge process that the two contacts
+   * still have their email addresses unchanged. We compare these emails to
+   * determine whether the records need to be flagged.
+   */
   public function alterLocationMergeData(&$blocksDAO, $mainId, $otherId, $migrationInfo) {
-    //if (empty($blocksDAO['email'])) {
-    //  /** @var \Civi\Osdi\LocalObject\PersonBasic $toBeDeletedPerson */
-    //  // "other" person's email is being abandoned
-    //  $toBeDeletedPerson =
-    //    Factory::make('LocalObject', 'Person', $otherId)->loadOnce();
-    //
-    //  $this->queueCreateDeletionRecord($toBeDeletedPerson->getAll());
-    //}
+    /** @var \Civi\Osdi\LocalObject\PersonBasic $dupePerson */
+    /** @var \Civi\Osdi\LocalObject\PersonBasic $keptPerson */
 
-    //$emailsBeingDeleted = $blocksDAO['email']['delete'] ?? [];
-    //$emailIdsBeingDeleted = [];
-    //foreach ($emailsBeingDeleted as $emailDAO) {
-    //  $emailIdsBeingDeleted[] = $emailDAO->id;
-    //}
-    //if (!$emailIdsBeingDeleted) {
-    //  return;
-    //}
-    //$primaryEmailBeingDeleted = Email::get(FALSE)
-    //  ->addWhere('id', 'IN', $emailIdsBeingDeleted)
-    //  ->addWhere('is_primary', '=', TRUE)
-    //  ->execute()->first();
-    //if (empty($primaryEmailBeingDeleted)) {
-    //  return;
-    //}
-    //
-    //$emailsBeingUpdated = $blocksDAO['email']['update'] ?? [];
-    //$primaryEmailIdsBeingUpdated = [];
-    //foreach ($emailsBeingUpdated as $emailDAO) {
-    //  if ($emailDAO->is_primary) {
-    //    $primaryEmailIdsBeingUpdated[] = $emailDAO->id;
-    //  }
-    //}
-    //if ($primaryEmailIdsBeingUpdated) {
-    //  $primaryEmailBeingMoved = Email::get(FALSE)
-    //    ->addWhere('id', 'IN', $primaryEmailIdsBeingUpdated)
-    //    //->addWhere('is_primary', '=', TRUE)
-    //    ->execute()->single();
-    //}
-    //
-    //if (!empty($primaryEmailBeingMoved)) {
-    //  if ($primaryEmailBeingDeleted['email'] === $primaryEmailBeingMoved['email']) {
-    //    return;
-    //  }
-    //}
-    //
-    //$localPersonArray = [
-    //  'id' => $primaryEmailBeingDeleted['contact_id'],
-    //  'emailEmail' => $primaryEmailBeingDeleted['email'],
-    //];
-    //
-    //$this->queueCreateDeletionRecord($localPersonArray);
+    $keptPerson =
+      Factory::make('LocalObject', 'Person', $mainId)->loadOnce();
+
+    $dupePerson =
+      Factory::make('LocalObject', 'Person', $otherId)->loadOnce();
+
+    $keptPersonEmail = $keptPerson->emailEmail->get();
+    $dupePersonEmail = $dupePerson->emailEmail->get();
+
+    if (
+      empty($keptPersonEmail) || empty($dupePersonEmail)
+      || $keptPersonEmail === $dupePersonEmail
+    ) {
+      return;
+    }
+
+    $message = "Contact #$otherId ($dupePersonEmail) was merged into contact "
+      . "#$mainId ($keptPersonEmail) on CiviCRM. Due to limitations of the "
+      . "Action Network API, we cannot automatically merge the corresponding "
+      . "people on Action Network. Please merge them manually, and then mark "
+      . "this flag as resolved.";
+
+    $syncer = self::getPersonSingleSyncer();
+
+    foreach (['kept' => $keptPerson, 'dupe' => $dupePerson] as $i => $localPerson) {
+      $flagCreate = OsdiFlag::create(FALSE)
+        ->addValue('contact_id', $localPerson->getId())
+        ->addValue('status', OsdiFlag::STATUS_ERROR)
+        ->addValue('flag_type', 'merge_incomplete')
+        ->addValue('message', $message);
+
+      $pair = $syncer->toLocalRemotePair($localPerson);
+      $pair->setOrigin($pair::ORIGIN_LOCAL);
+      $syncer->fetchOldOrFindNewMatch($pair);
+      $remotePerson = $pair->getRemoteObject();
+      if ($remotePerson) {
+        $flagCreate->addValue('remote_object_id', $remotePerson->getId());
+      }
+
+      $flagCreate->execute();
+    }
   }
 
   public function daoPreDelete(PreDelete $event) {
@@ -97,10 +96,15 @@ class PersonBasic {
     $this->respondToDaoPreUpdateSoftDelete($dao);
   }
 
-  public function merge(int $idBeingKept, int $idBeingDeleted) {
-    //OsdiPersonSyncState::delete(FALSE)
-    //  ->addWhere('contact_id', 'IN', [$idBeingKept, $idBeingDeleted])
-    //  ->execute();
+  public function merge($type, &$data, $idBeingKept = NULL, $idBeingDeleted = NULL, $tables = NULL) {
+    if ('cidRefs' === $type) {
+      unset($data['civicrm_osdi_flag']);
+      return;
+    }
+
+    if ('sqls' !== $type) {
+      return;
+    }
 
     \Civi::$statics['osdiClient.inProgress']['delete'][] =
       Factory::make('LocalObject', 'Person', $idBeingDeleted);
@@ -108,30 +112,6 @@ class PersonBasic {
       Factory::make('LocalObject', 'Person', $idBeingKept);
 
     $queue = \Civi\Osdi\Queue::getQueue();
-
-    //$localPersonArray =
-    //  Factory::make('LocalObject', 'Person', $idBeingDeleted)
-    //    ->loadOnce()
-    //    ->getAll();
-    //$task = new \CRM_Queue_Task(
-    //  [static::class, 'syncDeletionFromQueue'],
-    //  ['serializedPerson' => $localPersonArray],
-    //  E::ts('Sync merge deletion of Contact id %1',
-    //    [1 => $localPersonArray['id']])
-    //);
-    //$queue->createItem($task, ['weight' => -15]);
-    //
-    //$localPersonArray =
-    //  Factory::make('LocalObject', 'Person', $idBeingKept)
-    //    ->loadOnce()
-    //    ->getAll();
-    //$task = new \CRM_Queue_Task(
-    //  [static::class, 'syncDeletionFromQueue'],
-    //  ['serializedPerson' => $localPersonArray],
-    //  E::ts('Sync merge deletion of Contact id %1',
-    //    [1 => $localPersonArray['id']])
-    //);
-    //$queue->createItem($task, ['weight' => -15]);
 
     $task = new \CRM_Queue_Task(
       [static::class, 'syncCreationFromQueue'],
@@ -155,13 +135,6 @@ class PersonBasic {
       return;
     }
 
-    //$apiGetResult = OsdiPersonSyncState::get(FALSE)
-    //  ->addWhere('contact_id', '=', $objectId)
-    //  ->addOrderBy('sync_profile_id')
-    //  ->addOrderBy('remote_person_id IS NULL', 'DESC')
-    //  ->addOrderBy('sync_time', 'ASC')
-    //  ->execute();
-
     $query = 'SELECT id, sync_profile_id, sync_status, (remote_person_id IS NOT NULL) AS has_remote
       FROM ' . \CRM_OSDI_DAO_PersonSyncState::getTableName() . "
       WHERE contact_id = $objectId
@@ -177,16 +150,6 @@ class PersonBasic {
       }
       $olderPss = $pss;
     }
-
-    // keep only the contact's most recent PersonSyncState, per sync profile id
-    //foreach ($apiGetResult as $pss) {
-    //  if (isset($olderPss) && $pss['sync_profile_id'] === $olderPss['sync_profile_id']) {
-    //    OsdiPersonSyncState::delete(FALSE)
-    //      ->addWhere('id', '=', $olderPss['id'])
-    //      ->execute();
-    //  }
-    //  $olderPss = $pss;
-    //}
   }
 
   public static function syncCreationFromQueue(
@@ -276,9 +239,9 @@ class PersonBasic {
         // 'inProgress' list at any given time, and only one contact coming in
         // through the hook, so this should be fine
         $firstNameFromUs = (string) $objectFromUs->firstName->get();
-        $firstNameFromHook = (string) $entityArrayFromHook['first_name'] ?? '';
+        $firstNameFromHook = (string) ($entityArrayFromHook['first_name'] ?? '');
         $lastNameFromUs = (string) $objectFromUs->lastName->get();
-        $lastNameFromHook = (string) $entityArrayFromHook['last_name'] ?? '';
+        $lastNameFromHook = (string) ($entityArrayFromHook['last_name'] ?? '');
         return $firstNameFromUs === $firstNameFromHook
           && $lastNameFromUs === $lastNameFromHook;
       }

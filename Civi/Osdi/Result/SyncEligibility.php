@@ -12,4 +12,6 @@ class SyncEligibility extends AbstractResult implements \Civi\Osdi\ResultInterfa
 
   const INELIGIBLE = 'ineligible';
 
+  const NOT_NEEDED = 'not needed';
+
 }

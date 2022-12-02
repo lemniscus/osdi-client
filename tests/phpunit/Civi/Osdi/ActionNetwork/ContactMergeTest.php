@@ -83,6 +83,7 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
   protected function setUp(): void {
     self::$system = \CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
     self::$mergeEmailFromDupe = FALSE;
+    self::$mergeNameFromDupe = FALSE;
     \Civi\Osdi\Queue::getQueue(TRUE);
     parent::setUp();
   }
@@ -147,11 +148,12 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
    * both contacts have the same primary email.
    */
   public function testMerge_OneContactHasNoPrimaryEmail() {
+    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic(self::$system);
+
     $mainLocalPerson = new LocalPerson();
     $mainLocalPerson->emailEmail->set(NULL);
     $mainLocalPerson->firstName->set('Test Contact Merge - name from main');
     $mainLocalPerson->save();
-    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic(self::$system);
     $mainPair = $syncer->matchAndSyncIfEligible($mainLocalPerson);
 
     $dupeLocalPerson = new LocalPerson();
@@ -160,8 +162,14 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
     $dupeLocalPerson->save();
     $dupePair = $syncer->matchAndSyncIfEligible($dupeLocalPerson);
 
-    $this->assertAndGetErrorSyncState($mainLocalPerson);
-    $this->assertAndGetSuccessSyncState($dupeLocalPerson);
+    $mainPss = $this->assertAndGetErrorSyncState($mainLocalPerson);
+    $dupePss = $this->assertAndGetSuccessSyncState($dupeLocalPerson);
+
+    // simulate the sync histories being in the past
+    $mainPss->setLocalPostSyncModifiedTime(time() - 1);
+    $mainPss->save();
+    $dupePss->setLocalPostSyncModifiedTime(time() - 1);
+    $dupePss->save();
 
     // MERGE
     self::$mergeEmailFromDupe = TRUE;
@@ -248,16 +256,6 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
     return $syncState;
   }
 
-  private function assertDifferentEmail(
-    LocalPerson $person1,
-    LocalPerson $person2
-  ): void {
-    self::assertNotEquals(
-      $person1->emailEmail->get(),
-      $person2->emailEmail->get(),
-    );
-  }
-
   private function assertDoesntHaveFlag(...$localPeople): void {
     $contactIds = array_map(function ($p) {return $p->getID();}, $localPeople);
     $flags = \Civi\Api4\OsdiFlag::get(FALSE)
@@ -270,14 +268,6 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
   private function assertDoesntHaveSyncState(LocalPerson $p): void {
     $syncState = \Civi\Osdi\PersonSyncState::getForLocalPerson($p, NULL);
     self::assertEmpty($syncState->getId());
-  }
-
-  private function assertHasDeletionRecord($remotePerson): void {
-    $deletion = \Civi\Api4\OsdiDeletion::get(FALSE)
-      ->addWhere('remote_object_id', '=', $remotePerson->getId())
-      ->addWhere('sync_profile_id', 'IS NULL')
-      ->execute();
-    self::assertCount(1, $deletion);
   }
 
   private function assertLocalPeopleHaveFlags(...$localPeople): void {
@@ -329,12 +319,6 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
     self::assertCount(0, $deletion);
   }
 
-  private function assertNoRemotePersonWithSameEmailAs(LocalPerson $localPerson) {
-    $remoteSystemFindResult = self::$system->find('osdi:people',
-      [['email', 'eq', $localPerson->emailEmail->get()]]);
-    self::assertEquals(0, $remoteSystemFindResult->rawCurrentCount());
-  }
-
   private function assertSameEmail(
     LocalPerson $person1,
     LocalPerson $person2
@@ -372,31 +356,12 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
     return $localPerson;
   }
 
-  private function makeRemotePerson(string $index): RemotePerson {
-    $remotePerson = new RemotePerson(self::$system);
-    $remotePerson->emailAddress->set("contactMergeTest$index@test.net");
-    $remotePerson->givenName->set("Test Contact Merge $index");
-    $remotePerson->save();
-    return $remotePerson;
-  }
-
-  /**
-   * @param string $index
-   *
-   * @return array{0: \Civi\Osdi\LocalObject\PersonBasic, 1: \Civi\Osdi\ActionNetwork\Object\Person}
-   * @throws \Civi\Osdi\Exception\InvalidOperationException
-   */
-  private function makeSamePersonOnBothSides(string $index): array {
-    $localPerson = $this->makeLocalPerson($index);
-    $remotePerson = $this->makeRemotePerson($index);
-    return [$localPerson, $remotePerson];
-  }
-
   private function mergeViaCiviApi3(
     LocalPerson $dupeLocalPerson,
     LocalPerson $mainLocalPerson
   ): void {
     include_once 'api/v3/Contact.php';
+    // we call this method directly so we can access thrown errors
     \civicrm_api3_contact_merge([
       'to_remove_id' => $dupeLocalPerson->getId(),
       'to_keep_id' => $mainLocalPerson->getId(),

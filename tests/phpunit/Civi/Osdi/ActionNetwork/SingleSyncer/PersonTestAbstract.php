@@ -2,8 +2,11 @@
 
 namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
+use Civi\Api4\Contact;
+use Civi\Api4\OsdiFlag;
 use Civi\Osdi\ActionNetwork\Object\Person as ANPerson;
 use Civi\Osdi\Factory;
+use Civi\Osdi\PersonSyncState;
 use Civi\Osdi\Result\FetchOldOrFindNewMatch;
 use Civi\Osdi\Result\MapAndWrite;
 use Civi\Osdi\Result\Sync;
@@ -74,7 +77,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     $savedMatch = $syncResult->getState();
 
     self::assertEquals(FetchOldOrFindNewMatch::FETCHED_SAVED_MATCH, $fetchFindMatchResult->getStatusCode());
-    self::assertEquals(SyncEligibility::INELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertEquals(SyncEligibility::NOT_NEEDED, $syncEligibleResult->getStatusCode());
     self::assertNull($mapAndWriteResult);
     self::assertEquals(Sync::NO_SYNC_NEEDED, $syncResult->getStatusCode());
     self::assertEquals(\Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
@@ -174,7 +177,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     $savedMatch = $syncResult->getState();
 
     self::assertEquals(FetchOldOrFindNewMatch::FETCHED_SAVED_MATCH, $fetchFindMatchResult->getStatusCode());
-    self::assertEquals(SyncEligibility::INELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertEquals(SyncEligibility::NOT_NEEDED, $syncEligibleResult->getStatusCode());
     self::assertNull($mapAndWriteResult);
     self::assertEquals(Sync::NO_SYNC_NEEDED, $syncResult->getStatusCode());
     self::assertEquals(\Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
@@ -236,6 +239,113 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
       $pair->getLocalObject()->firstName->get());
   }
 
+  public function testErrorFlagBlocksSync() {
+    $syncer = self::$syncer;
+
+    // set up a contact merge which will result in records being flagged
+
+    $localPerson1 = Factory::make('LocalObject', 'Person');
+    $localPerson1->emailEmail->set('testErrorFlagBlocksSync.1@test.net');
+    $localPerson1->save();
+
+    $pair1 = $syncer->matchAndSyncIfEligible($localPerson1);
+    $resultStack1 = $pair1->getResultStack();
+    $syncResult1 = $resultStack1->getLastOfType(Sync::class);
+
+    self::assertEquals(Sync::SUCCESS, $syncResult1->getStatusCode());
+    self::assertNotNull($pair1->getRemoteObject()->getId());
+
+    $localPerson2 = Factory::make('LocalObject', 'Person');
+    $localPerson2->emailEmail->set('testErrorFlagBlocksSync.2@test.net');
+    $localPerson2->save();
+
+    $pair2 = $syncer->matchAndSyncIfEligible($localPerson2);
+    $resultStack2 = $pair2->getResultStack();
+    $syncResult2 = $resultStack2->getLastOfType(Sync::class);
+    $remotePerson2 = $pair2->getRemoteObject();
+
+    self::assertEquals(Sync::SUCCESS, $syncResult2->getStatusCode());
+    self::assertNotNull($remotePerson2->getId());
+
+    $cid1 = $localPerson1->getId();
+    $cid2 = $localPerson2->getId();
+
+    $flags = OsdiFlag::get(FALSE)
+      ->addWhere('contact_id', 'IN', [$cid1, $cid2])
+      ->execute();
+
+    self::assertCount(0, $flags);
+
+    // trigger the creation of error flags
+
+    // we call this method directly so we can access thrown errors
+    include_once 'api/v3/Contact.php';
+    \civicrm_api3_contact_merge([
+      'to_remove_id' => $cid2,
+      'to_keep_id' => $cid1,
+      'mode' => "aggressive",
+    ]);
+
+    $flags = OsdiFlag::get(FALSE)
+      ->addWhere('contact_id', 'IN', [$cid1, $cid2])
+      ->execute();
+
+    self::assertCount(2, $flags);
+    foreach ($flags as $flag) {
+      self::assertEquals(OsdiFlag::STATUS_ERROR, $flag['status']);
+    }
+
+    // we create a situation in which local person 1 (the merged contact) would
+    // be eligible for sync -- but because of the error flag it's not
+
+    $syncProfileId = $syncer->getSyncProfile()['id'];
+    $syncState = PersonSyncState::getForLocalPerson($localPerson1, $syncProfileId);
+    $syncState->setLocalPostSyncModifiedTime(
+      $syncState->getLocalPostSyncModifiedTime() - 1);
+    $syncState->save();
+
+    $pair = $syncer->matchAndSyncIfEligible($localPerson1);
+    $resultStack = $pair->getResultStack();
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+    $syncResult = $resultStack->getLastOfType(Sync::class);
+
+    self::assertEquals(SyncEligibility::INELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertEquals(Sync::INELIGIBLE, $syncResult->getStatusCode());
+
+    // mark person 1's flag 'resolved' -- now the contact can be synced
+
+    OsdiFlag::update(FALSE)
+      ->addWhere('contact_id', '=', $cid1)
+      ->addValue('status', OsdiFlag::STATUS_RESOLVED)
+      ->execute();
+
+    $syncState->setLocalPostSyncModifiedTime(
+      $syncState->getLocalPostSyncModifiedTime() - 1);
+    $syncState->save();
+
+    $pair = $syncer->matchAndSyncIfEligible($localPerson1);
+    $resultStack = $pair->getResultStack();
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+
+    self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode(), $syncEligibleResult->getMessage());
+
+    // the flag for person 2 still has 'error' status. even after the local
+    // person 2 is deleted, the error flag blocks sync of remote person 2
+
+    Contact::delete(FALSE)
+      ->setUseTrash(FALSE)
+      ->addWhere('id', '=', $cid2)
+      ->execute();
+
+    $pair = $syncer->matchAndSyncIfEligible($remotePerson2);
+    $resultStack = $pair->getResultStack();
+    $syncEligibleResult = $resultStack->getLastOfType(SyncEligibility::class);
+    $syncResult = $resultStack->getLastOfType(Sync::class);
+
+    self::assertEquals(SyncEligibility::INELIGIBLE, $syncEligibleResult->getStatusCode());
+    self::assertEquals(Sync::INELIGIBLE, $syncResult->getStatusCode());
+  }
+
   public function dataProviderDeletedPersonDoesNotGetRecreated() {
     return [
       ['use SyncProfile' => TRUE],
@@ -278,7 +388,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     self::assertEquals(FetchOldOrFindNewMatch::FETCHED_SAVED_MATCH, $fetchFindMatchResult->getStatusCode());
     self::assertEquals(SyncEligibility::INELIGIBLE, $syncEligibleResult->getStatusCode());
     self::assertNull($mapAndWriteResult);
-    self::assertEquals(Sync::NO_SYNC_NEEDED, $syncResult->getStatusCode());
+    self::assertEquals(Sync::INELIGIBLE, $syncResult->getStatusCode());
     self::assertEquals(\Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
     self::assertEquals(
       $civiToAnPair->getLocalObject()->getId(), $anToCiviPair->getLocalObject()->getId());

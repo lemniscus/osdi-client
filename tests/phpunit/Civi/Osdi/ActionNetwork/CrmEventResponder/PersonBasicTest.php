@@ -254,7 +254,7 @@ class PersonBasicTest extends \PHPUnit\Framework\TestCase implements
     }
 
     self::assertEquals(0, $queue->numberOfItems(),
-      print_r($queue->claimItem()->data, TRUE));
+      /*print_r($queue->claimItem()->data, TRUE)*/);
   }
 
   public function testDeleteMoreThanOne() {

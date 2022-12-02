@@ -11,6 +11,8 @@ class Sync extends AbstractResult implements \Civi\Osdi\ResultInterface {
 
   const ERROR = 'error';
 
+  const INELIGIBLE = 'did not qualify';
+
   const NO_SYNC_NEEDED = 'no sync needed';
 
   protected ?RemoteObjectInterface $remoteObject;

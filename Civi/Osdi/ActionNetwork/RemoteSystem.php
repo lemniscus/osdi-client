@@ -24,9 +24,9 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
   private HalClientInterface $client;
 
-  private \CRM_OSDI_BAO_SyncProfile $systemProfile;
+  private ?\CRM_OSDI_BAO_SyncProfile $systemProfile = NULL;
 
-  public function __construct(?\CRM_OSDI_BAO_SyncProfile $systemProfile,
+  public function __construct(?\CRM_OSDI_BAO_SyncProfile $systemProfile = NULL,
                               ?HalClientInterface $client = NULL) {
     if ($systemProfile) {
       $this->systemProfile = $systemProfile;
