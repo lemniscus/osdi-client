@@ -152,19 +152,19 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
 
     for ($i = 1; $i <= 28; $i++) {
       if (array_key_exists($i, $plan)) {
-        $remotePersonTagNames = $plan[$i];
+        $tagNamesBeforeSync = $plan[$i];
       }
 
       [$localPerson, $remotePerson] = $this->makeSamePersonOnBothSides($i);
       $localPeople[$i] = $localPerson;
 
-      foreach ($remotePersonTagNames['rem'] as $tagLetter) {
+      foreach ($tagNamesBeforeSync['rem'] as $tagLetter) {
         $remoteTagging = new Civi\Osdi\ActionNetwork\Object\Tagging(self::$remoteSystem);
         $remoteTagging->setPerson($remotePerson);
         $remoteTagging->setTag($remoteTags[$tagLetter]);
         $remoteTagging->save();
       }
-      foreach ($remotePersonTagNames['loc'] as $tagLetter) {
+      foreach ($tagNamesBeforeSync['loc'] as $tagLetter) {
         $localTagging = new Civi\Osdi\LocalObject\TaggingBasic();
         $localTagging->setPerson($localPerson);
         $localTagging->setTag($localTags[$tagLetter]);
@@ -176,10 +176,10 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
 
     for ($i = 1; $i <= 28; $i++) {
       if (array_key_exists($i, $plan)) {
-        $remotePersonTagNames = $plan[$i]['rem'];
+        $tagNamesBeforeSync = $plan[$i]['rem'];
       }
 
-      $expectedLocalTaggings[$i] = $remotePersonTagNames;
+      $expectedLocalTaggings[$i] = $tagNamesBeforeSync;
       $localPerson = $localPeople[$i];
 
       $localPersonTagNames = EntityTag::get(FALSE)
@@ -198,6 +198,120 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
     }
 
     self::assertEquals($expectedLocalTaggings, $actualLocalTaggings);
+  }
+
+  public function testBatchMirror() {
+    [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
+
+    foreach ($remoteTags as $remoteTag) {
+      /** @var \Civi\Osdi\ActionNetwork\RemoteFindResult $remoteTaggingCollection */
+      $remoteTaggingCollection = $remoteTag->getTaggings()->loadAll();
+      foreach ($remoteTaggingCollection as $remoteTagging) {
+        $remoteTagging->delete();
+      }
+    }
+
+    $plan = [
+      1 => [
+        'rem' => ['a'],
+        'loc' => ['a'],
+      ],
+      2 => [
+        'rem' => ['a'],
+        'loc' => ['b'],
+      ],
+      3 => [
+        'rem' => ['a'],
+        'loc' => ['a', 'b'],
+      ],
+      4 => [
+        'rem' => ['a'],
+        'loc' => [],
+      ],
+      // 5-24 will be the same as 4
+      25 => [
+        'rem' => ['a', 'b'],
+        'loc' => [],
+      ],
+      26 => [
+        'rem' => ['a', 'b'],
+        'loc' => ['a'],
+      ],
+      27 => [
+        'rem' => [],
+        'loc' => ['a'],
+      ],
+      28 => [
+        'rem' => [],
+        'loc' => ['a', 'b'],
+      ],
+    ];
+
+    for ($i = 1; $i <= 28; $i++) {
+      if (array_key_exists($i, $plan)) {
+        $tagNamesBeforeSync = $plan[$i];
+      }
+
+      [$localPerson, $remotePerson] = $this->makeSamePersonOnBothSides($i);
+      $localPeople[$i] = $localPerson;
+      $remotePeople[$i] = $remotePerson;
+
+      foreach ($tagNamesBeforeSync['rem'] as $tagLetter) {
+        $remoteTagging = new Civi\Osdi\ActionNetwork\Object\Tagging(self::$remoteSystem);
+        $remoteTagging->setPerson($remotePerson);
+        $remoteTagging->setTag($remoteTags[$tagLetter]);
+        $remoteTagging->save();
+      }
+      foreach ($tagNamesBeforeSync['loc'] as $tagLetter) {
+        $localTagging = new Civi\Osdi\LocalObject\TaggingBasic();
+        $localTagging->setPerson($localPerson);
+        $localTagging->setTag($localTags[$tagLetter]);
+        $localTagging->save();
+      }
+    }
+
+    self::$syncer->batchTwoWayMirror();
+
+    for ($i = 1; $i <= 28; $i++) {
+      if (array_key_exists($i, $plan)) {
+        $tagNamesAfterSync =
+          array_unique(array_merge($plan[$i]['rem'], $plan[$i]['loc']));
+        sort($tagNamesAfterSync);
+      }
+
+      $expectedLocalTaggings[$i] = $tagNamesAfterSync;
+      $expectedRemoteTaggings[$i] = $tagNamesAfterSync;
+
+      $localPerson = $localPeople[$i];
+
+      $localPersonTagNames = EntityTag::get(FALSE)
+        ->addWhere('entity_table', '=', 'civicrm_contact')
+        ->addWhere('entity_id', '=', $localPerson->getId())
+        ->addSelect('tag_id:name')
+        ->addOrderBy('tag_id:name')
+        ->execute()->column('tag_id:name');
+
+      foreach ($localPersonTagNames as $key => $val) {
+        $localPersonTagNames[$key] = substr($val, -1);
+      }
+
+      $actualLocalTaggings[$i] = $localPersonTagNames;
+
+      $remotePerson = $remotePeople[$i];
+      $remoteTaggingCollection = $remotePerson->getTaggings()->loadAll();
+      $tagNamesBeforeSync = [];
+
+      foreach ($remoteTaggingCollection as $remoteTagging) {
+        $remoteTagName = $remoteTagging->getTag()->name->get();
+        $tagNamesBeforeSync[] = substr($remoteTagName, -1);
+      }
+
+      sort($tagNamesBeforeSync);
+      $actualRemoteTaggings[$i] = $tagNamesBeforeSync;
+    }
+
+    self::assertEquals($expectedLocalTaggings, $actualLocalTaggings);
+    self::assertEquals($expectedRemoteTaggings, $actualRemoteTaggings);
   }
 
 }
