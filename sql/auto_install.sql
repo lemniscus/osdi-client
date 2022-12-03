@@ -68,9 +68,7 @@ CREATE TABLE `civicrm_osdi_sync_profile` (
   `label` varchar(128) COMMENT 'User-friendly label for the sync configuration',
   `entry_point` varchar(1023) COMMENT 'API entry point (AEP) URL',
   `api_token` varchar(1023) COMMENT 'API token',
-  `remote_system` varchar(127) COMMENT 'class name of Remote System',
-  `matcher` varchar(127) COMMENT 'class name of Matcher',
-  `mapper` varchar(127) COMMENT 'class name of Mapper',
+  `classes` longtext COMMENT 'Three-level associative array (category => key => class name) of classes to register with the OSDI Client\'s container/service locator',
   PRIMARY KEY (`id`)
 )
 ENGINE=InnoDB;
