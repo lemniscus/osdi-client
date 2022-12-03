@@ -75,7 +75,7 @@ class TaggingBasic implements BatchSyncerInterface {
         $taggingPair->setOrigin($taggingPair::ORIGIN_LOCAL);
         $result = $this->singleSyncer->oneWayMapAndWrite($taggingPair);
         $newFromLocalCount++;
-        $totalSuccessful = $totalSuccessful && $result->isError();
+        $totalSuccessful += $result->isError() ? 0 : 1;
       }
     }
 
@@ -179,32 +179,41 @@ class TaggingBasic implements BatchSyncerInterface {
       $tagName = $remoteTag->name->get();
       Logger::logDebug("Loading taggings for remote tag: $tagName");
       $remoteTaggingCollection = $remoteTag->getTaggings();
-      $currentTagTaggingCount = $remoteTaggingCollection->rawCurrentCount();
+      $currentTagTaggingCount = $remoteTaggingCollection->loadAll()->rawCurrentCount();
       Logger::logDebug("Loaded $currentTagTaggingCount"
         . ' taggings from this remote tag; beginning sync');
 
       $lastLogTime = time();
-      $syncedCount = $newCount = 0;
+      $processedCount = $newCount = $errorCount = 0;
       foreach ($remoteTaggingCollection as $remoteTagging) {
         if (time() - $lastLogTime > 14) {
           Logger::logDebug("still syncing taggings for current remote tag: of "
-            . "$currentTagTaggingCount, $syncedCount done");
+            . "$currentTagTaggingCount, $processedCount done");
           $lastLogTime = time();
         }
-        $taggingPair = $taggingSingleSyncer
-          ->toLocalRemotePair(NULL, $remoteTagging)
-          ->setOrigin(LocalRemotePair::ORIGIN_REMOTE);
+        try {
+          $taggingPair = $taggingSingleSyncer
+            ->toLocalRemotePair(NULL, $remoteTagging)
+            ->setOrigin(LocalRemotePair::ORIGIN_REMOTE);
 
-        $writeResult = $taggingSingleSyncer->oneWayMapAndWrite($taggingPair);
-        if (!$writeResult->isError()) {
-          $syncedLocalTaggings[$localTagId][] = $taggingPair->getLocalObject()->getId();
+          $writeResult = $taggingSingleSyncer->oneWayMapAndWrite($taggingPair);
+          if ($writeResult->isError()) {
+            $errorCount++;
+          }
+          else {
+            $syncedLocalTaggings[$localTagId][] = $taggingPair->getLocalObject()->getId();
+          }
+          if ($writeResult->isStatus($writeResult::WROTE_NEW)) {
+            $newCount++;
+          }
+          $processedCount++;
         }
-        if ($writeResult->isStatus($writeResult::WROTE_NEW)) {
-          $newCount++;
+        catch (\Throwable $e) {
+          \Civi::log()->error('OSDI client: Error during batch Tagging sync from Action Network');
+          $errorCount++;
         }
-        $syncedCount++;
       }
-      Logger::logDebug("Added $newCount new taggings to Civi");
+      Logger::logDebug("Successfully added $newCount new taggings to Civi, $errorCount errors, for remote tag: $tagName");
 
       if ($deleteNonMatching) {
         $this->deleteNonMatchingLocalTaggings(

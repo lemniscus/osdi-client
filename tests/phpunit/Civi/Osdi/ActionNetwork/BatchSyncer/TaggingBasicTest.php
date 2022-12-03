@@ -23,15 +23,14 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
     return \Civi\Test::headless()->installMe(__DIR__)->apply();
   }
 
-  public static function setUpBeforeClass(): void {
+  protected function setUp(): void {
     self::$remoteSystem = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
-    $syncer = self::makeNewSyncer();
-    self::$syncer = $syncer;
+    self::$syncer = self::makeNewSyncer();
+    parent::setUp();
   }
 
   private static function makeNewSyncer(): TaggingBasic {
-    $singleSyncer = self::makeNewSingleSyncer();
-    return new TaggingBasic($singleSyncer);
+    return new TaggingBasic(self::makeNewSingleSyncer());
   }
 
   private static function makeNewSingleSyncer(): \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic {
@@ -54,6 +53,9 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
     return $taggingSyncer;
   }
 
+  /**
+   * @return array{0: \Civi\Osdi\LocalObject\TagBasic[], 1: \Civi\Osdi\ActionNetwork\Object\Tag[]}
+   */
   private function makeSameTagsOnBothSides(): array {
     $remoteTags = $localTags = [];
     foreach (['a', 'b'] as $index) {
@@ -202,9 +204,11 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
 
   public function testBatchMirror() {
     [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
+    $remoteTagNamesById = [];
 
     foreach ($remoteTags as $remoteTag) {
       /** @var \Civi\Osdi\ActionNetwork\RemoteFindResult $remoteTaggingCollection */
+      $remoteTagNamesById[$remoteTag->getId()] = $remoteTag->name->get();
       $remoteTaggingCollection = $remoteTag->getTaggings()->loadAll();
       foreach ($remoteTaggingCollection as $remoteTagging) {
         $remoteTagging->delete();
@@ -238,12 +242,24 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
         'loc' => ['a'],
       ],
       27 => [
-        'rem' => [],
-        'loc' => ['a'],
+        'rem' => ['a', 'b'],
+        'loc' => ['b'],
       ],
       28 => [
         'rem' => [],
+        'loc' => ['a'],
+      ],
+      29 => [
+        'rem' => [],
         'loc' => ['a', 'b'],
+      ],
+      30 => [
+        'rem' => ['b'],
+        'loc' => [],
+      ],
+      31 => [
+        'rem' => [],
+        'loc' => [],
       ],
     ];
 
@@ -302,7 +318,7 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
       $tagNamesBeforeSync = [];
 
       foreach ($remoteTaggingCollection as $remoteTagging) {
-        $remoteTagName = $remoteTagging->getTag()->name->get();
+        $remoteTagName = $remoteTagNamesById[$remoteTagging->getTag()->getId()];
         $tagNamesBeforeSync[] = substr($remoteTagName, -1);
       }
 
