@@ -97,13 +97,22 @@ class PersonBasic {
   }
 
   public function merge($type, &$data, $idBeingKept = NULL, $idBeingDeleted = NULL, $tables = NULL) {
-    if ('cidRefs' === $type) {
-      unset($data['civicrm_osdi_flag']);
-      return;
-    }
+    // // it would be nice to use the following, but doing so is deprecated,
+    // // according to https://github.com/civicrm/civicrm-core/blob/5e794c90b9c3132f9e792b513e9434721d825712/CRM/Dedupe/Merger.php#L236
+    // // which was introduced by eileen @ https://github.com/civicrm/civicrm-core/commit/e3e87c738e8276dbfd4d3a0f9d74302896074558#diff-fe60c89ebe94bbd40114d135459371cc53708db1f2952ade6c0ce9b3468c4dabR220
+    //if ('cidRefs' === $type) {
+    //  unset($data['civicrm_osdi_flag']);
+    //  return;
+    //}
 
     if ('sqls' !== $type) {
       return;
+    }
+
+    foreach ($data as $key => $query) {
+      if (strpos($query, 'civicrm_osdi_flag') !== FALSE) {
+        unset($data[$key]);
+      }
     }
 
     \Civi::$statics['osdiClient.inProgress']['delete'][] =

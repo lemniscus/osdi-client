@@ -11,7 +11,7 @@ use CRM_OSDI_ExtensionUtil as E;
  * @see https://docs.civicrm.org/dev/en/latest/framework/api-architecture/
  */
 function _civicrm_api3_job_Osdiclientbatchsynctaggings_spec(&$spec) {
-  $spec['api_key']['api.required'] = 1;
+  //$spec['api_token']['api.required'] = 1;
 }
 
 /**
