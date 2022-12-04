@@ -5,8 +5,8 @@ namespace Civi\Osdi;
 class CrmEventDispatch {
 
   protected static function getResponder($objectName, $hookName) {
-    if (Factory::canMake('CrmEventResponder', $objectName)) {
-      $responder = Factory::make('CrmEventResponder', $objectName);
+    if (\Civi\OsdiClient::container()->canMake('CrmEventResponder', $objectName)) {
+      $responder = \Civi\OsdiClient::container()->make('CrmEventResponder', $objectName);
       if (method_exists($responder, $hookName)) {
         return $responder;
       }

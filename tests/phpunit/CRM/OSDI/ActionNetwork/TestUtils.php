@@ -6,25 +6,28 @@ use Jsor\HalClient\HttpClient\Guzzle6HttpClient;
 class CRM_OSDI_ActionNetwork_TestUtils {
 
   public static function createRemoteSystem(): \Civi\Osdi\ActionNetwork\RemoteSystem {
-    $systemProfile = new CRM_OSDI_BAO_SyncProfile();
-    $systemProfile->entry_point = 'https://actionnetwork.org/api/v2/';
+    $syncProfile = new CRM_OSDI_BAO_SyncProfile();
+    $syncProfile->entry_point = 'https://actionnetwork.org/api/v2/';
     self::defineActionNetworkApiToken();
-    $systemProfile->api_token = ACTION_NETWORK_TEST_API_TOKEN;
+    $syncProfile->api_token = ACTION_NETWORK_TEST_API_TOKEN;
+    $syncProfile->is_default = TRUE;
+    $syncProfile->save(FALSE);
 
     //    $client = new Jsor\HalClient\HalClient(
     //      'https://actionnetwork.org/api/v2/', new CRM_OSDI_FixtureHttpClient());
+
     $httpClient = new Guzzle6HttpClient(new Client(['timeout' => 27]));
     $client = new Jsor\HalClient\HalClient('https://actionnetwork.org/api/v2/', $httpClient);
 
-    Civi\Osdi\Factory::register(
+    \Civi\OsdiClient::container($syncProfile)->register(
       'RemoteSystem',
       'ActionNetwork',
       Civi\Osdi\ActionNetwork\RemoteSystem::class);
 
-    return \Civi\Osdi\Factory::singleton(
+    return \Civi\OsdiClient::container()->initializeSingleton(
       'RemoteSystem',
       'ActionNetwork',
-      $systemProfile,
+      $syncProfile,
       $client);
   }
 

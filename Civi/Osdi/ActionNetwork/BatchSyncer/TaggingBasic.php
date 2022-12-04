@@ -5,7 +5,7 @@ namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 use Civi\Api4\EntityTag;
 use Civi\Osdi\BatchSyncerInterface;
 use Civi\Osdi\Exception\InvalidOperationException;
-use Civi\Osdi\Factory;
+use Civi\Osdi\Container;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Logger;
@@ -69,7 +69,7 @@ class TaggingBasic implements BatchSyncerInterface {
         if (in_array($entityTagArray['id'], $syncedEntityTagIds)) {
           continue;
         }
-        $localTagging = Factory::make('LocalObject', 'Tagging');
+        $localTagging = \Civi\OsdiClient::container()->make('LocalObject', 'Tagging');
         $localTagging->loadFromArray($entityTagArray);
         $taggingPair = $this->singleSyncer->toLocalRemotePair($localTagging);
         $taggingPair->setOrigin($taggingPair::ORIGIN_LOCAL);
@@ -90,7 +90,7 @@ class TaggingBasic implements BatchSyncerInterface {
     $contactId = $localPerson->getId();
     Logger::logDebug("Tagging sync requested for contact id $contactId");
 
-    $personSyncer = Factory::singleton('SingleSyncer', 'Person',
+    $personSyncer = \Civi\OsdiClient::container()->getSingle('SingleSyncer', 'Person',
       $this->singleSyncer->getRemoteSystem());
 
     $personPair = $personSyncer->toLocalRemotePair($localPerson);
@@ -108,7 +108,7 @@ class TaggingBasic implements BatchSyncerInterface {
 
     $localTaggings = [];
     foreach ($entityTagArrays as $entityTagArray) {
-      $localTagging = Factory::make('LocalObject', 'Tagging');
+      $localTagging = \Civi\OsdiClient::container()->make('LocalObject', 'Tagging');
       $localTagging->loadFromArray($entityTagArray);
       $localTagName = $localTagging->getTag()->loadOnce()->name->get();
       $localTaggings[$localTagName] = $localTagging;
@@ -244,7 +244,7 @@ class TaggingBasic implements BatchSyncerInterface {
     $deletedCount = 0;
     foreach ($allEntityTags as $entityTag) {
       if (!in_array($entityTag['id'], $syncedLocalTaggings)) {
-        $localTagging = Factory::make('LocalObject', 'Tagging');
+        $localTagging = \Civi\OsdiClient::container()->make('LocalObject', 'Tagging');
         $localTagging->loadFromArray($entityTag);
         $localTagging->delete();
         $deletedCount++;

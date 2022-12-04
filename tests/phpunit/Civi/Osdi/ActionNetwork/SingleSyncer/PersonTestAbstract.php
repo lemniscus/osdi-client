@@ -5,7 +5,7 @@ namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 use Civi\Api4\Contact;
 use Civi\Api4\OsdiFlag;
 use Civi\Osdi\ActionNetwork\Object\Person as ANPerson;
-use Civi\Osdi\Factory;
+use Civi\Osdi\Container;
 use Civi\Osdi\PersonSyncState;
 use Civi\Osdi\Result\FetchOldOrFindNewMatch;
 use Civi\Osdi\Result\MapAndWrite;
@@ -27,7 +27,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
   public function testMatchAndSyncIfEligible_WriteNewTwin_FromLocal() {
     $syncer = self::$syncer;
-    $localPerson = Factory::make('LocalObject', 'Person');
+    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person');
     $localPerson->firstName->set('testMatchAndSyncIfEligible_FromLocal');
     $emailAddress = 'testMatchAndSyncIfEligible_FromLocal_' . time() . '@civicrm.org';
     $localPerson->emailEmail->set($emailAddress);
@@ -244,7 +244,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     // set up a contact merge which will result in records being flagged
 
-    $localPerson1 = Factory::make('LocalObject', 'Person');
+    $localPerson1 = \Civi\OsdiClient::container()->make('LocalObject', 'Person');
     $localPerson1->emailEmail->set('testErrorFlagBlocksSync.1@test.net');
     $localPerson1->save();
 
@@ -255,7 +255,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     self::assertEquals(Sync::SUCCESS, $syncResult1->getStatusCode());
     self::assertNotNull($pair1->getRemoteObject()->getId());
 
-    $localPerson2 = Factory::make('LocalObject', 'Person');
+    $localPerson2 = \Civi\OsdiClient::container()->make('LocalObject', 'Person');
     $localPerson2->emailEmail->set('testErrorFlagBlocksSync.2@test.net');
     $localPerson2->save();
 
@@ -363,7 +363,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
       $syncer->setSyncProfile(self::$syncer->getSyncProfile());
     }
 
-    $localPerson = Factory::make('LocalObject', 'Person');
+    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person');
     $localPerson->firstName->set('Cheese');
     $localPerson->emailEmail->set('bitz@bop.com');
     $localPerson->save();
@@ -398,7 +398,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     $emailAddressSharedBy2People = 'testNoSyncOnMatchError@civicrm.org';
 
     $syncer = self::$syncer;
-    $localPerson1 = Factory::make('LocalObject', 'Person');
+    $localPerson1 = \Civi\OsdiClient::container()->make('LocalObject', 'Person');
     $localPerson1->firstName->set('testNoSyncOnMatchError');
     $localPerson1->emailEmail->set($emailAddressSharedBy2People);
     $localPerson1->save();
@@ -414,7 +414,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     self::assertEquals(\Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
     self::assertNotNull($pair1->getRemoteObject()->getId());
 
-    $localPerson2 = Factory::make('LocalObject', 'Person');
+    $localPerson2 = \Civi\OsdiClient::container()->make('LocalObject', 'Person');
     $localPerson2->firstName->set('testNoSyncOnMatchError');
     $localPerson2->emailEmail->set($emailAddressSharedBy2People);
     $localPerson2->save();
@@ -436,7 +436,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
   }
 
   public function testRemoteSystemIsSettable() {
-    $syncer = Factory::make('SingleSyncer', 'Person', self::$remoteSystem);
+    $syncer = \Civi\OsdiClient::container()->make('SingleSyncer', 'Person', self::$remoteSystem);
     $originalSystem = $syncer->getRemoteSystem();
     $defaultSystemAEP = $originalSystem->getEntryPoint();
 
@@ -536,7 +536,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     // TEST PROPER
 
-    $localPerson = Factory::make('LocalObject', 'Person', $contact['id']);
+    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person', $contact['id']);
     $pair = self::$syncer->matchAndSyncIfEligible($localPerson);
     /** @var \Civi\Osdi\Result\Sync $result */
     $result = $pair->getResultStack()->getLastOfType(Sync::class);
@@ -649,7 +649,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
       ->addValue('first_name', $changedFirstName)
       ->execute();
 
-    $localPerson = Factory::make('LocalObject', 'Person', $contactId);
+    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person', $contactId);
     $pair = self::$syncer->matchAndSyncIfEligible($localPerson);
 
     $remotePeopleWithTheEmail = self::$remoteSystem->find(
@@ -727,7 +727,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
       ->addValue('postal_code', '65542')
       ->execute();
 
-    $localPerson = Factory::make('LocalObject', 'Person', $contactId);
+    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person', $contactId);
     self::$syncer->matchAndSyncIfEligible($localPerson);
 
     $reFetchedRemotePerson =
@@ -768,7 +768,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
       ->addValue('postal_code', '')
       ->execute();
 
-    $localPerson = Factory::make('LocalObject', 'Person', $contactId);
+    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person', $contactId);
     self::$syncer->matchAndSyncIfEligible($localPerson);
 
     $reFetchedRemotePerson =
@@ -782,7 +782,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     $firstNameOne = 'Bee';
     $lastName = 'Bim';
     $emailOne = 'bop@yum.com';
-    $localPerson = Factory::make('LocalObject', 'Person');
+    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person');
     $localPerson->firstName->set($firstNameOne);
     $localPerson->lastName->set($lastName);
     $localPerson->emailEmail->set($emailOne);
@@ -869,7 +869,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     $firstNameOne = 'Bee';
     $lastName = 'Bim';
     $emailOne = 'bop@yum.com';
-    $localPerson = Factory::make('LocalObject', 'Person');
+    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person');
     $localPerson->firstName->set($firstNameOne);
     $localPerson->lastName->set($lastName);
     $localPerson->emailEmail->set($emailOne);

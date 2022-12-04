@@ -6,9 +6,9 @@ use Civi\Osdi\Exception\InvalidArgumentException;
 use GuzzleHttp\Client;
 use Jsor\HalClient\HttpClient\Guzzle6HttpClient;
 
-class Factory {
+class Container {
 
-  public static array $registry = [
+  public array $registry = [
     'LocalObject' => [
       'Person' => LocalObject\PersonBasic::class,
       'Tagging' => LocalObject\TaggingBasic::class,
@@ -43,25 +43,25 @@ class Factory {
     ],
   ];
 
-  public static function canMake(string $category, string $key) {
-    $class = self::$registry[$category][$key] ?? NULL;
+  public function canMake(string $category, string $key) {
+    $class = $this->registry[$category][$key] ?? NULL;
     return !is_null($class);
   }
 
   #[\ReturnTypeWillChange]
-  public static function make(string $category, string $key, ...$constructorParams) {
-    $class = self::$registry[$category][$key] ?? NULL;
+  public function make(string $category, string $key, ...$constructorParams) {
+    $class = $this->registry[$category][$key] ?? NULL;
     if (is_null($class)) {
       throw new InvalidArgumentException();
     }
     return new $class(...$constructorParams);
   }
 
-  public static function register(string $category, string $key, string $class) {
-    self::$registry[$category][$key] = $class;
+  public function register(string $category, string $key, string $class) {
+    $this->registry[$category][$key] = $class;
   }
 
-  public static function singleton(string $category, string $key, ...$constructorParams) {
+  public function getSingle(string $category, string $key, ...$constructorParams) {
     $singletons = &\Civi::$statics['osdiClient.singletons'];
     $singleton = $singletons[$category][$key] ?? NULL;
     if (is_null($singleton)) {
@@ -71,22 +71,24 @@ class Factory {
     return $singleton;
   }
 
-  public static function initializeRemoteSystem(string $apiToken) {
-    $systemProfile = new \CRM_OSDI_BAO_SyncProfile();
-    $systemProfile->entry_point = 'https://actionnetwork.org/api/v2/';
-    $systemProfile->api_token = $apiToken;
-    $httpClient = new Guzzle6HttpClient(new Client(['timeout' => 27]));
-    $client = new \Jsor\HalClient\HalClient('https://actionnetwork.org/api/v2/', $httpClient);
+  public function initializeSingleton(string $category, string $key, ...$constructorParams) {
+    unset(\Civi::$statics['osdiClient.singletons'][$category][$key]);
+    return $this->getSingle($category, $key, ...$constructorParams);
+  }
 
-    self::register(
+  public function initializeRemoteSystem(\CRM_OSDI_BAO_SyncProfile $syncProfile) {
+    $httpClient = new Guzzle6HttpClient(new Client(['timeout' => 27]));
+    $client = new \Jsor\HalClient\HalClient($syncProfile->entry_point, $httpClient);
+
+    $this->register(
       'RemoteSystem',
       'ActionNetwork',
       \Civi\Osdi\ActionNetwork\RemoteSystem::class);
 
-    return self::singleton(
+    return $this->initializeSingleton(
       'RemoteSystem',
       'ActionNetwork',
-      $systemProfile,
+      $syncProfile,
       $client);
   }
 

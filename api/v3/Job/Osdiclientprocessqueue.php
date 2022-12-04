@@ -15,11 +15,7 @@ use CRM_OSDI_ExtensionUtil as E;
  * @throws API_Exception
  */
 function civicrm_api3_job_Osdiclientprocessqueue($params) {
-  if (empty($params['api_token'])) {
-    throw new Exception('Cannot sync with Action Network without an API token');
-  }
-
-  \Civi\Osdi\Factory::initializeRemoteSystem($params['api_token']);
+  \Civi\OsdiClient::containerWithDefaultSyncProfile();
 
   $queue = \Civi\Osdi\Queue::getQueue();
   $queueName = $queue->getName();

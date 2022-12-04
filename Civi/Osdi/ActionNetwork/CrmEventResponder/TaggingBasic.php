@@ -5,7 +5,7 @@ namespace Civi\Osdi\ActionNetwork\CrmEventResponder;
 use Civi\Api4\EntityTag;
 use Civi\Core\DAO\Event\PreDelete;
 use Civi\Core\DAO\Event\PreUpdate;
-use Civi\Osdi\Factory;
+use Civi\Osdi\Container;
 use Civi\Osdi\LocalRemotePair;
 use CRM_OSDI_ExtensionUtil as E;
 use Symfony\Component\EventDispatcher\Event;
@@ -127,12 +127,12 @@ class TaggingBasic {
     \CRM_Queue_TaskContext $context,
     array $serializedTagging
   ) {
-    $localTagging = Factory::make('LocalObject', 'Tagging');
+    $localTagging = \Civi\OsdiClient::container()->make('LocalObject', 'Tagging');
     $localTagging->loadFromArray($serializedTagging);
 
-    $remoteSystem = Factory::singleton('RemoteSystem', 'ActionNetwork');
+    $remoteSystem = \Civi\OsdiClient::container()->getSingle('RemoteSystem', 'ActionNetwork');
     /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic $syncer */
-    $syncer = Factory::singleton('SingleSyncer', 'Tagging', $remoteSystem);
+    $syncer = \Civi\OsdiClient::container()->getSingle('SingleSyncer', 'Tagging', $remoteSystem);
 
     $pair = $syncer->toLocalRemotePair($localTagging);
     $pair->setOrigin(LocalRemotePair::ORIGIN_LOCAL);
@@ -145,12 +145,12 @@ class TaggingBasic {
     \CRM_Queue_TaskContext $context,
     array $serializedTagging
   ) {
-    $localTagging = Factory::make('LocalObject', 'Tagging');
+    $localTagging = \Civi\OsdiClient::container()->make('LocalObject', 'Tagging');
     $localTagging->loadFromArray($serializedTagging);
 
-    $remoteSystem = Factory::singleton('RemoteSystem', 'ActionNetwork');
+    $remoteSystem = \Civi\OsdiClient::container()->getSingle('RemoteSystem', 'ActionNetwork');
     /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic $syncer */
-    $syncer = Factory::singleton('SingleSyncer', 'Tagging', $remoteSystem);
+    $syncer = \Civi\OsdiClient::container()->getSingle('SingleSyncer', 'Tagging', $remoteSystem);
 
     $pair = $syncer->toLocalRemotePair($localTagging);
     $pair->setOrigin(LocalRemotePair::ORIGIN_LOCAL);

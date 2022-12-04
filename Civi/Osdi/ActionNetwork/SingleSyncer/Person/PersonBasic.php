@@ -7,7 +7,7 @@ use Civi\Api4\OsdiFlag;
 use Civi\Osdi\ActionNetwork\SingleSyncer\AbstractSingleSyncer;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\Factory;
+use Civi\Osdi\Container;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Logger;
@@ -116,12 +116,12 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
   }
 
   public function makeLocalObject($id = NULL): LocalObjectInterface {
-    return Factory::make('LocalObject', 'Person', $id);
+    return \Civi\OsdiClient::container()->make('LocalObject', 'Person', $id);
   }
 
   public function makeRemoteObject($id = NULL): RemoteObjectInterface {
     $system = $this->getRemoteSystem();
-    $person = Factory::make('OsdiObject', 'osdi:people', $system);
+    $person = \Civi\OsdiClient::container()->make('OsdiObject', 'osdi:people', $system);
     if (!is_null($id)) {
       $person->setId($id);
     }
@@ -338,7 +338,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
 
   public function getMapper(): MapperInterface {
     if (empty($this->mapper)) {
-      $this->mapper = Factory::make('Mapper', 'Person', $this->getRemoteSystem());
+      $this->mapper = \Civi\OsdiClient::container()->make('Mapper', 'Person', $this->getRemoteSystem());
     }
     return $this->mapper;
   }
@@ -350,7 +350,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
 
   public function getMatcher(): MatcherInterface {
     if (empty($this->matcher)) {
-      $this->matcher = Factory::make('Matcher', 'Person', $this->getRemoteSystem());
+      $this->matcher = \Civi\OsdiClient::container()->make('Matcher', 'Person', $this->getRemoteSystem());
     }
     return $this->matcher;
   }

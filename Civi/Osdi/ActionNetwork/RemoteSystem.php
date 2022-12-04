@@ -8,7 +8,7 @@ use Civi\Osdi\ActionNetwork\Object\Tag;
 use Civi\Osdi\ActionNetwork\Object\Tagging;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\Factory;
+use Civi\Osdi\Container;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\Result\Save;
 use CRM_OSDI_ExtensionUtil as E;
@@ -44,7 +44,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       string $type,
       ?HalResource $resource = NULL
   ): RemoteObjectInterface {
-    return Factory::make('OsdiObject', $type, $this, $resource);
+    return \Civi\OsdiClient::container()->make('OsdiObject', $type, $this, $resource);
   }
 
   public function fetchObjectByUrl(string $type, string $url): RemoteObjectInterface {

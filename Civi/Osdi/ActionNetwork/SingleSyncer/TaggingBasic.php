@@ -5,7 +5,7 @@ namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 use Civi\Osdi\ActionNetwork\Object\Tagging as OsdiTaggingObject;
 use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\Exception\InvalidOperationException;
-use Civi\Osdi\Factory;
+use Civi\Osdi\Container;
 use Civi\Osdi\LocalObject\TaggingBasic as LocalTaggingObject;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MapperInterface;
@@ -38,14 +38,14 @@ class TaggingBasic extends AbstractSingleSyncer {
 
   public function getPersonSyncer(): SingleSyncerInterface {
     if (empty($this->personSyncer)) {
-      $this->personSyncer = Factory::make('SingleSyncer', 'Person', $this->getRemoteSystem());
+      $this->personSyncer = \Civi\OsdiClient::container()->make('SingleSyncer', 'Person', $this->getRemoteSystem());
     }
     return $this->personSyncer;
   }
 
   public function getTagSyncer(): SingleSyncerInterface {
     if (empty($this->tagSyncer)) {
-      $this->tagSyncer = Factory::make('SingleSyncer', 'Tag', $this->getRemoteSystem());
+      $this->tagSyncer = \Civi\OsdiClient::container()->make('SingleSyncer', 'Tag', $this->getRemoteSystem());
     }
     return $this->tagSyncer;
   }
@@ -90,14 +90,14 @@ class TaggingBasic extends AbstractSingleSyncer {
 
   public function getMapper(): MapperInterface {
     if (empty($this->mapper)) {
-      $this->mapper = Factory::make('Mapper', 'Tagging', $this);
+      $this->mapper = \Civi\OsdiClient::container()->make('Mapper', 'Tagging', $this);
     }
     return $this->mapper;
   }
 
   public function getMatcher(): MatcherInterface {
     if (empty($this->matcher)) {
-      $this->matcher = Factory::make('Matcher', 'Tagging', $this);
+      $this->matcher = \Civi\OsdiClient::container()->make('Matcher', 'Tagging', $this);
     }
     return $this->matcher;
   }

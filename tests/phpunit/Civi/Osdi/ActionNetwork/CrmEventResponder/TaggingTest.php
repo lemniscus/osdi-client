@@ -24,10 +24,6 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     return \Civi\Test::headless()->installMe(__DIR__)->apply();
   }
 
-  public static function setUpBeforeClass(): void {
-    parent::setUpBeforeClass();
-  }
-
   protected function setUp(): void {
     self::$remoteSystem = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
     Civi\Osdi\Queue::getQueue(TRUE);

@@ -1,5 +1,5 @@
 <?php
-use \Civi\Osdi\Factory;
+use \Civi\Osdi\Container;
 use CRM_OSDI_ExtensionUtil as E;
 
 /**
@@ -27,14 +27,11 @@ function _civicrm_api3_job_Osdiclientbatchsynctaggings_spec(&$spec) {
  * @throws API_Exception
  */
 function civicrm_api3_job_Osdiclientbatchsynctaggings($params) {
-  if (empty($params['api_token'])) {
-    throw new Exception('Cannot sync with Action Network without an API token');
-  }
+  $container = \Civi\OsdiClient::containerWithDefaultSyncProfile();
+  $system = $container->getSingle('RemoteSystem', 'ActionNetwork');
 
-  $system = Factory::initializeRemoteSystem($params['api_token']);
-
-  $singleSyncer = Factory::singleton('SingleSyncer', 'Tagging', $system);
-  $batchSyncer = Factory::singleton('BatchSyncer', 'Tagging', $singleSyncer);
+  $singleSyncer = $container->getSingle('SingleSyncer', 'Tagging', $system);
+  $batchSyncer = $container->getSingle('BatchSyncer', 'Tagging', $singleSyncer);
 
   try {
     $countFromRemote = $batchSyncer->batchSyncFromRemote();

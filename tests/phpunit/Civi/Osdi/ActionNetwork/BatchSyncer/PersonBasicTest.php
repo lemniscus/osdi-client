@@ -3,7 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 
 use Civi;
-use Civi\Osdi\Factory;
+use Civi\Osdi\Container;
 use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use CRM_OSDI_ActionNetwork_TestUtils;
 use PHPUnit;
@@ -38,12 +38,8 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
       ->apply();
   }
 
-  public static function setUpBeforeClass(): void {
-    self::$system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
-    parent::setUpBeforeClass();
-  }
-
   public function setUp(): void {
+    self::$system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
     parent::setUp();
   }
 
@@ -79,8 +75,8 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
       'osdiClient.syncJobEndTime' => NULL,
     ]);
 
-    $singleSyncer = Factory::singleton('SingleSyncer', 'Person', self::$system);
-    $batchSyncer = Factory::singleton('BatchSyncer', 'Person', $singleSyncer);
+    $singleSyncer = \Civi\OsdiClient::container()->getSingle('SingleSyncer', 'Person', self::$system);
+    $batchSyncer = \Civi\OsdiClient::container()->getSingle('BatchSyncer', 'Person', $singleSyncer);
 
     $batchSyncer->batchSyncFromRemote();
     $syncedContactCount = \Civi\Api4\Email::get(FALSE)
@@ -105,8 +101,8 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
 
     $syncStartTime = time();
 
-    $singleSyncer = Factory::singleton('SingleSyncer', 'Person', self::$system);
-    $batchSyncer = Factory::singleton('BatchSyncer', 'Person', $singleSyncer);
+    $singleSyncer = \Civi\OsdiClient::container()->getSingle('SingleSyncer', 'Person', self::$system);
+    $batchSyncer = \Civi\OsdiClient::container()->getSingle('BatchSyncer', 'Person', $singleSyncer);
 
     $batchSyncer->batchSyncFromRemote();
 
@@ -118,8 +114,8 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
 
     $syncStartTime = time();
 
-    $singleSyncer = Factory::singleton('SingleSyncer', 'Person', self::$system);
-    $batchSyncer = Factory::singleton('BatchSyncer', 'Person', $singleSyncer);
+    $singleSyncer = \Civi\OsdiClient::container()->getSingle('SingleSyncer', 'Person', self::$system);
+    $batchSyncer = \Civi\OsdiClient::container()->getSingle('BatchSyncer', 'Person', $singleSyncer);
 
     $batchSyncer->batchSyncFromLocal();
 
