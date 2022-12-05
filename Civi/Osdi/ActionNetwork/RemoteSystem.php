@@ -94,7 +94,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       }
       [$key, $operator, $value] = $criterion;
       if (in_array($operator, ['eq', 'lt', 'gt'])) {
-        $filterClauses[] = "$key $operator '" . addslashes($value) . "'";
+        $filterClauses[] = "$key $operator '" . urlencode($value) . "'";
       }
       else {
         throw new InvalidArgumentException("Operator '$operator' is not implemented");
