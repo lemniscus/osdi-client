@@ -139,7 +139,7 @@ class PersonBasic {
     $queue->createItem($task, ['weight' => -5]);
   }
 
-  public static function post(string $op, string $objectName, int $objectId, &$objectRef) {
+  public static function post(string $op, string $objectName, ?int $objectId, &$objectRef) {
     if ($op !== 'merge') {
       return;
     }
