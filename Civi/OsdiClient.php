@@ -48,8 +48,8 @@ class OsdiClient {
     self::$containerSingletonWasMadeWithDefaultSyncProfile =
       (bool) $syncProfileBAO->is_default;
 
-    self::$containerSingleton = new Container();
-    self::$containerSingleton->initializeRemoteSystem($syncProfileBAO);
+    self::$containerSingleton = new Container($syncProfileBAO);
+    self::$containerSingleton->initializeRemoteSystem();
 
     $classesToRegister = json_decode($syncProfileBAO->classes ?? '', TRUE);
     if ($classesToRegister) {
