@@ -53,9 +53,15 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
 
     $syncProfileId = OsdiClient::container()->getSyncProfileId();
 
-    $syncState = $pair->isOriginLocal()
-      ? PersonSyncState::getForLocalPerson($pair->getLocalObject(), $syncProfileId)
-      : PersonSyncState::getForRemotePerson($pair->getRemoteObject(), $syncProfileId);
+    try {
+      $syncState = $pair->isOriginLocal()
+        ? PersonSyncState::getForLocalPerson($pair->getLocalObject(), $syncProfileId)
+        : PersonSyncState::getForRemotePerson($pair->getRemoteObject(), $syncProfileId);
+    }
+    catch (\Throwable $e) {
+      $result->setMessage('error retrieving sync state');
+      return $this->pushResult($pair, $result, $result::ERROR);
+    }
 
     if ($this->fillLocalRemotePairFromSyncState($pair, $syncState)) {
       $result->setSavedMatch($syncState);
