@@ -3,6 +3,7 @@
 namespace Civi\Osdi;
 
 use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\LocalObject\TagBasic;
 use CRM_OSDI_BAO_SyncProfile;
 use GuzzleHttp\Client;
 use Jsor\HalClient\HttpClient\Guzzle6HttpClient;
@@ -15,6 +16,7 @@ class Container {
     ],
     'LocalObject' => [
       'Person' => LocalObject\PersonBasic::class,
+      'Tag' => LocalObject\TagBasic::class,
       'Tagging' => LocalObject\TaggingBasic::class,
     ],
     'OsdiObject' => [
