@@ -14,14 +14,14 @@ require_once __DIR__ . DIRECTORY_SEPARATOR
 /**
  * Implements hook_civicrm_searchKitTasks().
  */
-function osdi_client_civicrm_searchKitTasks(array &$tasks, bool $checkPermissions, ?int $userId) {
-  $tasks['Contact']['osdi-sync'] = [
-    'module' => 'osdiSearchTasks',
-    'title' => E::ts('Upload to Action Network'),
-    'icon' => 'fa-cloud-upload',
-    'uiDialog' => ['templateUrl' => '~/osdiSearchTasks/osdiSearchTaskSync.html'],
-  ];
-}
+//function osdi_client_civicrm_searchKitTasks(array &$tasks, bool $checkPermissions, ?int $userId) {
+//  $tasks['Contact']['osdi-sync'] = [
+//    'module' => 'osdiSearchTasks',
+//    'title' => E::ts('Upload to Action Network'),
+//    'icon' => 'fa-cloud-upload',
+//    'uiDialog' => ['templateUrl' => '~/osdiSearchTasks/osdiSearchTaskSync.html'],
+//  ];
+//}
 
 function osdi_client_civicrm_config(&$config) {
   if (isset(Civi::$statics[__FUNCTION__])) {
