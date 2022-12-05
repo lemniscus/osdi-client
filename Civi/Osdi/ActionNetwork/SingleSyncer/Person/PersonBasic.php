@@ -422,7 +422,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
   }
 
   protected function fillLocalRemotePairFromSyncState(
-    LocalRemotePair &$pair,
+    LocalRemotePair $pair,
     PersonSyncState $syncState
   ): bool {
     $pair->setPersonSyncState($syncState);

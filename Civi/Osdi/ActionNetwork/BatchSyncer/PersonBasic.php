@@ -4,11 +4,11 @@ namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 
 use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\BatchSyncerInterface;
-use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\Osdi\Logger;
 use Civi\Osdi\PersonSyncState;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\SingleSyncerInterface;
+use Civi\OsdiClient;
 
 class PersonBasic implements BatchSyncerInterface {
 
@@ -177,7 +177,9 @@ class PersonBasic implements BatchSyncerInterface {
         $upToDate = [];
       }
 
-      $localPerson = (new LocalPerson($emailRecord['contact_id']))->loadOnce();
+      $localPerson = OsdiClient::container()
+        ->make('LocalObject', 'Person', $emailRecord['contact_id'])
+        ->loadOnce();
 
       Logger::logDebug('Considering Civi id ' . $localPerson->getId() .
         ', mod ' . $localPerson->modifiedDate->get() .
