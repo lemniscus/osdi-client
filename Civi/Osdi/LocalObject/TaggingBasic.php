@@ -4,6 +4,7 @@ namespace Civi\Osdi\LocalObject;
 
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\LocalObjectInterface;
+use Civi\OsdiClient;
 
 class TaggingBasic extends AbstractLocalObject implements LocalObjectInterface {
 
@@ -111,10 +112,14 @@ class TaggingBasic extends AbstractLocalObject implements LocalObjectInterface {
     $newTagId = $this->tagId->get();
 
     if (is_null($this->person) || ($newContactId !== $this->person->getId())) {
-      $this->setPerson(new PersonBasic($newContactId));
+      $newPerson = OsdiClient::container()
+        ->make('LocalObject', 'Person', $newContactId);
+      $this->setPerson($newPerson);
     }
     if (is_null($this->tag) || ($newTagId !== $this->tag->getId())) {
-      $this->setTag(new TagBasic($newTagId));
+      $newTag = OsdiClient::container()
+        ->make('LocalObject', 'Tag', $newTagId);
+      $this->setTag($newTag);
     }
   }
 
