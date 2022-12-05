@@ -45,13 +45,14 @@ class CRM_OSDI_ActionNetwork_TestUtils {
       ->execute()->single();
   }
 
-  private static function defineActionNetworkApiToken(): void {
+  public static function defineActionNetworkApiToken(): string {
     if (!defined('ACTION_NETWORK_TEST_API_TOKEN')) {
       define(
         'ACTION_NETWORK_TEST_API_TOKEN',
         file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'apiToken')
       );
     }
+    return ACTION_NETWORK_TEST_API_TOKEN;
   }
 
 }
