@@ -11,6 +11,7 @@ use Civi\Osdi\Result\FetchOldOrFindNewMatch;
 use Civi\Osdi\Result\MapAndWrite;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\Result\SyncEligibility;
+use Civi\OsdiClient;
 use CRM_OSDI_Fixture_PersonMatching as PersonMatchFixture;
 
 abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
@@ -298,7 +299,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     // we create a situation in which local person 1 (the merged contact) would
     // be eligible for sync -- but because of the error flag it's not
 
-    $syncProfileId = $syncer->getSyncProfile()['id'];
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
     $syncState = PersonSyncState::getForLocalPerson($localPerson1, $syncProfileId);
     $syncState->setLocalPostSyncModifiedTime(
       $syncState->getLocalPostSyncModifiedTime() - 1);
@@ -951,7 +952,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     $syncState = \Civi\Osdi\PersonSyncState::getForLocalPerson(
       $localPerson,
-      self::$syncer->getSyncProfile()['id']
+      OsdiClient::container()->getSyncProfileId()
     );
     self::assertEquals('Civi\Osdi\Result\MapAndWrite::error during save',
       $syncState->getSyncStatus());

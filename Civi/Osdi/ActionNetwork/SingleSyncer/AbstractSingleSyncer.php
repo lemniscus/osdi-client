@@ -26,25 +26,9 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
 
   protected ?MapperInterface $mapper = NULL;
 
-  public function getMapper(): MapperInterface {
-    if (empty($this->mapper)) {
-      $mapperClass = $this->getSyncProfile()['mapper'];
-      $this->mapper = new $mapperClass($this->getRemoteSystem());
-    }
-    return $this->mapper;
-  }
-
   public function setMapper(?MapperInterface $mapper): AbstractSingleSyncer {
     $this->mapper = $mapper;
     return $this;
-  }
-
-  public function getMatcher(): MatcherInterface {
-    if (empty($this->matcher)) {
-      $matcherClass = $this->getSyncProfile()['matcher'];
-      $this->matcher = new $matcherClass($this->getRemoteSystem());
-    }
-    return $this->matcher;
   }
 
   public function setMatcher(?MatcherInterface $matcher): self {

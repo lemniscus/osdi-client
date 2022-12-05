@@ -63,6 +63,13 @@ class Container {
     return !is_null($class);
   }
 
+  public function getSyncProfileId(): ?int {
+    if ($this->syncProfile) {
+      return $this->syncProfile->id;
+    }
+    return NULL;
+  }
+
   #[\ReturnTypeWillChange]
   public function make(string $category, string $key, ...$constructorParams) {
     $class = $this->registry[$category][$key] ?? NULL;

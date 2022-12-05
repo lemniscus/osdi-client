@@ -3,15 +3,14 @@
 namespace Civi\Osdi\ActionNetwork\CrmEventResponder;
 
 use Civi\Api4\Contact;
-use Civi\Api4\Email;
 use Civi\Api4\OsdiFlag;
 use Civi\Api4\OsdiPersonSyncState;
 use Civi\Core\DAO\Event\PreDelete;
 use Civi\Core\DAO\Event\PreUpdate;
 use Civi\Osdi\BatchSyncerInterface;
-use Civi\Osdi\Container;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\SingleSyncerInterface;
+use Civi\OsdiClient;
 use CRM_OSDI_ExtensionUtil as E;
 
 class PersonBasic {
@@ -26,10 +25,10 @@ class PersonBasic {
     /** @var \Civi\Osdi\LocalObject\PersonBasic $keptPerson */
 
     $keptPerson =
-      \Civi\OsdiClient::container()->make('LocalObject', 'Person', $mainId)->loadOnce();
+      OsdiClient::container()->make('LocalObject', 'Person', $mainId)->loadOnce();
 
     $dupePerson =
-      \Civi\OsdiClient::container()->make('LocalObject', 'Person', $otherId)->loadOnce();
+      OsdiClient::container()->make('LocalObject', 'Person', $otherId)->loadOnce();
 
     $keptPersonEmail = $keptPerson->emailEmail->get();
     $dupePersonEmail = $dupePerson->emailEmail->get();
@@ -116,9 +115,9 @@ class PersonBasic {
     }
 
     \Civi::$statics['osdiClient.inProgress']['delete'][] =
-      \Civi\OsdiClient::container()->make('LocalObject', 'Person', $idBeingDeleted);
+      OsdiClient::container()->make('LocalObject', 'Person', $idBeingDeleted);
     \Civi::$statics['osdiClient.inProgress']['delete'][] =
-      \Civi\OsdiClient::container()->make('LocalObject', 'Person', $idBeingKept);
+      OsdiClient::container()->make('LocalObject', 'Person', $idBeingKept);
 
     $queue = \Civi\Osdi\Queue::getQueue();
 
@@ -165,7 +164,7 @@ class PersonBasic {
     \CRM_Queue_TaskContext $context,
     array $serializedPerson
   ) {
-    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person');
+    $localPerson = OsdiClient::container()->make('LocalObject', 'Person');
     $localPerson->loadFromArray($serializedPerson);
     if (count($serializedPerson) === 1) {
       $localPerson->load();
@@ -180,7 +179,7 @@ class PersonBasic {
     \CRM_Queue_TaskContext $context,
     array $serializedPerson
   ) {
-    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person');
+    $localPerson = OsdiClient::container()->make('LocalObject', 'Person');
     $localPerson->loadFromArray($serializedPerson);
 
     $syncer = self::getPersonSingleSyncer();
@@ -192,7 +191,7 @@ class PersonBasic {
 
     if ($result->hasMatch()) {
       $deletionRecord = [
-        'sync_profile_id' => $syncer->getSyncProfile()['id'] ?? NULL,
+        'sync_profile_id' => OsdiClient::container()->getSyncProfileId(),
         'remote_object_id' => $pair->getTargetObject()->getId(),
       ];
       \Civi\Api4\OsdiDeletion::save(FALSE)
@@ -206,7 +205,7 @@ class PersonBasic {
     \CRM_Queue_TaskContext $context,
     array $serializedPerson
   ) {
-    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person');
+    $localPerson = OsdiClient::container()->make('LocalObject', 'Person');
     $localPerson->loadFromArray($serializedPerson);
 
     $syncer = self::getPersonSingleSyncer();
@@ -222,7 +221,7 @@ class PersonBasic {
     \CRM_Queue_TaskContext $context,
     int $contactId
   ) {
-    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person', $contactId);
+    $localPerson = OsdiClient::container()->make('LocalObject', 'Person', $contactId);
     $syncer = self::getTaggingBatchSyncer();
     $syncer->syncTaggingsFromLocalPerson($localPerson);
   }
@@ -264,7 +263,7 @@ class PersonBasic {
   }
 
   protected function makeLocalObjectArrayFromDao(\CRM_Contact_DAO_Contact $dao): array {
-    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person', $dao->id);
+    $localPerson = OsdiClient::container()->make('LocalObject', 'Person', $dao->id);
     return $localPerson->loadOnce()->getAll();
   }
 
@@ -311,15 +310,15 @@ class PersonBasic {
   }
 
   private static function getPersonSingleSyncer(): SingleSyncerInterface {
-    $remoteSystem = \Civi\OsdiClient::container()->getSingle('RemoteSystem', 'ActionNetwork');
-    $syncer = \Civi\OsdiClient::container()->getSingle('SingleSyncer', 'Person', $remoteSystem);
+    $remoteSystem = OsdiClient::container()->getSingle('RemoteSystem', 'ActionNetwork');
+    $syncer = OsdiClient::container()->getSingle('SingleSyncer', 'Person', $remoteSystem);
     return $syncer;
   }
 
   private static function getTaggingBatchSyncer(): BatchSyncerInterface {
-    $remoteSystem = \Civi\OsdiClient::container()->getSingle('RemoteSystem', 'ActionNetwork');
-    $singleSyncer = \Civi\OsdiClient::container()->getSingle('SingleSyncer', 'Tagging', $remoteSystem);
-    $batchSyncer = \Civi\OsdiClient::container()->getSingle('BatchSyncer', 'Tagging', $singleSyncer);
+    $remoteSystem = OsdiClient::container()->getSingle('RemoteSystem', 'ActionNetwork');
+    $singleSyncer = OsdiClient::container()->getSingle('SingleSyncer', 'Tagging', $remoteSystem);
+    $batchSyncer = OsdiClient::container()->getSingle('BatchSyncer', 'Tagging', $singleSyncer);
     return $batchSyncer;
   }
 

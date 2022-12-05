@@ -5,6 +5,7 @@ namespace Civi\Osdi\ActionNetwork;
 use Civi\Osdi\ActionNetwork\Object\Person as RemotePerson;
 use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\Osdi\RemoteObjectInterface;
+use Civi\OsdiClient;
 
 /**
  * Syncing a contact merge from Civi to AN does NOT just boil down to syncing a
@@ -241,7 +242,8 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
   private function assertAndGetErrorSyncState(
     LocalPerson $localPerson
   ): \Civi\Osdi\PersonSyncState {
-    $syncState = \Civi\Osdi\PersonSyncState::getForLocalPerson($localPerson, NULL);
+    $syncState = \Civi\Osdi\PersonSyncState::getForLocalPerson(
+      $localPerson, OsdiClient::container()->getSyncProfileId());
     self::assertNotEmpty($syncState->getId());
     self::assertTrue($syncState->isError(), print_r($syncState->toArray(), TRUE));
     return $syncState;
@@ -250,7 +252,8 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
   private function assertAndGetSuccessSyncState(
     LocalPerson $localPerson
   ): \Civi\Osdi\PersonSyncState {
-    $syncState = \Civi\Osdi\PersonSyncState::getForLocalPerson($localPerson, NULL);
+    $syncState = \Civi\Osdi\PersonSyncState::getForLocalPerson(
+      $localPerson, OsdiClient::container()->getSyncProfileId());
     self::assertNotEmpty($syncState->getId());
     self::assertFalse($syncState->isError());
     return $syncState;
@@ -266,7 +269,8 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
   }
 
   private function assertDoesntHaveSyncState(LocalPerson $p): void {
-    $syncState = \Civi\Osdi\PersonSyncState::getForLocalPerson($p, NULL);
+    $syncState = \Civi\Osdi\PersonSyncState::getForLocalPerson(
+      $p, OsdiClient::container()->getSyncProfileId());
     self::assertEmpty($syncState->getId());
   }
 
@@ -289,7 +293,8 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
   }
 
   private function assertHasSyncState(LocalPerson $p): void {
-    $syncState = \Civi\Osdi\PersonSyncState::getForLocalPerson($p, NULL);
+    $syncState = \Civi\Osdi\PersonSyncState::getForLocalPerson(
+      $p, OsdiClient::container()->getSyncProfileId());
     self::assertNotEmpty($syncState->getId());
   }
 
