@@ -5,7 +5,18 @@ namespace Civi\Osdi;
 class CrmEventDispatch {
 
   protected static function getResponder($objectName, $hookName) {
-    if (\Civi\OsdiClient::container()->canMake('CrmEventResponder', $objectName)) {
+    try {
+      $canMakeResponder = \Civi\OsdiClient::container()
+        ->canMake('CrmEventResponder', $objectName);
+    }
+    catch (\Throwable $e) {
+      $canMakeResponder = FALSE;
+      \Civi::log()->warning('OSDI Client could not respond to event '
+        . "$hookName for $objectName due to error: " . $e->getMessage(),
+        [$e->getTrace()[0] ?? NULL]
+      );
+    }
+    if ($canMakeResponder) {
       $responder = \Civi\OsdiClient::container()->make('CrmEventResponder', $objectName);
       if (method_exists($responder, $hookName)) {
         return $responder;
