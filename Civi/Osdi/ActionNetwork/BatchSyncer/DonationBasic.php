@@ -2,11 +2,11 @@
 
 namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 
-use Civi\Osdi\ActionNetwork\RemoteSystem;
+use Civi\Api4\Contribution;
 use Civi\Osdi\BatchSyncerInterface;
+use Civi\Osdi\Factory;
 use Civi\Osdi\LocalObject\Donation as LocalDonation;
 use Civi\Osdi\Logger;
-use Civi\Osdi\DonationSyncState;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\SingleSyncerInterface;
 
@@ -60,6 +60,7 @@ class DonationBasic implements BatchSyncerInterface {
     $latest = $result ? $result['last_receive_date'] : date('Y-m-d');
 
     $cutoff = date('Y-m-d', strtotime("$latest - 1 week"));
+    Logger::logDebug("Using $cutoff for $source donation sync");
     return $cutoff;
   }
 
@@ -105,6 +106,33 @@ class DonationBasic implements BatchSyncerInterface {
 
     // @todo
     // select contributions.* from contribs where date_received > $cutoff and not exists (select DonationSyncState where contribs.id = contribution_id)
+    $contributions = Contribution::get(FALSE)
+    ->addWhere('receive_date', '>=', $cutoff)
+    ->addWhere('contribution_status_id:name', '=', 'Completed')
+    ->addJoin(
+      'OsdiDonationSyncState AS Contribution_OsdiDonationSyncState_contribution_id_01',
+      'EXCLUDE',
+      [ 'id', '=', 'Contribution_OsdiDonationSyncState_contribution_id_01.contribution_id' ]
+    )
+    ->execute();
+
+    foreach ($contributions as $contribution) {
+      Logger::logDebug("Considering Contribution id {$contribution['id']}, created {$contribution['receive_date']}");
+
+      try {
+        // artfulrobot: @todo all cases are eligible unless I were to implement getSyncEligibility
+        $localDonation = LocalDonation::fromId($contribution['id']);
+        $pair = $this->singleSyncer->matchAndSyncIfEligible($localDonation);
+        $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
+        $codeAndMessage = $syncResult->getStatusCode() . ' - ' . $syncResult->getMessage();
+        Logger::logDebug("Result for Contribution {$contribution['id']}: $codeAndMessage");
+      }
+      catch (\Throwable $e) {
+        $syncResult = new Sync(NULL, NULL, NULL, $e->getMessage());
+        Logger::logError($e->getMessage(), ['exception' => $e]);
+      }
+
+    }
 
     return 0;
   }

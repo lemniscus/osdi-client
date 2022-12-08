@@ -17,10 +17,23 @@ use Civi\Osdi\Result\MatchResult as MatchResult;
 class Basic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
   protected function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult {
-    throw new \Exception( "code not written");
     $result = new MatchResult($pair->getOrigin());
-    $result->setStatusCode($result::NO_MATCH);
-    $result->setMessage('Finding tags on Action Network is not implemented');
+
+    $syncState = \Civi\Api4\OsdiDonationSyncState::get(FALSE)
+    ->addWhere('contribution_id', '=', $pair->getLocalObject()->getId())
+    // @todo limit by sync profile too?
+    ->execute()->first();
+
+    if ($syncState) {
+      $remoteClass = $pair->getRemoteClass();
+      /** @var \Civi\Osdi\ActionNetwork\Object\Donation */
+      $remoteObject = $remoteClass::fromId($syncState['remote_donation_id']);
+      $result->setRemoteObject($remoteObject);
+      $result->setStatusCode($result::FOUND_MATCH);
+    }
+    else {
+      $result->setStatusCode($result::NO_MATCH);
+    }
     return $result;
   }
 
