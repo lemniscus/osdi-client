@@ -151,7 +151,9 @@ class RemoteFindResult implements \Iterator {
       return FALSE;
     }
 
-    // sometimes the "next page" is actually the same page, ad infinitum. bug reported by email to AN, 20222-10-07
+    // Sometimes the "next page" is actually the same page, ad infinitum.
+    // Bug was fixed for at least some AN endpoints as of 2022-12-07, but
+    // it doesn't hurt to keep this sanity check.
     if ($currentPage->hasProperty('total_records')) {
       if ($this->rawCurrentCount() >= $currentPage->getProperty('total_records')) {
         return FALSE;
