@@ -226,22 +226,25 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
   }
 
   public function getUrlForRead(): ?string {
-    try {
-      if ($selfLink = $this->_resource->getFirstLink('self')) {
-        return $selfLink->getHref();
+
+    if ($this->_resource) {
+      try {
+        $selfLink = $this->_resource->getFirstLink('self');
+        if ($selfLink) {
+          return $selfLink->getHref();
+        }
       }
+      catch (\Throwable $e) {}
+    }
+
+    try {
+      return $this->constructOwnUrl();
     }
     catch (\Throwable $e) {
-      try {
-        return $this->constructOwnUrl();
-      }
-      catch (\Throwable $e) {
-        throw new EmptyResultException(
-          'Could not find or create url for "%s" with type "%s" and id "%s"',
-          get_called_class(), $this->getType(), $this->getId());
-      }
+      throw new EmptyResultException(
+        'Could not find or create url for "%s" with type "%s" and id "%s"',
+        get_called_class(), $this->getType(), $this->getId());
     }
-    return NULL;
   }
 
   public function getUrlForUpdate(): string {
