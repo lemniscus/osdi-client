@@ -11,8 +11,8 @@ use CRM_OSDI_FixtureHttpClient;
  * @group headless
  */
 class RemoteFindResultTest extends \PHPUnit\Framework\TestCase implements
-  HeadlessInterface,
-  TransactionalInterface {
+    HeadlessInterface,
+    TransactionalInterface {
 
   /**
    * @var \Civi\Osdi\ActionNetwork\RemoteSystem
