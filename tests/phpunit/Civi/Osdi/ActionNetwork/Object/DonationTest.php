@@ -161,7 +161,7 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
     $this->assertEquals($recipients, $reFetchedDonation->recipients->get());
 
     $fetchedPaymentInfo = $reFetchedDonation->payment->get();
-    print "\n" . json_encode($fetchedPaymentInfo, JSON_PRETTY_PRINT) . "\n";
+    // print "\n" . json_encode($fetchedPaymentInfo, JSON_PRETTY_PRINT) . "\n";
     $this->assertIsArray($fetchedPaymentInfo);
     $this->assertEquals('Credit Card', $fetchedPaymentInfo['method'] ?? NULL,
       "For some reson, ActionNetwork should declare ALL payments submitted through API as Credit Card, even though we passed in EFT. If this test fails, their policy has changed since this code was written.");
