@@ -3,16 +3,17 @@
 namespace Civi\Osdi\ActionNetwork\CrmEventResponder;
 
 use Civi\Api4\OsdiPersonSyncState;
+use Civi\Core\DAO\Event\PreDelete;
+use Civi\Core\DAO\Event\PreUpdate;
 use Civi\Osdi\BatchSyncerInterface;
 use Civi\Osdi\Factory;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\SingleSyncerInterface;
 use CRM_OSDI_ExtensionUtil as E;
-use Symfony\Component\EventDispatcher\Event;
 
 class PersonBasic {
 
-  public function daoPreDelete(Event $event) {
+  public function daoPreDelete(PreDelete $event) {
     /** @var \CRM_Contact_DAO_Contact $dao */
     $dao = $event->object;
 
@@ -20,13 +21,13 @@ class PersonBasic {
       return;
     }
 
-    $contactAsArray = $this->makeLocalObjectArrayFromDao($dao);
+    $localPersonArray = $this->makeLocalObjectArrayFromDao($dao);
 
     $task = new \CRM_Queue_Task(
       [static::class, 'syncDeletionFromQueue'],
-      ['contact' => $contactAsArray],
-      E::ts('Sync deletion of Contact id %1',
-        [1 => $contactAsArray['id']])
+      ['serializedPerson' => $localPersonArray],
+      E::ts('Sync hard deletion of Contact id %1',
+        [1 => $localPersonArray['id']])
     );
 
     $queue = \Civi\Osdi\Queue::getQueue();
@@ -42,7 +43,7 @@ class PersonBasic {
 
     $task = new \CRM_Queue_Task(
       [static::class, 'syncCreationFromQueue'],
-      ['contact' => ['id' => $idBeingKept]],
+      ['serializedPerson' => ['id' => $idBeingKept]],
       E::ts('Sync merge of Contact id %1 into id %2',
         [1 => $idBeingDeleted, 2 => $idBeingKept])
     );
@@ -87,11 +88,11 @@ class PersonBasic {
 
   public static function syncCreationFromQueue(
     \CRM_Queue_TaskContext $context,
-    array $serializedContact
+    array $serializedPerson
   ) {
     $localPerson = Factory::make('LocalObject', 'Person');
-    $localPerson->loadFromArray($serializedContact);
-    if (count($serializedContact) === 1) {
+    $localPerson->loadFromArray($serializedPerson);
+    if (count($serializedPerson) === 1) {
       $localPerson->load();
     }
 

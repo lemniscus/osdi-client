@@ -4,13 +4,14 @@ namespace Civi\Osdi\ActionNetwork\CrmEventResponder;
 
 use Civi\Api4\EntityTag;
 use Civi\Osdi\Factory;
+use Civi\Core\DAO\Event\PreDelete;
+use Civi\Core\DAO\Event\PreUpdate;
 use Civi\Osdi\LocalRemotePair;
 use CRM_OSDI_ExtensionUtil as E;
-use Symfony\Component\EventDispatcher\Event;
 
 class TaggingBasic {
 
-  public function daoPreUpdate(Event $event) {
+  public function daoPreUpdate(PreUpdate $event) {
     /** @var \CRM_Core_DAO_EntityTag $dao */
     $dao = $event->object;
 
@@ -28,7 +29,7 @@ class TaggingBasic {
 
     $task = new \CRM_Queue_Task(
       [static::class, 'syncDeletionFromQueue'],
-      ['tagging' => $preUpdateLocalObjectArray],
+      ['serializedTagging' => $preUpdateLocalObjectArray],
       E::ts('Sync update of EntityTag id %1: delete old version',
         [1 => $preUpdateLocalObjectArray['id']])
     );
@@ -37,7 +38,7 @@ class TaggingBasic {
     $queue->createItem($task);
   }
 
-  public function daoPreDelete(Event $event) {
+  public function daoPreDelete(PreDelete $event) {
     /** @var \CRM_Core_DAO_EntityTag $dao */
     $dao = $event->object;
 
@@ -53,7 +54,7 @@ class TaggingBasic {
 
     $task = new \CRM_Queue_Task(
       [static::class, 'syncDeletionFromQueue'],
-      ['tagging' => $taggingAsArray],
+      ['serializedTagging' => $taggingAsArray],
       E::ts('Sync deletion of EntityTag with tag id %1, contact id %2',
         [1 => $taggingAsArray['tagId'], 2 => $taggingAsArray['contactId']])
     );
@@ -88,7 +89,7 @@ class TaggingBasic {
 
       $task = new \CRM_Queue_Task(
         [static::class, 'syncCreationFromQueue'],
-        ['tagging' => $taggingAsArray],
+        ['serializedTagging' => $taggingAsArray],
         E::ts('Sync creation of EntityTag with tag id %1, contact id %2',
           [1 => $tagId, 2 => $contactId])
       );
