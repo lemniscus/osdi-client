@@ -20,6 +20,7 @@ SET FOREIGN_KEY_CHECKS=0;
 DROP TABLE IF EXISTS `civicrm_osdi_deletion`;
 DROP TABLE IF EXISTS `civicrm_osdi_person_sync_state`;
 DROP TABLE IF EXISTS `civicrm_osdi_sync_profile`;
+DROP TABLE IF EXISTS `civicrm_osdi_donation_sync_state`;
 
 SET FOREIGN_KEY_CHECKS=1;
 -- /*******************************************************
@@ -27,6 +28,7 @@ SET FOREIGN_KEY_CHECKS=1;
 -- * Create new tables
 -- *
 -- *******************************************************/
+
 
 -- /*******************************************************
 -- *
@@ -45,6 +47,27 @@ CREATE TABLE `civicrm_osdi_sync_profile` (
   `matcher` varchar(127) COMMENT 'class name of Matcher',
   `mapper` varchar(127) COMMENT 'class name of Mapper',
   PRIMARY KEY (`id`)
+)
+ENGINE=InnoDB;
+
+-- /*******************************************************
+-- *
+-- * civicrm_osdi_donation_sync_state
+-- *
+-- * Linkages between CiviCRM Contributions and their counterparts on remote OSDI systems
+-- *
+-- *******************************************************/
+CREATE TABLE `civicrm_osdi_donation_sync_state` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique DonationSyncState ID',
+  `contribution_id` int unsigned COMMENT 'FK to Contact',
+  `sync_profile_id` int unsigned COMMENT 'FK to OSDI Sync Profile',
+  `remote_donation_id` varchar(255) DEFAULT NULL COMMENT 'FK to identifier field on remote system',
+  `source` varchar(0) COMMENT 'Whether the donation source was local (CiviCRM) or remote',
+  PRIMARY KEY (`id`),
+  INDEX `index_sync_profile_id`(sync_profile_id),
+  INDEX `index_remote_donation_id`(remote_donation_id),
+  CONSTRAINT FK_civicrm_osdi_donation_sync_state_contribution_id FOREIGN KEY (`contribution_id`) REFERENCES `civicrm_contribution`(`id`) ON DELETE CASCADE,
+  CONSTRAINT FK_civicrm_osdi_donation_sync_state_sync_profile_id FOREIGN KEY (`sync_profile_id`) REFERENCES `civicrm_osdi_sync_profile`(`id`) ON DELETE CASCADE
 )
 ENGINE=InnoDB;
 

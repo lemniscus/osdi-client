@@ -3,6 +3,7 @@
 
 namespace Civi\Osdi\ActionNetwork;
 
+use Civi\Osdi\ActionNetwork\Object\FundraisingPage;
 use Civi\Osdi\ActionNetwork\Object\Person;
 use Civi\Osdi\ActionNetwork\Object\Tag;
 use Civi\Osdi\ActionNetwork\Object\Tagging;
@@ -82,7 +83,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
    *   where $operator is 'eq', 'lt', or 'gt'
    */
   public function find(string $objectType, array $criteria): RemoteFindResult {
-    $entitiesThatSupportOData = ['osdi:people', 'osdi:signatures', 'osdi:outreaches'];
+    $entitiesThatSupportOData = ['osdi:people', 'osdi:signatures', 'osdi:outreaches', 'osdi:donations'];
     if (!in_array($objectType, $entitiesThatSupportOData)) {
       throw new InvalidArgumentException(
         '%s is an unsupported object type for find', $objectType);
@@ -166,7 +167,8 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
    */
   private function createOnRemoteSystem(RemoteObjectInterface $osdiObject) {
     $endpoint = $this->linkify($osdiObject->getUrlForCreate());
-    return $endpoint->post([], ['body' => $osdiObject->getArrayForCreate()]);
+    $body = $osdiObject->getArrayForCreate();
+    return $endpoint->post([], ['body' => $body]);
   }
 
   public function getClient(): HalClientInterface {

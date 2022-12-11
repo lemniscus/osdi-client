@@ -108,7 +108,7 @@ class PersonBasic extends AbstractLocalObject implements LocalObjectInterface {
       ['Phone AS phone', 'LEFT', NULL,
         ['phone.phone_type_id:name', '=', '"Mobile"'],
       ],
-      ['Address AS address', FALSE, NULL, ['address.is_primary', '=', 1]],
+      ['Address AS address', 'LEFT', NULL, ['address.is_primary', '=', 1]],
     ];
   }
 

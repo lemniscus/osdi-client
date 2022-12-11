@@ -10,16 +10,20 @@ class Factory {
 
   public static array $registry = [
     'LocalObject' => [
+      'Donation' => LocalObject\Donation::class,
       'Person' => LocalObject\PersonBasic::class,
       'Tagging' => LocalObject\TaggingBasic::class,
     ],
     'OsdiObject' => [
+      'osdi:donations' => ActionNetwork\Object\Donation::class,
+      'osdi:fundraising_pages' => ActionNetwork\Object\FundraisingPage::class,
       'osdi:people' => ActionNetwork\Object\Person::class,
       'osdi:tags' => ActionNetwork\Object\Tag::class,
       'osdi:taggings' => ActionNetwork\Object\Tagging::class,
     ],
     'Mapper' => [
       'Person' => ActionNetwork\Mapper\PersonBasic::class,
+      'Donation' => ActionNetwork\Mapper\DonationBasic::class,
       'Tag' => ActionNetwork\Mapper\TagBasic::class,
       'Tagging' => ActionNetwork\Mapper\TaggingBasic::class,
     ],
@@ -29,11 +33,13 @@ class Factory {
       'Tagging' => ActionNetwork\Matcher\TaggingBasic::class,
     ],
     'SingleSyncer' => [
+      'Donation' => ActionNetwork\SingleSyncer\Donation\DonationBasic::class,
       'Person' => ActionNetwork\SingleSyncer\Person\PersonBasic::class,
       'Tag' => ActionNetwork\SingleSyncer\TagBasic::class,
       'Tagging' => ActionNetwork\SingleSyncer\TaggingBasic::class,
     ],
     'BatchSyncer' => [
+      'Donation' => ActionNetwork\BatchSyncer\DonationBasic::class,
       'Person' => ActionNetwork\BatchSyncer\PersonBasic::class,
       'Tagging' => ActionNetwork\BatchSyncer\TaggingBasic::class,
     ],
@@ -52,7 +58,7 @@ class Factory {
   public static function make(string $category, string $key, ...$constructorParams) {
     $class = self::$registry[$category][$key] ?? NULL;
     if (is_null($class)) {
-      throw new InvalidArgumentException();
+      throw new InvalidArgumentException("Factory cannot make '$category', '$key'");
     }
     return new $class(...$constructorParams);
   }
