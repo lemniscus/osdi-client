@@ -14,13 +14,13 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
   public Field $amount;
   public Field $currency;
   public Field $financialTypeId;
-  public Field $paymentMethodId;
+  public Field $paymentInstrumentId;
   public Field $contributionRecurId;
   public Field $contactId;
   // public Field $fr_page_?;
   // public Field $referrer?;
   public Field $financialTypeLabel;
-  public Field $paymentMethodLabel;
+  public Field $paymentInstrumentLabel;
   public Field $contributionRecurFrequency;
   public Field $trxnId;
   public Field $source;
@@ -42,7 +42,7 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
       'receiveDate'         => ['select' => 'receive_date'],
       'currency'            => ['select' => 'currency'],
       'financialTypeId'     => ['select' => 'financial_type_id'], // maps to 1st (only) 'recipients'
-      'paymentMethodId'     => ['select' => 'payment_method_id'], // ? from 'payment' hash?
+      'paymentInstrumentId' => ['select' => 'payment_instrument_id'], // ? from 'payment' hash?
       'contributionRecurId' => ['select' => 'contribution_recur_id'], 
       'contactId'           => ['select' => 'contact_id'],
       'trxnId'              => ['select' => 'trxn_id'],
@@ -51,8 +51,8 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
       // 'fr_page_?'             => '@todo', // xxx
       // 'referrer?'             => '@todo', // xxx
       // These fields are read only
-      'financialTypeLabel'   => ['select' => 'financial_type_id:label', 'readOnly' => TRUE],
-      'paymentMethodLabel'   => ['select' => 'payment_method_id:label', 'readOnly' => TRUE],
+      'financialTypeLabel'    => ['select' => 'financial_type_id:label', 'readOnly' => TRUE],
+      'paymentInstrumentLabel' => ['select' => 'payment_instrument_id:label', 'readOnly' => TRUE],
       'contributionRecurFrequency' => ['select' => 'contribution_recur_id.frequency_unit:name', 'readOnly' => TRUE], 
       'tceFundraisingPage'  => ['select' => '']
     ];
@@ -69,10 +69,10 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
 
     // Add the payment.
     civicrm_api3('Payment', 'create', [
-      'contribution_id'   => $contributionId,
-      'total_amount'      => $this->amount->get(),
-      'trxn_date'         => $this->receiveDate->get(),
-      'payment_method_id' => $this->paymentMethodId->get(),
+      'contribution_id'       => $contributionId,
+      'total_amount'          => $this->amount->get(),
+      'trxn_date'             => $this->receiveDate->get(),
+      'payment_instrument_id' => $this->paymentInstrumentId->get(),
     ]);
 
     $this->id->load($contributionId);
@@ -89,7 +89,7 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
       'receive_date'          => $this->receiveDate->get(),
       'currency'              => $this->currency->get(),
       'financial_type_id'     => $this->financialTypeId->get(),
-      'payment_method_id'     => $this->paymentMethodId->get(),
+      'payment_instrument_id' => $this->paymentInstrumentId->get(),
       'contribution_recur_id' => $this->contributionRecurId->get(),
       'contact_id'            => $this->contactId->get(),
       'source'                => $this->source->get(),

@@ -26,7 +26,7 @@ class DonationBasic implements MapperInterface {
 
   protected static array $financialTypesMap;
 
-  protected static array $paymentMethodsMap;
+  protected static array $paymentInstrumentsMap;
 
   public function __construct(
     RemoteSystemInterface $remoteSystem,
@@ -184,7 +184,9 @@ class DonationBasic implements MapperInterface {
     } 
 
     ['method' => $remotePaymentMethod, 'reference_number' => $remoteTrxnId] = $remoteDonation->payment->get();
-    $localDonation->paymentMethodId->set($this->mapRemotePaymentMethodToLocalId($remotePaymentMethod));
+    $localDonation->paymentInstrumentId->set($this->mapRemotePaymentMethodToLocalId($remotePaymentMethod));
+    // $localDonation->paymentMethodId->set($this->mapRemotePaymentMethodToLocalId($remotePaymentMethod));
+
     // @todo possibly use a prefix?
     $localDonation->trxnId->set($remoteTrxnId);
 
@@ -246,18 +248,21 @@ class DonationBasic implements MapperInterface {
 
   /**
    *
+   * Note the local 'id' here is found in OptionValue.value, not OptionValue.id
    */
   protected function mapRemotePaymentMethodToLocalId(string $remotePaymentMethod) :int {
-    if (!isset(static::$paymentMethodsMap)) {
-      static::$paymentMethodsMap = \Civi\Api4\OptionValue::get(FALSE)
-      ->addSelect('label')
+    if (!isset(static::$paymentInstrumentsMap)) {
+      static::$paymentInstrumentsMap = \Civi\Api4\OptionValue::get(FALSE)
+      ->addSelect('label', 'value')
       ->addwhere('option_group_id:name', '=', 'payment_instrument')
       ->addWhere('is_active', '=', TRUE)
-      ->execute()->indexBy('label')->column('id');
+      ->addOrderBy('id', 'DESC') // Ensure we pick the first one if there are two with identical labels.
+      ->execute()->indexBy('label')->column('value');
+      // print json_encode(static::$paymentInstrumentsMap, JSON_PRETTY_PRINT);
     }
-    if (empty(static::$paymentMethodsMap[$remotePaymentMethod])) {
-      throw new \InvalidArgumentException("Cannot sync a donation made by '{$remotePaymentMethod}' as there is no matching payment method.");
+    if (empty(static::$paymentInstrumentsMap[$remotePaymentMethod])) {
+      throw new \InvalidArgumentException("Cannot sync a donation made by '{$remotePaymentMethod}' as there is no matching payment instrument.");
     }
-    return (int) static::$paymentMethodsMap[$remotePaymentMethod];
+    return (int) static::$paymentInstrumentsMap[$remotePaymentMethod];
   }
 }
