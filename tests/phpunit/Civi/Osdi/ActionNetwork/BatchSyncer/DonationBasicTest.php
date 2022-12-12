@@ -2,13 +2,11 @@
 
 namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 
-use Civi;
 use Civi\Osdi\Factory;
 use Civi\Osdi\ActionNetwork\DonationHelperTrait;
 use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
 use Civi\Osdi\ActionNetwork\Matcher\Donation\Basic as DonationBasicMatcher;
 use Civi\Osdi\ActionNetwork\Mapper\DonationBasic as DonationBasicMapper;
-use Civi\Api4\Contribution;
 
 use PHPUnit;
 
@@ -16,11 +14,11 @@ use PHPUnit;
  * Test \Civi\Osdi\RemoteSystemInterface
  *
  * @group headless
- *  
+ *
  */
 class DonationBasicTest extends PHPUnit\Framework\TestCase implements
-  \Civi\Test\HeadlessInterface,
-  \Civi\Test\TransactionalInterface {
+    \Civi\Test\HeadlessInterface,
+    \Civi\Test\TransactionalInterface {
 
   use DonationHelperTrait;
 
@@ -36,7 +34,7 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
   }
 
   public function testBatchSyncFromAN() {
-
+    // NM todo: make it test syncing at least 2 donations
     // Create fixture
     // Don't run the test twice in one second, or this won't work ;-)
     $rightHereRightNow = date('Y-m-d\TH:i:s\Z');
@@ -51,27 +49,28 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
     $remoteDonationToday->save();
 
     // Call system under test.
-    /** @var \Civi\Osdi\ActionNetwork\BatchSyncer\Donation\DonationBasic */
+    /** @var \Civi\Osdi\ActionNetwork\BatchSyncer\DonationBasic */
     $batchSyncer = $this->getBatchSyncer();
     $batchSyncer->batchSyncFromRemote();
 
     // We should now have the donation we created above. (We may have a load of others,
     // too, if you have run this test a few times within a week).
     $contributions = \Civi\Api4\Contribution::get(FALSE)
-    ->addWhere('contact_id', '=', static::$createdEntities['Contact'][0])
-    ->addWhere('receive_date', '=', rtrim($rightHereRightNow, 'Z'))
-    ->execute();
+      ->addWhere('contact_id', '=', static::$createdEntities['Contact'][0])
+      ->addWhere('receive_date', '=', rtrim($rightHereRightNow, 'Z'))
+      ->execute();
     $this->assertEquals(1, $contributions->countFetched());
     $cn = $contributions->first();
     $this->assertEquals(2.22, $cn['total_amount'], "Amount of Contribution created by Remote-to-Local sync differs.");
-
   }
 
   public function testBatchSyncFromCivi() {
+    // NM todo: make it test syncing at least 2 donations
     // Create a donation in Civi, call sync, load recent donations and check it's there.
     $now = time();
 
     // Create fixture.
+    // NM todo: add something more unique that we can check for
     $contribution = civicrm_api3('Order', 'create', [
       'financial_type_id' => 1,
       'contact_id' => static::$createdEntities['Contact'][0],
