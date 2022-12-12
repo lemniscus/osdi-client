@@ -1,6 +1,7 @@
 <?php
 namespace Civi\Osdi\ActionNetwork;
 
+use Civi\Api4\FinancialType;
 use \Civi\Osdi\ActionNetwork\Object\Person;
 use \Civi\Osdi\ActionNetwork\RemoteSystem;
 use \Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail;
@@ -82,10 +83,21 @@ trait DonationHelperTrait {
     static::$testFundraisingPage = $fundraisingPage;
 
     // Create 'Test recipient financial type'
-    static::$financialTypeId = \Civi\Api4\FinancialType::create(FALSE)
-    ->addValue('name', 'Test recipient financial type')
-    ->addValue('description', 'Used by PHPUnit test ' . __CLASS__ . '::' . __FUNCTION__)
-    ->execute()->single()['id'];
+    $ftName = 'Test recipient financial type';
+    $financialTypeApiResult = FinancialType::get(FALSE)
+      ->addWhere('name', '=', $ftName)
+      ->execute();
+
+    if ($financialTypeApiResult->count() > 1) {
+      throw new \Exception("The DB has multiple financial types by the same name: $ftName");
+    }
+    elseif ($financialTypeApiResult->count() === 0) {
+      $financialTypeApiResult = \Civi\Api4\FinancialType::create(FALSE)
+        ->addValue('name', $ftName)
+        ->addValue('description', 'Used by PHPUnit test ' . __CLASS__ . '::' . __FUNCTION__)
+        ->execute();
+    }
+    static::$financialTypeId = $financialTypeApiResult->single()['id'];
   }
 
   public static function tearDownAfterClass(): void {
