@@ -127,11 +127,17 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
 
   public function load(HalResource $resource = NULL): self {
     if (is_null($resource)) {
-      $resource = $this->_system->fetch($this);
+      if ($this->getUrlForRead()) {
+        $resource = $this->_system->fetch($this);
+      }
+      else {
+        return $this;
+      }
     }
     $this->_resource = $resource;
 
-    if ($id = $this->extractIdFromResource($resource)) {
+    $id = $this->extractIdFromResource($resource);
+    if ($id) {
       $this->_id = $id;
     }
 
@@ -226,22 +232,23 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
   }
 
   public function getUrlForRead(): ?string {
-    try {
-      if ($selfLink = $this->_resource->getFirstLink('self')) {
-        return $selfLink->getHref();
-      }
-    }
-    catch (\Throwable $e) {
+    if ($this->_resource) {
       try {
-        return $this->constructOwnUrl();
+        $selfLink = $this->_resource->getFirstLink('self');
+        if ($selfLink) {
+          return $selfLink->getHref();
+        }
       }
-      catch (\Throwable $e) {
-        throw new EmptyResultException(
-          'Could not find or create url for "%s" with type "%s" and id "%s"',
-          get_called_class(), $this->getType(), $this->getId());
+      catch (\Jsor\HalClient\Exception\InvalidArgumentException $e) {
       }
     }
-    return NULL;
+
+    try {
+      return $this->constructOwnUrl();
+    }
+    catch (EmptyResultException $e) {
+      return NULL;
+    }
   }
 
   public function getUrlForUpdate(): string {
