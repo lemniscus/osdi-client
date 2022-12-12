@@ -35,13 +35,25 @@ class TaggingTest extends \PHPUnit\Framework\TestCase implements
     $tagging->setTag($tag);
     $tagging->setPerson($person);
 
-    self::expectException(\Civi\Osdi\Exception\InvalidArgumentException::class);
-    $tagging->save();
+    try {
+      $tagging->save();
+      self::fail('Tagging should not be able to be saved until its person has an id');
+    }
+    catch (\Throwable $e) {
+      self::assertEquals(\Civi\Osdi\Exception\InvalidArgumentException::class,
+        get_class($e));
+    }
 
     $person->save();
 
-    self::expectException(\Civi\Osdi\Exception\InvalidArgumentException::class);
-    $tagging->save();
+    try {
+      $tagging->save();
+      self::fail('Tagging should not be able to be saved until its tag has an id');
+    }
+    catch (\Throwable $e) {
+      self::assertEquals(\Civi\Osdi\Exception\InvalidArgumentException::class,
+        get_class($e));
+    }
 
     $tag->save();
     $tagging->save();

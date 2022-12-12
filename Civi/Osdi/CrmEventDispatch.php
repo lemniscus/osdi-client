@@ -5,7 +5,17 @@ namespace Civi\Osdi;
 class CrmEventDispatch {
 
   protected static function getResponder($objectName, $hookName) {
-    if (Factory::canMake('CrmEventResponder', $objectName)) {
+    try {
+      $canMakeResponder = Factory::canMake('CrmEventResponder', $objectName);
+    }
+    catch (\Throwable $e) {
+      $canMakeResponder = FALSE;
+      \Civi::log()->warning('OSDI Client could not respond to event '
+        . "$hookName for $objectName due to error: " . $e->getMessage(),
+        [$e->getTrace()[0] ?? NULL]
+      );
+    }
+    if ($canMakeResponder) {
       $responder = Factory::make('CrmEventResponder', $objectName);
       if (method_exists($responder, $hookName)) {
         return $responder;
@@ -13,6 +23,14 @@ class CrmEventDispatch {
     }
 
     return FALSE;
+  }
+
+  public static function alterLocationMergeData(&$blocksDAO, $mainId, $otherId, $migrationInfo) {
+    $responder = static::getResponder('Contact', 'alterLocationMergeData');
+    if ($responder) {
+      // mainId is the one being kept; otherId belongs to the contact being deleted
+      $responder->alterLocationMergeData($blocksDAO, $mainId, $otherId, $migrationInfo);
+    }
   }
 
   public static function daoPreDelete($event): void {
@@ -32,20 +50,10 @@ class CrmEventDispatch {
   }
 
   public static function merge($type, &$data, $mainId = NULL, $otherId = NULL, $tables = NULL): void {
-    //  // not used anywhere
-    //  if ('eidRefs' === $type) {
-    //    \Civi::dispatcher()->dispatch('civi.osdi.contactmerge.tablemap',
-    //      \Civi\Core\Event\GenericHookEvent::create(['tableMap' => &$data]));
-    //  }
-
-    if ('sqls' !== $type) {
-      return;
-    }
-
     $responder = static::getResponder('Contact', 'merge');
     if ($responder) {
       // mainId is the one being kept; otherId belongs to the contact being deleted
-      $responder->merge($mainId, $otherId);
+      $responder->merge($type, $data, $mainId, $otherId, $tables);
     }
   }
 
@@ -53,6 +61,13 @@ class CrmEventDispatch {
     $responder = static::getResponder($objectName, 'pre');
     if ($responder) {
       $responder->pre($op, $objectName, $id, $params);
+    }
+  }
+
+  public static function post(string $op, string $objectName, ?int $objectId, &$objectRef): void {
+    $responder = static::getResponder($objectName, 'post');
+    if ($responder) {
+      $responder->post($op, $objectName, $objectId, $objectRef);
     }
   }
 

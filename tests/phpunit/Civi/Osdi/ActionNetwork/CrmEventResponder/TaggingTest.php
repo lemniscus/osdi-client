@@ -7,6 +7,10 @@ use CRM_OSDI_ActionNetwork_TestUtils;
 use PHPUnit;
 
 /**
+ * This class does NOT implement TransactionalInterface, because it tests
+ * behavior involving transactions. Therefore it must take care of its own
+ * cleanup.
+ *
  * @group headless
  */
 class TaggingTest extends PHPUnit\Framework\TestCase implements
@@ -21,7 +25,7 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
   }
 
   public static function setUpBeforeClass(): void {
-    parent::setUpBeforeClass();;
+    parent::setUpBeforeClass();
   }
 
   protected function setUp(): void {
@@ -74,6 +78,61 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     }
   }
 
+  private function makeLocalTag(string $index): Civi\Osdi\LocalObject\TagBasic {
+    $localTag = new \Civi\Osdi\LocalObject\TagBasic();
+    $localTag->name->set("test tagging sync $index");
+    $localTag->save();
+    return $localTag;
+  }
+
+  private function makeRemoteTag(string $index): Civi\Osdi\ActionNetwork\Object\Tag {
+    $remoteTag = new \Civi\Osdi\ActionNetwork\Object\Tag(self::$remoteSystem);
+    $remoteTag->name->set("test tagging sync $index");
+    $remoteTag->save();
+    return $remoteTag;
+  }
+
+  /**
+   * @return array{0: \Civi\Osdi\LocalObject\TagBasic[], 1: \Civi\Osdi\ActionNetwork\Object\Tag[]}
+   * @throws \Civi\Osdi\Exception\InvalidOperationException
+   */
+  private function makeSameTagsOnBothSides(): array {
+    $remoteTags = $localTags = [];
+    foreach (['a', 'b', 'c'] as $index) {
+      $localTags[$index] = $this->makeLocalTag($index);
+      $remoteTags[$index] = $this->makeRemoteTag($index);
+    }
+    return [$localTags, $remoteTags];
+  }
+
+  private function makeLocalPerson(string $index): Civi\Osdi\LocalObject\PersonBasic {
+    $localPerson = new \Civi\Osdi\LocalObject\PersonBasic();
+    $localPerson->emailEmail->set("taggingEventResponderTest$index@test.net");
+    $localPerson->firstName->set("Test Tagging Event Responder $index");
+    $localPerson->save();
+    return $localPerson;
+  }
+
+  private function makeRemotePerson(string $index): Civi\Osdi\ActionNetwork\Object\Person {
+    $remotePerson = new Civi\Osdi\ActionNetwork\Object\Person(self::$remoteSystem);
+    $remotePerson->emailAddress->set("taggingEventResponderTest$index@test.net");
+    $remotePerson->givenName->set("Test Tagging Event Responder $index");
+    $remotePerson->save();
+    return $remotePerson;
+  }
+
+  /**
+   * @param string $index
+   *
+   * @return array{0: \Civi\Osdi\LocalObject\PersonBasic, 1: \Civi\Osdi\ActionNetwork\Object\Person}
+   * @throws \Civi\Osdi\Exception\InvalidOperationException
+   */
+  private function makeSamePersonOnBothSides(string $index): array {
+    $localPerson = $this->makeLocalPerson($index);
+    $remotePerson = $this->makeRemotePerson($index);
+    return [$localPerson, $remotePerson];
+  }
+
   private function listTaggings(array $remotePeople): array {
     $actual = [];
 
@@ -93,61 +152,19 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     return $actual;
   }
 
-  /**
-   * @return array{0: \Civi\Osdi\LocalObject\TagBasic[], 1: \Civi\Osdi\ActionNetwork\Object\Tag[]}
-   * @throws \Civi\Osdi\Exception\InvalidOperationException
-   */
-  private function makeSameTagsOnBothSides(): array {
-    $remoteTags = $localTags = [];
-    foreach (['a', 'b', 'c'] as $index) {
-      $tagName = "test tagging sync $index";
-
-      $remoteTag = new \Civi\Osdi\ActionNetwork\Object\Tag(self::$remoteSystem);
-      $remoteTag->name->set($tagName);
-      $remoteTag->save();
-      $remoteTags[$index] = $remoteTag;
-
-      $localTag = new \Civi\Osdi\LocalObject\TagBasic();
-      $localTag->name->set($tagName);
-      $localTag->save();
-      $localTags[$index] = $localTag;
-    }
-    return [$localTags, $remoteTags];
-  }
-
-  /**
-   * @param string $index
-   *
-   * @return array{0: \Civi\Osdi\LocalObject\PersonBasic, 1: \Civi\Osdi\ActionNetwork\Object\Person}
-   * @throws \Civi\Osdi\Exception\InvalidOperationException
-   */
-  private function makeSamePersonOnBothSides(string $index): array {
-    $email = "taggingtest$index@test.net";
-    $givenName = "Test Tagging Sync $index";
-
-    $remotePerson = new Civi\Osdi\ActionNetwork\Object\Person(self::$remoteSystem);
-    $remotePerson->emailAddress->set($email);
-    $remotePerson->givenName->set($givenName);
-    $remotePerson->save();
-
-    $localPerson = new \Civi\Osdi\LocalObject\PersonBasic();
-    $localPerson->emailEmail->set($email);
-    $localPerson->firstName->set($givenName);
-    $localPerson->save();
-    return [$localPerson, $remotePerson];
-  }
-
   public function testCreationAndUpdateAndDeletionByOsdiClientIsIgnored() {
-    [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
-    [$localPerson, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
+    $localTagA = $this->makeLocalTag('a');
+    $localTagB = $this->makeLocalTag('b');
+    $localPerson = $this->makeLocalPerson(1);
 
-    array_push(self::$objectsToDelete,
-      $localTags['a'], $localTags['b'], $localPerson);
+    array_push(self::$objectsToDelete, $localPerson, $localTagA, $localTagB);
 
     $localTagging = new Civi\Osdi\LocalObject\TaggingBasic();
     $localTagging->setPerson($localPerson);
-    $localTagging->setTag($localTags['a'])->save();
-    $localTagging->setTag($localTags['b'])->save();
+    $localTagging->setTag($localTagA);
+    $localTagging->save();
+    $localTagging->setTag($localTagB);
+    $localTagging->save();
     $localTagging->delete();
 
     $queue = Civi\Osdi\Queue::getQueue();
@@ -156,16 +173,16 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
   }
 
   public function testCreationAndUpdateAreAddedToQueue() {
-    [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
-    [$localPerson, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
+    $localTagA = $this->makeLocalTag('a');
+    $localTagB = $this->makeLocalTag('b');
+    $localPerson = $this->makeLocalPerson(1);
 
-    array_push(self::$objectsToDelete,
-      $localTags['a'], $localTags['b'], $localPerson);
+    array_push(self::$objectsToDelete, $localPerson, $localTagA, $localTagB);
 
     $queue = Civi\Osdi\Queue::getQueue(TRUE);
 
     $contactId = $localPerson->getId();
-    $tagAId = $localTags['a']->getId();
+    $tagAId = $localTagA->getId();
     $entityTagId = Civi\Api4\EntityTag::create(FALSE)
       ->addValue('tag_id', $tagAId)
       ->addValue('entity_table', 'civicrm_contact')
@@ -183,7 +200,7 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
 
     $queue->deleteItem($item);
 
-    $tagBId = $localTags['b']->getId();
+    $tagBId = $localTagB->getId();
     Civi\Api4\EntityTag::update(FALSE)
       ->addWhere('id', '=', $entityTagId)
       ->addValue('entity_id', $contactId)
@@ -212,14 +229,15 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
   }
 
   public function testDeletionIsAddedToQueue() {
-    [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
-    [$localPerson1, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
+    $localTagA = $this->makeLocalTag('a');
+    $localTagB = $this->makeLocalTag('b');
+    $localPerson1 = $this->makeLocalPerson(1);
 
     $localTagging1a = new Civi\Osdi\LocalObject\TaggingBasic();
-    $localTagging1a->setPerson($localPerson1)->setTag($localTags['a'])->save();
+    $localTagging1a->setPerson($localPerson1)->setTag($localTagA)->save();
 
     array_push(self::$objectsToDelete,
-      $localTags['a'], $localTags['b'], $localPerson1);
+      $localTagA, $localTagB, $localPerson1);
 
     $queue = Civi\Osdi\Queue::getQueue(TRUE);
 
@@ -233,22 +251,14 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
 
     self::assertEquals(\CRM_Queue_Task::class, get_class($task));
     self::assertEquals('Sync deletion of EntityTag with tag id ' .
-      $localTags['a']->getId() . ', contact id ' . $localPerson1->getId(), $task->title);
+      $localTagA->getId() . ', contact id ' . $localPerson1->getId(), $task->title);
   }
 
   public function testMergesAreAddedToQueue() {
-    [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
-    [$localPerson1, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
-    [$localPerson2, $remotePerson2] = $this->makeSamePersonOnBothSides(2);
+    $localPerson1 = $this->makeLocalPerson(1);
+    $localPerson2 = $this->makeLocalPerson(2);
 
-    $localTagging1a = new Civi\Osdi\LocalObject\TaggingBasic();
-    $localTagging1a->setPerson($localPerson1)->setTag($localTags['a'])->save();
-
-    $localTagging2b = new Civi\Osdi\LocalObject\TaggingBasic();
-    $localTagging2b->setPerson($localPerson2)->setTag($localTags['b'])->save();
-
-    array_push(self::$objectsToDelete,
-      $localTags['a'], $localTags['b'], $localPerson1, $localPerson2);
+    array_push(self::$objectsToDelete, $localPerson1, $localPerson2);
 
     $toRemoveId = $localPerson1->getId();
     $toKeepId = $localPerson2->getId();
@@ -276,7 +286,8 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
       $queue->deleteItem($item);
     }
 
-    self::assertEquals(0, $queue->numberOfItems());
+    self::assertEquals(0, $queue->numberOfItems(),
+      /*print_r($queue->claimItem()->data, TRUE)*/);
   }
 
   public function testDeleteMoreThanOne() {
@@ -399,7 +410,6 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     $remoteTagging2a = new Civi\Osdi\ActionNetwork\Object\Tagging(self::$remoteSystem);
     $remoteTagging2a->setPerson($remotePerson2)->setTag($remoteTags['a'])->save();
 
-    //xdebug_break();
     foreach ([$localTagging1a, $localTagging2a] as $tagging) {
       Civi\Api4\EntityTag::update(FALSE)
         ->addWhere('id', 'IN', [$tagging->getId()])

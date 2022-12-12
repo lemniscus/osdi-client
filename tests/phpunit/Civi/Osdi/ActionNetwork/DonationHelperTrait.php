@@ -52,8 +52,8 @@ trait DonationHelperTrait {
     $personSyncer->setMapper($personMapper);
     static::$personMatcher = new UniqueEmailOrFirstLastEmail(static::$system);
     $personSyncer->setMatcher(static::$personMatcher);
-    $syncResult = $personSyncer->syncFromRemoteIfNeeded($remotePerson);
-    static::$createdEntities['Contact'] = [$syncResult->getLocalObject()->getId()];
+    $pair = $personSyncer->matchAndSyncIfEligible($remotePerson);
+    static::$createdEntities['Contact'] = [$pair->getLocalObject()->getId()];
     $contactId = static::$createdEntities['Contact'][0];
     // HACK: the above sometimes returns a deleted contact.
     $neededToUndelete = \Civi\Api4\Contact::update(FALSE)->addWhere('id', '=', $contactId)->addValue('is_deleted', 0)->addWhere('is_deleted', '=', 1)->execute()->count();

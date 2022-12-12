@@ -25,6 +25,26 @@ class PersonSyncState {
   const ORIGIN_LOCAL = 0;
   const ORIGIN_REMOTE = 1;
 
+  public function isError(): bool {
+    $status = $this->getSyncStatus();
+
+    if (empty($status)) {
+      return FALSE;
+    }
+
+    $explodedStatus = explode('::', $status);
+
+    if (2 !== count($explodedStatus)) {
+      throw new \CRM_Core_Exception('Sync state code in invalid format');
+    }
+
+    [$resultClass, $statusConstant] = $explodedStatus;
+    /** @var \Civi\Osdi\ResultInterface $resultObject */
+    $resultObject = new $resultClass();
+    $resultObject->setStatusCode($statusConstant);
+    return $resultObject->isError();
+  }
+
   public static function syncOriginPseudoConstant(): array {
     return [
       self::ORIGIN_LOCAL => ts('local'),
@@ -57,11 +77,20 @@ class PersonSyncState {
     if ($syncProfileId) {
       $osdiMatchGetAction->addWhere('sync_profile_id', '=', $syncProfileId);
     }
+    else {
+      $osdiMatchGetAction->addWhere('sync_profile_id', 'IS NULL');
+    }
 
     try {
       return self::createFromApiGetAction($osdiMatchGetAction);
     }
-    catch (\API_Exception $e) {
+    catch (\CRM_Core_Exception $e) {
+      if (preg_match(
+        '/^Expected to find one .+ record, but there were multiple\.$/',
+        $e->getMessage()
+      )) {
+        throw $e;
+      }
       return new static();
     }
   }
@@ -87,6 +116,7 @@ class PersonSyncState {
 
   public function save() {
     $id = OsdiPersonSyncState::save(FALSE)
+      ->setMatch(['contact_id', 'remote_person_id', 'sync_profile_id'])
       ->setRecords([
         [
           'id' => $this->getId(),

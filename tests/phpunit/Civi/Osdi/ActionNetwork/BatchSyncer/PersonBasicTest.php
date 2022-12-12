@@ -143,6 +143,13 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     $this->assertBatchSyncFromCivi($remotePeople, $syncStartTime, $maxRemoteModTimeBeforeSync);
   }
 
+  /**
+   * Create 4 remote people, 4 matching local people, and PersonSyncStates
+   * linking them together. Make remote person #3 eligible for sync due to
+   * changes since the last sync.
+   *
+   * @return \Civi\Osdi\LocalObject\PersonBasic[]
+   */
   private function setUpBatchSyncFromAN(): array {
     $twoSecondsAgo = self::$system::formatDateTime(time() - 2);
 
@@ -156,24 +163,35 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     $testTime = time();
 
     for ($i = 1; $i < 5; $i++) {
+      $email = "syncJobFromANTest$i@null.org";
+      $lastName = "Sync Job Test $i $testTime";
+
       $remotePerson = new \Civi\Osdi\ActionNetwork\Object\Person(self::$system);
-      $remotePerson->emailAddress->set($email = "syncJobFromANTest$i@null.org");
-      $remotePerson->givenName->set('Sync Job Test');
-      $remotePerson->familyName->set($lastName = "$i $testTime");
+      $remotePerson->emailAddress->set($email);
+      $remotePerson->givenName->set("ANtoCiviTest Remote person $i name");
+      $remotePerson->familyName->set($lastName);
+
+      /** @var \Civi\Osdi\ActionNetwork\Object\Person[] $remotePeople */
       $remotePeople[$i] = $remotePerson->save();
       $remoteModTime = strtotime($remotePerson->modifiedDate->get());
 
       $localPerson = new LocalPerson();
       $localPerson->emailEmail->set($email);
-      $localPerson->firstName->set('Unsynced');
+      $localPerson->firstName->set("ANtoCiviTest Local person $i name");
       $localPerson->lastName->set($lastName);
       $localPeople[$i] = $localPerson->save();
       $localModTime = strtotime($localPerson->modifiedDate->get());
+
+      // Create a PersonSyncState that links the RemotePerson to the LocalPerson
 
       $syncState = new \Civi\Osdi\PersonSyncState();
       $syncState->setSyncOrigin(\Civi\Osdi\PersonSyncState::ORIGIN_REMOTE);
       $syncState->setRemotePersonId($remotePerson->getId());
       $syncState->setContactId($localPerson->getId());
+
+      // Set it up to look like the RemotePerson was modified by the last sync
+      // and has not been modified since then; likewise with the LocalPerson
+
       $syncState->setRemotePreSyncModifiedTime($remoteModTime - 10);
       $syncState->setRemotePostSyncModifiedTime($remoteModTime);
       $syncState->setLocalPreSyncModifiedTime($localModTime - 10);
@@ -182,8 +200,13 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
       /** @var \Civi\Osdi\PersonSyncState[] $syncStates */
       $syncStates[$i] = $syncState;
 
+      // With .4 seconds between creations, person 4 will have a mod date at least
+      // 1 second after person 1
+
       usleep(400000);
     }
+
+    // Make sure person 3 has a mod time later than everyone else's
 
     usleep(700000);
     $remotePeople[3]->languageSpoken->set('es');
@@ -196,7 +219,7 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
 
     // "find" results can lag. we wait for them to catch up
     $foundByModDate = FALSE;
-    for ($i = 0; $i < 5; $i++) {
+    for ($s = 0; $s < 5; $s++) {
       $searchResults = self::$system->find('osdi:people', [
         ['modified_date', 'gt', $testTime],
       ]);
@@ -215,7 +238,7 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
   }
 
   /**
-   * @param \Civi\Osdi\LocalObject\Person\N2F[] $localPeople
+   * @param \Civi\Osdi\LocalObject\PersonBasic[] $localPeople
    * @param int $syncStartTime
    *
    * @return void
@@ -224,12 +247,12 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     foreach ($localPeople as $i => $localPerson) {
       $localPerson->load();
       if ($i === 3) {
-        self::assertEquals('Sync Job Test', $localPerson->firstName->get());
+        self::assertEquals("ANtoCiviTest Remote person $i name", $localPerson->firstName->get());
         self::assertGreaterThanOrEqual($syncStartTime, strtotime($localPerson->modifiedDate->get()));
         self::assertLessThan($syncStartTime + 60, strtotime($localPerson->modifiedDate->get()));
       }
       else {
-        self::assertEquals('Unsynced', $localPerson->firstName->get());
+        self::assertEquals("ANtoCiviTest Local person $i name", $localPerson->firstName->get());
         self::assertLessThan($syncStartTime, strtotime($localPerson->modifiedDate->get()));
       }
     }
@@ -246,35 +269,53 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     ]);
 
     $testTime = time();
+    $modTimeOfPreviousPerson = 0;
 
     /** @var \Civi\Osdi\LocalObject\PersonBasic[] $localPeople */
     for ($i = 1; $i < 5; $i++) {
+      $email = "syncJobFromCiviTest$i@null.org";
+      $lastName = "Sync Job Test $i $testTime";
+
       $localPerson = new LocalPerson();
-      $localPerson->emailEmail->set($email = "syncJobFromCiviTest$i@null.org");
-      $localPerson->firstName->set('Sync Job Test');
-      $localPerson->lastName->set($lastName = "$i $testTime");
+      $localPerson->emailEmail->set($email);
+      $localPerson->firstName->set("CiviToANTest Local person $i name");
+      $localPerson->lastName->set($lastName);
       $localPeople[$i] = $localPerson->save();
       $localModTime = strtotime($localPerson->modifiedDate->get());
 
       $remotePerson = new \Civi\Osdi\ActionNetwork\Object\Person(self::$system);
       $remotePerson->emailAddress->set($email);
-      $remotePerson->givenName->set('test (not yet synced)');
+      $remotePerson->givenName->set("CiviToANTest Remote person $i name");
       $remotePerson->familyName->set($lastName);
       $remotePeople[$i] = $remotePerson->save();
       $remoteModTime = strtotime($remotePerson->modifiedDate->get());
+
+      self::assertGreaterThanOrEqual($modTimeOfPreviousPerson, $remoteModTime);
+      $modTimeOfPreviousPerson = $remoteModTime;
+
+      // Create a PersonSyncState that links the RemotePerson to the LocalPerson
 
       $syncState = new \Civi\Osdi\PersonSyncState();
       $syncState->setSyncOrigin(\Civi\Osdi\PersonSyncState::ORIGIN_REMOTE);
       $syncState->setRemotePersonId($remotePerson->getId());
       $syncState->setContactId($localPerson->getId());
+
+      // Set it up to look like the RemotePerson was modified by the last sync
+      // and has not been modified since then; likewise with the LocalPerson
+
       $syncState->setLocalPreSyncModifiedTime($localModTime - 10);
       $syncState->setLocalPostSyncModifiedTime($localModTime);
       $syncState->setRemotePreSyncModifiedTime($remoteModTime - 10);
       $syncState->setRemotePostSyncModifiedTime($remoteModTime);
       $syncState->save();
 
+      // With .4 seconds between creations, person 4 will have a mod date at least
+      // 1 second after person 1
+
       usleep(400000);
     }
+
+    // Make sure person 3 has a mod time later than everyone else's
 
     usleep(700000);
     $localPeople[3]->preferredLanguage->set('es');
@@ -288,12 +329,12 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
       /** @var \Civi\Osdi\ActionNetwork\Object\Person $remotePerson */
       $remotePerson->load();
       if ($i == 3) {
-        self::assertEquals('Sync Job Test', $remotePerson->givenName->get());
+        self::assertEquals('CiviToANTest Local person 3 name', $remotePerson->givenName->get());
         self::assertGreaterThanOrEqual($syncStartTime, strtotime($remotePerson->modifiedDate->get()));
         self::assertLessThan($syncStartTime + 60, strtotime($remotePerson->modifiedDate->get()));
       }
       else {
-        self::assertEquals('test (not yet synced)', $remotePerson->givenName->get());
+        self::assertEquals("CiviToANTest Remote person $i name", $remotePerson->givenName->get());
         self::assertLessThanOrEqual($maxRemoteModTimeBeforeSync, strtotime($remotePerson->modifiedDate->get()));
       }
     }

@@ -315,6 +315,11 @@ function _osdi_client_civix_civicrm_entityTypes(&$entityTypes) {
       'class' => 'CRM_OSDI_DAO_Deletion',
       'table' => 'civicrm_osdi_deletion',
     ],
+    'CRM_OSDI_DAO_Flag' => [
+      'name' => 'OsdiFlag',
+      'class' => 'CRM_OSDI_DAO_Flag',
+      'table' => 'civicrm_osdi_flag',
+    ],
     'CRM_OSDI_DAO_SyncProfile' => [
       'name' => 'OsdiSyncProfile',
       'class' => 'CRM_OSDI_DAO_SyncProfile',

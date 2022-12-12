@@ -3,9 +3,9 @@
 namespace Civi\Osdi\ActionNetwork\CrmEventResponder;
 
 use Civi\Api4\EntityTag;
-use Civi\Osdi\Factory;
 use Civi\Core\DAO\Event\PreDelete;
 use Civi\Core\DAO\Event\PreUpdate;
+use Civi\Osdi\Factory;
 use Civi\Osdi\LocalRemotePair;
 use CRM_OSDI_ExtensionUtil as E;
 

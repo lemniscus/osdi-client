@@ -45,6 +45,13 @@ class ResultStack extends \ArrayIterator implements \Iterator {
     $this->lastByType[$item->getType() ?? 'NULL'] = $item;
   }
 
+  public function toArray() {
+    $toArray = function (ResultInterface $result) {
+      return $result->toArray();
+    };
+    return array_map($toArray, $this->stack);
+  }
+
   /**
    * Iterator implementation
    */
@@ -55,6 +62,7 @@ class ResultStack extends \ArrayIterator implements \Iterator {
   /**
    * Iterator implementation
    */
+  #[\ReturnTypeWillChange]
   public function current() {
     return $this->stack[$this->position];
   }
@@ -62,6 +70,7 @@ class ResultStack extends \ArrayIterator implements \Iterator {
   /**
    * Iterator implementation
    */
+  #[\ReturnTypeWillChange]
   public function key(): int {
     return $this->position;
   }
@@ -69,6 +78,7 @@ class ResultStack extends \ArrayIterator implements \Iterator {
   /**
    * Iterator implementation
    */
+  #[\ReturnTypeWillChange]
   public function next(): void {
     --$this->position;
   }
@@ -76,6 +86,7 @@ class ResultStack extends \ArrayIterator implements \Iterator {
   /**
    * Iterator implementation
    */
+  #[\ReturnTypeWillChange]
   public function valid(): bool {
     return isset($this->stack[$this->position]);
   }

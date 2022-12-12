@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+
+<table>
+  <base>CRM/OSDI</base>
+  <class>Flag</class>
+  <name>civicrm_osdi_flag</name>
+  <comment>Information about OSDI sync problems</comment>
+  <log>true</log>
+
+  <field>
+    <name>id</name>
+    <type>int unsigned</type>
+    <required>true</required>
+    <comment>Unique OsdiFlag ID</comment>
+    <html>
+      <type>Number</type>
+    </html>
+  </field>
+  <primaryKey>
+    <name>id</name>
+    <autoincrement>true</autoincrement>
+  </primaryKey>
+
+  <field>
+    <name>contact_id</name>
+    <title>Local Contact ID</title>
+    <type>int unsigned</type>
+    <comment>FK to Contact</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+  <index>
+    <name>index_contact_id</name>
+    <fieldName>contact_id</fieldName>
+  </index>
+  <foreignKey>
+    <name>contact_id</name>
+    <table>civicrm_contact</table>
+    <key>id</key>
+    <onDelete>SET NULL</onDelete>
+  </foreignKey>
+
+  <field>
+    <name>remote_object_id</name>
+    <title>Remote Entity Identifier</title>
+    <type>varchar</type>
+    <length>255</length>
+    <default>NULL</default>
+    <comment>FK to identifier field on remote system</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+  <index>
+    <name>index_remote_object_id</name>
+    <fieldName>remote_object_id</fieldName>
+  </index>
+
+  <field>
+    <name>flag_type</name>
+    <title>Flag Type</title>
+    <type>varchar</type>
+    <length>255</length>
+    <default>NULL</default>
+    <html>
+      <type>Radio</type>
+      <multiple>0</multiple>
+    </html>
+    <pseudoconstant>
+      <optionGroupName>osdi_flag_type</optionGroupName>
+    </pseudoconstant>
+    <import>true</import>
+    <export>true</export>
+  </field>
+  <index>
+    <name>index_flag_type</name>
+    <fieldName>flag_type</fieldName>
+  </index>
+
+  <field>
+    <name>status</name>
+    <title>Status</title>
+    <type>varchar</type>
+    <length>255</length>
+    <default>NULL</default>
+    <comment>Status code</comment>
+    <html>
+      <type>Radio</type>
+      <multiple>0</multiple>
+    </html>
+    <pseudoconstant>
+      <callback>CRM_OSDI_BAO_Flag::statusPseudoConstant</callback>
+      <prefetch>true</prefetch>
+    </pseudoconstant>
+    <import>true</import>
+    <export>true</export>
+  </field>
+  <index>
+    <name>index_status</name>
+    <fieldName>status</fieldName>
+  </index>
+
+  <field>
+    <name>message</name>
+    <title>Message</title>
+    <type>varchar</type>
+    <length>511</length>
+    <default>NULL</default>
+    <html>
+      <type>TextArea</type>
+      <rows>2</rows>
+    </html>
+    <comment>Description of the issue</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+
+  <field>
+    <name>context</name>
+    <title>Context</title>
+    <type>text</type>
+    <default>NULL</default>
+    <serialize>JSON</serialize>
+    <comment>Structured data to help understand the issue</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+
+  <field>
+    <name>created_date</name>
+    <title>Created Date</title>
+    <type>timestamp</type>
+    <comment>When the flag was created</comment>
+    <default>CURRENT_TIMESTAMP</default>
+  </field>
+
+  <field>
+    <name>modified_date</name>
+    <title>Modified Date</title>
+    <type>timestamp</type>
+    <comment>When the client was created or modified.</comment>
+    <default>CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</default>
+  </field>
+
+</table>

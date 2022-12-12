@@ -85,14 +85,23 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
 
     $result = new SyncResult();
 
-    $this->fetchOldOrFindNewMatch($pair);
+    $fetchOldOrFindNewMatchResult = $this->fetchOldOrFindNewMatch($pair);
 
-    if ($this->getSyncEligibility($pair)->isStatus(SyncEligibility::ELIGIBLE)) {
-      $mapAndWrite = $this->oneWayMapAndWrite($pair);
-      $statusCode = $mapAndWrite->isError() ? $result::ERROR : $result::SUCCESS;
+    if ($fetchOldOrFindNewMatchResult->isError()) {
+      $statusCode = $result::ERROR;
     }
     else {
-      $statusCode = $result::NO_SYNC_NEEDED;
+      $syncEligibility = $this->getSyncEligibility($pair);
+      if ($syncEligibility->isStatus(SyncEligibility::INELIGIBLE)) {
+        $statusCode = $result::INELIGIBLE;
+      }
+      elseif ($syncEligibility->isStatus(SyncEligibility::NOT_NEEDED)) {
+        $statusCode = $result::NO_SYNC_NEEDED;
+      }
+      elseif ($syncEligibility->isStatus(SyncEligibility::ELIGIBLE)) {
+        $mapAndWrite = $this->oneWayMapAndWrite($pair);
+        $statusCode = $mapAndWrite->isError() ? $result::ERROR : $result::SUCCESS;
+      }
     }
 
     $result->setStatusCode($statusCode);

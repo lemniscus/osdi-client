@@ -12,7 +12,7 @@
     <title>ID</title>
     <type>int unsigned</type>
     <required>true</required>
-    <comment>Unique OsdiSyncState ID</comment>
+    <comment>Unique PersonSyncState ID</comment>
     <import>true</import>
     <export>true</export>
   </field>

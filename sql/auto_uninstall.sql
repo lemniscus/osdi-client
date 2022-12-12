@@ -19,5 +19,6 @@ DROP TABLE IF EXISTS `civicrm_osdi_deletion`;
 DROP TABLE IF EXISTS `civicrm_osdi_person_sync_state`;
 DROP TABLE IF EXISTS `civicrm_osdi_sync_profile`;
 DROP TABLE IF EXISTS `civicrm_osdi_donation_sync_state`;
+DROP TABLE IF EXISTS `civicrm_osdi_flag`;
 
 SET FOREIGN_KEY_CHECKS=1;

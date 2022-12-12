@@ -9,9 +9,13 @@ use Jsor\HalClient\HttpClient\Guzzle6HttpClient;
 class Factory {
 
   public static array $registry = [
+    'RemoteSystem' => [
+      'ActionNetwork' => \Civi\Osdi\ActionNetwork\RemoteSystem::class,
+    ],
     'LocalObject' => [
       'Donation' => LocalObject\Donation::class,
       'Person' => LocalObject\PersonBasic::class,
+      'Tag' => LocalObject\TagBasic::class,
       'Tagging' => LocalObject\TaggingBasic::class,
     ],
     'OsdiObject' => [
