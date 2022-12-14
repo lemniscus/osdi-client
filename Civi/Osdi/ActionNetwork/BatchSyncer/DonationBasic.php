@@ -80,21 +80,25 @@ class DonationBasic implements BatchSyncerInterface {
     ]);
 
     foreach ($searchResults as $remoteDonation) {
-      Logger::logDebug('Considering AN id ' . $remoteDonation->getId() .
+      // if ($remoteDonation->getId() !== '022c49ca-0ef5-4d96-9d93-7535c76545a4') {
+      //   continue;
+      // }
+      $startTime = microtime(TRUE);
+      Logger::logDebug('Considering AN Donation id ' . $remoteDonation->getId() .
         ', mod ' . $remoteDonation->modifiedDate->get());
 
       try {
-        // artfulrobot: @todo all cases are eligible unless I were to implement getSyncEligibility
         $pair = $this->singleSyncer->matchAndSyncIfEligible($remoteDonation);
         $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
       }
       catch (\Throwable $e) {
         $syncResult = new Sync(NULL, NULL, NULL, $e->getMessage());
-        Logger::logError($e->getMessage(), ['exception' => $e]);
+        Logger::logError('Error: ' . $e->getMessage(), ['exception' => $e]);
       }
 
       $codeAndMessage = $syncResult->getStatusCode() . ' - ' . $syncResult->getMessage();
-      Logger::logDebug('Result for AN id ' . $remoteDonation->getId() . ": $codeAndMessage");
+      $took = round(microtime(TRUE) - $startTime, 1);
+      Logger::logDebug("Result for AN Donation id " . $remoteDonation->getId() . " (took {$took}s): $codeAndMessage");
       if ($syncResult->isError()) {
         Logger::logError($codeAndMessage, $syncResult->getContext());
       }

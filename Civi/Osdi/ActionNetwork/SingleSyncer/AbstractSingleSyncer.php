@@ -7,6 +7,7 @@ use Civi\Osdi\Exception\CannotMapException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
+use Civi\Osdi\Logger;
 use Civi\Osdi\MapperInterface;
 use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\RemoteObjectInterface;
@@ -86,8 +87,10 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
 
     $result = new SyncResult();
 
+    $startTime = microtime(TRUE);
     $fetchOldOrFindNewMatchResult = $this->fetchOldOrFindNewMatch($pair);
 
+    Logger::startTask("oneWayMapAndWrite");
     if ($fetchOldOrFindNewMatchResult->isError()) {
       $statusCode = $result::ERROR;
     }
@@ -100,6 +103,7 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
         $statusCode = $result::NO_SYNC_NEEDED;
       }
       elseif ($syncEligibility->isStatus(SyncEligibility::ELIGIBLE)) {
+        $startTime = microtime(TRUE);
         try {
           $mapAndWrite = $this->oneWayMapAndWrite($pair);
           $statusCode = $mapAndWrite->isError() ? $result::ERROR : $result::SUCCESS;
@@ -109,6 +113,7 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
         }
       }
     }
+    Logger::endTask();
 
     $result->setStatusCode($statusCode);
     $result->setState($this->saveSyncStateIfNeeded($pair));
