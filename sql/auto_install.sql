@@ -20,8 +20,8 @@ SET FOREIGN_KEY_CHECKS=0;
 DROP TABLE IF EXISTS `civicrm_osdi_deletion`;
 DROP TABLE IF EXISTS `civicrm_osdi_person_sync_state`;
 DROP TABLE IF EXISTS `civicrm_osdi_sync_profile`;
-DROP TABLE IF EXISTS `civicrm_osdi_donation_sync_state`;
 DROP TABLE IF EXISTS `civicrm_osdi_flag`;
+DROP TABLE IF EXISTS `civicrm_osdi_donation_sync_state`;
 
 SET FOREIGN_KEY_CHECKS=1;
 -- /*******************************************************
@@ -89,7 +89,7 @@ CREATE TABLE `civicrm_osdi_donation_sync_state` (
   `contribution_id` int unsigned COMMENT 'FK to Contact',
   `sync_profile_id` int unsigned COMMENT 'FK to OSDI Sync Profile',
   `remote_donation_id` varchar(255) DEFAULT NULL COMMENT 'FK to identifier field on remote system',
-  `source` varchar(0) COMMENT 'Whether the donation source was local (CiviCRM) or remote',
+  `source` varchar(12) COMMENT 'Whether the donation source was local (CiviCRM) or remote',
   PRIMARY KEY (`id`),
   INDEX `index_sync_profile_id`(sync_profile_id),
   INDEX `index_remote_donation_id`(remote_donation_id),

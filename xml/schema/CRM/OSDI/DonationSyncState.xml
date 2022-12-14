@@ -75,6 +75,7 @@
     <name>source</name>
     <title>Source</title>
     <type>varchar</type>
+    <length>12</length>
     <default></default>
     <comment>Whether the donation source was local (CiviCRM) or remote</comment>
     <import>true</import>
