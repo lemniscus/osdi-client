@@ -69,10 +69,11 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
 
     // Add the payment.
     civicrm_api3('Payment', 'create', [
-      'contribution_id'       => $contributionId,
-      'total_amount'          => $this->amount->get(),
-      'trxn_date'             => $this->receiveDate->get(),
-      'payment_instrument_id' => $this->paymentInstrumentId->get(),
+      'contribution_id'                   => $contributionId,
+      'total_amount'                      => $this->amount->get(),
+      'trxn_date'                         => $this->receiveDate->get(),
+      'payment_instrument_id'             => $this->paymentInstrumentId->get(),
+      'is_send_contribution_notification' => 0,
     ]);
 
     $this->id->load($contributionId);
