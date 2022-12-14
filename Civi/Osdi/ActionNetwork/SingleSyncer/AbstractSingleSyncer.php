@@ -3,6 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
 use Civi\Osdi\CrudObjectInterface;
+use Civi\Osdi\Exception\CannotMapException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
@@ -99,8 +100,13 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
         $statusCode = $result::NO_SYNC_NEEDED;
       }
       elseif ($syncEligibility->isStatus(SyncEligibility::ELIGIBLE)) {
-        $mapAndWrite = $this->oneWayMapAndWrite($pair);
-        $statusCode = $mapAndWrite->isError() ? $result::ERROR : $result::SUCCESS;
+        try {
+          $mapAndWrite = $this->oneWayMapAndWrite($pair);
+          $statusCode = $mapAndWrite->isError() ? $result::ERROR : $result::SUCCESS;
+        }
+        catch (CannotMapException $e) {
+          $statusCode = $result::INELIGIBLE;
+        }
       }
     }
 
