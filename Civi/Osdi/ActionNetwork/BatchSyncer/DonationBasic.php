@@ -59,7 +59,8 @@ class DonationBasic implements BatchSyncerInterface {
 
     $latest = $result ? $result['last_receive_date'] : date('Y-m-d');
 
-    $cutoff = date('Y-m-d', strtotime("$latest - 1 week"));
+    // $cutoff = date('Y-m-d', strtotime("$latest - 1 week"));
+    $cutoff = date('Y-m-d', strtotime("$latest - 2 day"));
     Logger::logDebug("Using $cutoff for $source donation sync");
     return $cutoff;
   }

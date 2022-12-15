@@ -56,6 +56,7 @@ trait DonationHelperTrait {
       $remotePerson->familyName->set('Flintstone');
       $remotePerson->emailAddress->set('wilma@example.org');
       $remotePerson->save();
+      Logger::logDebug("New test person: " . $remotePerson->getId());
     }
     else {
       Logger::logDebug("Reusing existing test person: " . $remotePerson->getId());
@@ -89,7 +90,7 @@ trait DonationHelperTrait {
     if (!$found) {
       // Create the default fundraising page now.
       // @Todo expect this code to change.
-      
+
       $fundraisingPage = new FundraisingPage(static::$system);
       $fundraisingPage->name->set(DonationBasicMapper::FUNDRAISING_PAGE_NAME);
       // Nb. title is the public title and is required according to the API,

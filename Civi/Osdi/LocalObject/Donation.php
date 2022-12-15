@@ -43,7 +43,7 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
       'currency'            => ['select' => 'currency'],
       'financialTypeId'     => ['select' => 'financial_type_id'], // maps to 1st (only) 'recipients'
       'paymentInstrumentId' => ['select' => 'payment_instrument_id'], // ? from 'payment' hash?
-      'contributionRecurId' => ['select' => 'contribution_recur_id'], 
+      'contributionRecurId' => ['select' => 'contribution_recur_id'],
       'contactId'           => ['select' => 'contact_id'],
       'trxnId'              => ['select' => 'trxn_id'],
       'source'              => ['select' => 'source'],
@@ -53,7 +53,7 @@ class Donation extends AbstractLocalObject implements LocalObjectInterface {
       // These fields are read only
       'financialTypeLabel'    => ['select' => 'financial_type_id:label', 'readOnly' => TRUE],
       'paymentInstrumentLabel' => ['select' => 'payment_instrument_id:label', 'readOnly' => TRUE],
-      'contributionRecurFrequency' => ['select' => 'contribution_recur_id.frequency_unit:name', 'readOnly' => TRUE], 
+      'contributionRecurFrequency' => ['select' => 'contribution_recur_id.frequency_unit:name', 'readOnly' => TRUE],
       'tceFundraisingPage'  => ['select' => '']
     ];
   }
