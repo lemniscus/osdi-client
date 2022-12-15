@@ -42,25 +42,15 @@ trait DonationHelperTrait {
     \CRM_OSDI_ActionNetwork_TestUtils::createSyncProfile();
 
     // We need a remote person that matches a local person.
-    // ... get the remote person
-    $searchResults = static::$system->find('osdi:people',
-      [[ 'email', 'eq', 'wilma@example.org']]);
-    try {
-      $remotePerson = $searchResults->filteredFirst();
-    }
-    catch (EmptyResultException $e) {}
-    if (!$remotePerson) {
-      Logger::logDebug("Creating new test person as did not find one.");
-      $remotePerson = new Person(static::$system);
-      $remotePerson->givenName->set('Wilma');
-      $remotePerson->familyName->set('Flintstone');
-      $remotePerson->emailAddress->set('wilma@example.org');
-      $remotePerson->save();
-      Logger::logDebug("New test person: " . $remotePerson->getId());
-    }
-    else {
-      Logger::logDebug("Reusing existing test person: " . $remotePerson->getId());
-    }
+    Logger::logDebug("Creating new test person as did not find one.");
+    $remotePerson = new Person(static::$system);
+    $remotePerson->givenName->set('Wilma');
+    $remotePerson->familyName->set('FlintstoneTest');
+    // Use an email the system won't have seen before, so we are sure we have a new contact.
+    $remotePerson->emailAddress->set('wilma.' . (new \DateTime())->format('Ymd.Hisv') . '@example.org');
+    $remotePerson->save();
+    Logger::logDebug("New test person: " . $remotePerson->getId());
+
     static::$testRemotePerson = $remotePerson;
 
     // ... use sync to create local person
