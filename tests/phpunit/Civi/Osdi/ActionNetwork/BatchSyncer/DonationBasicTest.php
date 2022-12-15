@@ -35,14 +35,6 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
   }
 
   public function testBatchSyncFromAN() {
-    // $syncState = \Civi\Api4\OsdiDonationSyncState::get(FALSE)
-    // ->addSelect('remote_donation_id', 'contribution_id', 'contribution.total_amount', 'contribution.receive_date')
-    // ->addWhere('remote_donation_id', 'IS NOT NULL')
-    // ->addJoin('Contribution AS contribution', 'INNER', ['contribution_id', '=', 'contribution.id'])
-    // ->execute()
-    // ->indexBy('remote_donation_id')
-    // ->getArrayCopy();
-
     // Create fixture: 2 donations.
     // Don't run the test twice in one second, or this won't work ;-)
     $sets = [
@@ -68,25 +60,10 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
     // Call system under test.
     /** @var \Civi\Osdi\ActionNetwork\BatchSyncer\DonationBasic */
     $batchSyncer = $this->getBatchSyncer();
-    $startTime = microtime(TRUE);
     $batchSyncer->batchSyncFromRemote();
-    Logger::logDebug(sprintf('Took %0.1f to call the donation sync’s batchSyncFromRemote', microtime(TRUE) - $startTime));
 
     // We should now have the donation we created above. (We may have a load of others,
     // too, if you have run this test a few times within a week).
-    // $syncState = \Civi\Api4\OsdiDonationSyncState::get(FALSE)
-    // ->addSelect('remote_donation_id', 'contribution_id')
-    // ->execute()
-    // ->getArrayCopy();
-    // print "\nReally all: \n" . json_encode($syncState, JSON_PRETTY_PRINT) . "\n";
-    //
-    // $syncState = \Civi\Api4\OsdiDonationSyncState::get(FALSE)
-    // ->addSelect('remote_donation_id', 'contribution_id')
-    // ->addWhere('remote_donation_id', 'IN', $createdRemoteDonationIds)
-    // ->execute()
-    // ->getArrayCopy();
-    // print "\nall: \n" . json_encode($syncState, JSON_PRETTY_PRINT) . "\n";
-
     $syncState = \Civi\Api4\OsdiDonationSyncState::get(FALSE)
     ->addSelect('remote_donation_id', 'contribution_id', 'contribution.total_amount', 'contribution.receive_date')
     ->addJoin('Contribution AS contribution', 'INNER', ['contribution_id', '=', 'contribution.id'])
@@ -94,34 +71,11 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
     ->execute()
     ->indexBy('remote_donation_id')
     ->getArrayCopy();
-    // print "\nwith contribs: \n" . json_encode($syncState, JSON_PRETTY_PRINT) . "\n";
-
     foreach ($createdRemoteDonationIds as $i => $remoteId) {
       $this->assertArrayHasKey($remoteId, $syncState, "Missing remote id in dataset $i: $remoteId");
       $this->assertEquals($sets[$i]['amount'], $syncState[$remoteId]['contribution.total_amount'], "Mismatch of amount on dataset $i");
       $this->assertEquals(strtr($sets[$i]['when'], ['Z' => '', 'T'=> ' ']), $syncState[$remoteId]['contribution.receive_date'], "Mismatch of receive date on dataset $i");
     }
-    //
-    //
-    // $contributions = \Civi\Api4\Contribution::get(FALSE)
-    //   ->addWhere('contact_id', '=', static::$createdEntities['Contact'][0])
-    //   ->execute()->getArrayCopy();
-    // $found = 0;
-    // foreach ($sets as $set) {
-    //   foreach ($contributions as $contribution) {
-    //     if ($contribution['total_amount'] == $set['amount']
-    //       && $contribution['receive_date'] === strtr($set['when'], ['Z' => '', 'T'=> ' '])) {
-    //       $found++;
-    //     }
-    //     // else {
-    //     //   print "cn~f $contribution[total_amount]~$set[amount] "
-    //     //   . (($contribution['total_amount'] == $set['amount']) ? 'ok ' : 'no ');
-    //     //   print "     '$contribution[receive_date]'~'" . strtr($set['when'], ['Z' => '', 'T'=> ' ']) . "' "
-    //     //   . (($contribution['receive_date'] === strtr($set['when'], ['Z' => '', 'T'=> ' '])) ? 'ok' : 'no') . "\n";
-    //     // }
-    //   }
-    // }
-    // $this->assertEquals(2, $found);
   }
 
   public function testBatchSyncFromCivi() {
@@ -159,9 +113,6 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
         // Assume it's this one.
         $found = $donation;
       }
-      // else {
-      //   print "not this one " . $donation->amount->get() ." nope.\n";
-      // }
     }
     $this->assertNotNull($found);
   }

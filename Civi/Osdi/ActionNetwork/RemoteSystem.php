@@ -10,7 +10,6 @@ use Civi\Osdi\ActionNetwork\Object\Tagging;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Factory;
-use Civi\Osdi\Logger;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\Result\Save;
 use CRM_OSDI_ExtensionUtil as E;
@@ -106,18 +105,12 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     $query = implode(' and ', $filterClauses);
     $href = $endpoint->getHref() . "?filter=$query";
     $endPointWithQuery = $this->linkify($href);
-    $startTime = microtime(TRUE);
-    $result = new RemoteFindResult($this, $objectType, $endPointWithQuery);
-    Logger::logDebug(sprintf('Took %0.1f to call find %s %s', microtime(TRUE) - $startTime, $objectType, json_encode($criteria)));
-    return $result;
+    return new RemoteFindResult($this, $objectType, $endPointWithQuery);
   }
 
   public function findAll(string $objectType): RemoteFindResult {
     $endpoint = $this->getEndpointFor($objectType);
-    $startTime = microtime(TRUE);
-    $result = new RemoteFindResult($this, $objectType, $endpoint);
-    Logger::logDebug(sprintf('Took %0.1f to call findAll %s', microtime(TRUE) - $startTime, $objectType));
-    return $result;
+    return new RemoteFindResult($this, $objectType, $endpoint);
   }
 
   public function save(RemoteObjectInterface $osdiObject): HalResource {
@@ -125,7 +118,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
       try {
         $result = $this->updateOnRemoteSystem($osdiObject);
       }
-     catch (\Throwable $e) {
+      catch (\Throwable $e) {
         $result = $this->createOnRemoteSystem($osdiObject);
       }
     }
@@ -164,10 +157,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
   private function updateOnRemoteSystem(RemoteObjectInterface $osdiObject) {
     $endpoint = $this->linkify($osdiObject->getUrlForUpdate());
-    $startTime = microtime(TRUE);
-    $result = $endpoint->put([], ['body' => $osdiObject->getArrayForUpdate()]);
-    Logger::logDebug(sprintf('Took %0.1f to call updateOnRemoteSystem', microtime(TRUE) - $startTime));
-    return $result;
+    return $endpoint->put([], ['body' => $osdiObject->getArrayForUpdate()]);
   }
 
   /**
@@ -177,9 +167,7 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
    */
   private function createOnRemoteSystem(RemoteObjectInterface $osdiObject) {
     $endpoint = $this->linkify($osdiObject->getUrlForCreate());
-    $startTime = microtime(TRUE);
     $body = $osdiObject->getArrayForCreate();
-    Logger::logDebug(sprintf('Took %0.1f to call createOnRemoteSystem', microtime(TRUE) - $startTime));
     return $endpoint->post([], ['body' => $body]);
   }
 

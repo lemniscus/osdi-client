@@ -59,7 +59,6 @@ class DonationBasic implements MapperInterface {
     }
     catch (\Throwable $e) {
       $result->setStatusCode($result::ERROR);
-      throw $e; // xxx
     }
 
     $pair->getResultStack()->push($result);
@@ -152,26 +151,20 @@ class DonationBasic implements MapperInterface {
     LocalObjectInterface $localDonation = NULL
   ): LocalDonation {
 
-    Logger::startTask('mapRemoteToLocal');
     /** @var LocalDonation $localDonation */
     $localDonation = $localDonation ?? new LocalDonation();
 
     // Load the person that the donation belongs to.
     /** @var RemoteDonation $remoteDonation */
     $remotePerson = $remoteDonation->getDonor();
-    Logger::progressTask("getDonor");
-    
     $personPair = new LocalRemotePair(NULL, $remotePerson);
     $personPair->setOrigin(LocalRemotePair::ORIGIN_REMOTE);
     $personPair->setLocalClass(LocalPerson::class);
     $matchResult = $this->personMatcher->tryToFindMatchFor($personPair); // xxx
-    Logger::progressTask("personMatcher->tryToFindMatchFor");
     if (!$matchResult->gotMatch()) {
-      Logger::endTask();
       throw new CannotMapException("Cannot sync a donation whose Person ({$remotePerson->getId()}) has no LocalPerson match.");
     }
     $localPerson = $matchResult->getMatch();
-    Logger::progressTask("matchResult->getMatch");
     $localDonation->contactId->set($localPerson->getId());
 
     // Simple mappings
@@ -193,21 +186,16 @@ class DonationBasic implements MapperInterface {
     } 
 
     ['method' => $remotePaymentMethod, 'reference_number' => $remoteTrxnId] = $remoteDonation->payment->get();
-    Logger::progressTask("before mapRemotePaymentMethodToLocalId");
     $localDonation->paymentInstrumentId->set($this->mapRemotePaymentMethodToLocalId($remotePaymentMethod));
-    Logger::progressTask("done mapRemotePaymentMethodToLocalId");
     // $localDonation->paymentMethodId->set($this->mapRemotePaymentMethodToLocalId($remotePaymentMethod));
 
     // @todo possibly use a prefix?
     $localDonation->trxnId->set($remoteTrxnId);
 
-    Logger::startTask("mapRemoteFundraisingPageToLocal");
     $this->mapRemoteFundraisingPageToLocal($remoteDonation, $localDonation);
-    Logger::endTask();
 
     // @todo $remoteDonation->referrerData 
 
-    Logger::endTask();
     return $localDonation;
   }
 
