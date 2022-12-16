@@ -52,8 +52,8 @@ class DonationBasic implements BatchSyncerInterface {
     }
 
     $result = \Civi\Api4\Contribution::get(FALSE)
-    ->addSelect('MAX(receive_date) last_receive_date')
-    ->addJoin('OsdiDonationSyncState AS osdi_donation_sync_state', 'INNER', ['id', '=', 'osdi_donation_sync_state.contribution_id'])
+    ->addSelect('MAX(receive_date) AS last_receive_date')
+    ->addJoin('OsdiDonationSyncState AS osdi_donation_sync_state', 'INNER', NULL, ['id', '=', 'osdi_donation_sync_state.contribution_id'])
     ->addWhere('osdi_donation_sync_state.source', '=', $source)
     ->execute()->first();
 
@@ -85,7 +85,6 @@ class DonationBasic implements BatchSyncerInterface {
         ', mod ' . $remoteDonation->modifiedDate->get());
 
       try {
-        // artfulrobot: @todo all cases are eligible unless I were to implement getSyncEligibility
         $pair = $this->singleSyncer->matchAndSyncIfEligible($remoteDonation);
         $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
       }

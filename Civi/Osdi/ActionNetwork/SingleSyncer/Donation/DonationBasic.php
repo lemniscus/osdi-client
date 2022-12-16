@@ -72,5 +72,29 @@ class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterfac
     return NULL;
   }
 
+  /**
+   * We are eligible unless a sync state exists.
+   */
+  protected function getSyncEligibility(LocalRemotePair $pair): SyncEligibility {
+    $syncStateApi = \Civi\Api4\OsdiDonationSyncState::get(FALSE);
+    $origin = $pair->getOrigin();
+    if ($origin === 'remote') {
+      $syncStateApi->addWhere('remote_donation_id', '=', $pair->getRemoteObject()->getId());
+    }
+    else {
+      $syncStateApi->addWhere('contribution_id', '=', $pair->getLocalObject()->getId());
+    }
+    $alreadyInSync = $syncStateApi->execute()->first();
+
+    $result = new SyncEligibility();
+    $result->setStatusCode($alreadyInSync ? SyncEligibility::INELIGIBLE : SyncEligibility::ELIGIBLE);
+    $result->setMessage("Donation from $origin ({$pair->getOriginObject()->getId()}) is " . ($alreadyInSync ? 'already in sync' : 'eligible for sync'));
+    $pair->getResultStack()->push($result);
+    // Logger::logDebug("Donation from $origin ({$pair->getOriginObject()->getId()}) is " . ($alreadyInSync ? 'already in sync' : 'eligible for sync'));
+
+    return $result;
+  }
+
+
 }
 
