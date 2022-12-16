@@ -57,8 +57,13 @@ class DonationBasic implements MapperInterface {
       }
       $result->setStatusCode($result::SUCCESS);
     }
+    catch (\Civi\Osdi\Exception\CannotMapException $e) {
+      $result->setStatusCode($result::ERROR);
+      $result->setMessage($e->getMessage());
+    }
     catch (\Throwable $e) {
       $result->setStatusCode($result::ERROR);
+      // Note: here we do nothing with any error message?
     }
 
     $pair->getResultStack()->push($result);
@@ -119,7 +124,7 @@ class DonationBasic implements MapperInterface {
     // $remoteDonation->payment = ['method' => 'EFT', 'reference_number' => 'test_payment_1'];
 
     // Fundraising page
-    // @todo $remoteDonation->fundraisingPageHref 
+    // @todo $remoteDonation->fundraisingPageHref
     // This is a challenge: on the Civi side we have just a string;
     // on the remote side we have an object. And we can't look up the
     // object by name.
@@ -138,7 +143,7 @@ class DonationBasic implements MapperInterface {
       throw new CannotMapException("Cannot map local donation: Failed to find remote fundraising page called " . json_encode(self::FUNDRAISING_PAGE_NAME));
     }
 
-    // @todo $remoteDonation->referrerData 
+    // @todo $remoteDonation->referrerData
 
     return $remoteDonation;
   }
@@ -183,7 +188,7 @@ class DonationBasic implements MapperInterface {
       // then write a ContributionRecur record on save, where there isn't one.
       // (we'd need to ensure not to create a new recur every contribution.)
       // $period = $remoteDonation->recurrence->get()['period'];
-    } 
+    }
 
     ['method' => $remotePaymentMethod, 'reference_number' => $remoteTrxnId] = $remoteDonation->payment->get();
     $localDonation->paymentInstrumentId->set($this->mapRemotePaymentMethodToLocalId($remotePaymentMethod));
@@ -194,7 +199,7 @@ class DonationBasic implements MapperInterface {
 
     $this->mapRemoteFundraisingPageToLocal($remoteDonation, $localDonation);
 
-    // @todo $remoteDonation->referrerData 
+    // @todo $remoteDonation->referrerData
 
     return $localDonation;
   }

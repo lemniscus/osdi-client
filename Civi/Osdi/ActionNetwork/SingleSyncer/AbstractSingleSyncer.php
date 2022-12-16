@@ -93,6 +93,7 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     }
     else {
       $syncEligibility = $this->getSyncEligibility($pair);
+      $result->setMessage($syncEligibility->getMessage());
       if ($syncEligibility->isStatus(SyncEligibility::INELIGIBLE)) {
         $statusCode = $result::INELIGIBLE;
       }
@@ -101,11 +102,13 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
       }
       elseif ($syncEligibility->isStatus(SyncEligibility::ELIGIBLE)) {
         try {
-          $mapAndWrite = $this->oneWayMapAndWrite($pair);
-          $statusCode = $mapAndWrite->isError() ? $result::ERROR : $result::SUCCESS;
+          $mapAndWriteResult = $this->oneWayMapAndWrite($pair);
+          $statusCode = $mapAndWriteResult->isError() ? $result::ERROR : $result::SUCCESS;
+          $result->setMessage($mapAndWriteResult->getMessage());
         }
         catch (CannotMapException $e) {
           $statusCode = $result::INELIGIBLE;
+          $result->setMessage($e->getMessage());
         }
       }
     }
