@@ -117,10 +117,22 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
     $dupePair = $syncer->matchAndSyncIfEligible($dupeLocalPerson);
     self::assertTrue($dupePair->isError(), print_r($dupePair->getResultStack()->toArray(), TRUE));
 
-    $this->assertAndGetSuccessSyncState($mainLocalPerson);
-    $this->assertAndGetErrorSyncState($dupeLocalPerson);
+    $mainSyncState = $this->assertAndGetSuccessSyncState($mainLocalPerson);
+    $dupeSyncState = $this->assertAndGetErrorSyncState($dupeLocalPerson);
 
-    // MERGE
+    // Simulate a situation where the two records' last syncs are at least 1
+    // second before the merge. In a production environment, we are exceedingly
+    // unlikely to encounter any other situation.
+
+    $mainSyncState->setLocalPostSyncModifiedTime(
+      $mainSyncState->getLocalPostSyncModifiedTime() - 1);
+    $mainSyncState->save();
+
+    $dupeSyncState->setLocalPostSyncModifiedTime(
+      $dupeSyncState->getLocalPostSyncModifiedTime() - 1);
+    $dupeSyncState->save();
+
+    // MERGE CONTACTS, AND RUN SYNC QUEUE
     self::$mergeNameFromDupe = TRUE;
     $this->mergeViaCiviApi3($dupeLocalPerson, $mainLocalPerson);
     $this->runQueueViaCiviApi3();
