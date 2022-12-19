@@ -3,12 +3,12 @@ namespace Civi\Osdi\ActionNetwork;
 
 use Civi\Api4\FinancialType;
 use Civi\Osdi\ActionNetwork\Object\Person;
+use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\Logger;
 use Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail;
 use Civi\Osdi\ActionNetwork\Mapper\DonationBasic as DonationBasicMapper;
 use Civi\Osdi\ActionNetwork\Object\FundraisingPage;
-use Civi\Osdi\Exception\EmptyResultException;
 
 
 trait DonationHelperTrait {
@@ -17,9 +17,9 @@ trait DonationHelperTrait {
    * @var array{Contact: array, OptionGroup: array, OptionValue: array,
    *   CustomGroup: array, CustomField: array}
    */
-  private static $createdEntities = [];
+  protected $createdLocalEntities = [];
 
-  private static Person $testRemotePerson;
+  protected $createdRemoteEntities = [];
 
   private static RemoteSystem $system;
 
@@ -38,35 +38,10 @@ trait DonationHelperTrait {
    */
   public static function setUpBeforeClass(): void {
     static::$system = \CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    static::$personMatcher = new UniqueEmailOrFirstLastEmail(static::$system);
 
     \CRM_OSDI_ActionNetwork_TestUtils::createSyncProfile();
 
-    // We need a remote person that matches a local person.
-    Logger::logDebug("Creating new test person as did not find one.");
-    $remotePerson = new Person(static::$system);
-    $remotePerson->givenName->set('Wilma');
-    $remotePerson->familyName->set('FlintstoneTest');
-    // Use an email the system won't have seen before, so we are sure we have a new contact.
-    $remotePerson->emailAddress->set('wilma.' . (new \DateTime())->format('Ymd.Hisv') . '@example.org');
-    $remotePerson->save();
-    Logger::logDebug("New test person: " . $remotePerson->getId());
-
-    static::$testRemotePerson = $remotePerson;
-
-    // ... use sync to create local person
-    $personSyncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic(static::$system);
-    $personMapper = new \Civi\Osdi\ActionNetwork\Mapper\PersonBasic(static::$system);
-    $personSyncer->setMapper($personMapper);
-    static::$personMatcher = new UniqueEmailOrFirstLastEmail(static::$system);
-    $personSyncer->setMatcher(static::$personMatcher);
-    $pair = $personSyncer->matchAndSyncIfEligible($remotePerson);
-    static::$createdEntities['Contact'] = [$pair->getLocalObject()->getId()];
-    $contactId = static::$createdEntities['Contact'][0];
-
-    // HACK: the above sometimes returns a deleted contact.
-    $neededToUndelete = \Civi\Api4\Contact::update(FALSE)->addWhere('id', '=', $contactId)->addValue('is_deleted', 0)->addWhere('is_deleted', '=', 1)->execute()->count();
-
-    // print "\nSync created contact $contactId from remote person {$remotePerson->getId()}\n";
 
     // Ensure we have the default fundraising page.
     $fundraisingPages = static::$system->findAll('osdi:fundraising_pages');
@@ -110,22 +85,66 @@ trait DonationHelperTrait {
     static::$financialTypeId = $financialTypeApiResult->single()['id'];
   }
 
-  public static function tearDownAfterClass(): void {
+  public function tearDown(): void {
 
-    static::$testRemotePerson->delete();
-
-    foreach (self::$createdEntities as $type => $ids) {
-      foreach ($ids as $id) {
-        civicrm_api4($type, 'delete', [
-          'where' => [['id', '=', $id]],
-          'checkPermissions' => FALSE,
-          'useTrash' => FALSE,
-        ]);
-      }
+    foreach ($this->createdRemoteEntities as $entity) {
+      $entity->delete();
     }
 
-    parent::tearDownAfterClass();
+    // Civi seems to be refusing to delete contacts, probably because they have contributions.
+    // However they should be removed by the db rollback.
+    //
+    // foreach ($this->createdLocalEntities as $type => $ids) {
+    //   // filter these for ones that still exist (actually shouldn't be any?)
+    //   $exists = civicrm_api4($type, 'get', [
+    //       'select' => ['id'],
+    //       'where' => [['id', 'IN', $ids]],
+    //       'checkPermissions' => FALSE,
+    //     ])->column('id');
+    //
+    //   foreach ($ids as $id) {
+    //     if (in_array($id, $exists)) {
+    //       civicrm_api4($type, 'delete', [
+    //         'where' => [['id', '=', $id]],
+    //         'checkPermissions' => FALSE,
+    //         'useTrash' => FALSE,
+    //       ]);
+    //     }
+    //   }
+    // }
+
   }
 
+
+  public function createInSyncPerson(): LocalRemotePair {
+
+    // We need a remote person that matches a local person.
+    Logger::logDebug("Creating new test person as did not find one.");
+    $remotePerson = new Person(static::$system);
+    $remotePerson->givenName->set('Wilma');
+    $remotePerson->familyName->set('FlintstoneTest');
+    // Use an email the system won't have seen before, so we are sure we have a new contact.
+    $remotePerson->emailAddress->set('wilma.' . (new \DateTime())->format('Ymd.Hisv') . '@example.org');
+    $remotePerson->save();
+    Logger::logDebug("New test person: " . $remotePerson->getId());
+
+    // ... use sync to create local person
+    $personSyncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic(static::$system);
+    $personMapper = new \Civi\Osdi\ActionNetwork\Mapper\PersonBasic(static::$system);
+    $personSyncer->setMapper($personMapper);
+    $personSyncer->setMatcher(static::$personMatcher);
+    $pair = $personSyncer->matchAndSyncIfEligible($remotePerson);
+
+    $this->createdLocalEntities['Contact'] = [$pair->getLocalObject()->getId()];
+    // $contactId = static::$createdEntities['Contact'][0];
+
+    $this->createdRemoteEntities[] = $remotePerson;
+
+    return $pair;
+
+    // HACK: the above sometimes returns a deleted contact. (shouldn't)
+    // $neededToUndelete = \Civi\Api4\Contact::update(FALSE)->addWhere('id', '=', $contactId)->addValue('is_deleted', 0)->addWhere('is_deleted', '=', 1)->execute()->count();
+    // print "\nSync created contact $contactId from remote person {$remotePerson->getId()}\n";
+  }
 
 }

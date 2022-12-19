@@ -47,6 +47,8 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
    *
    */
   public function testMapRemoteToNewLocal() {
+    $personPair = $this->createInSyncPerson();
+    $contactId = $personPair->getLocalObject()->getId();
 
     // Create fixture
     $remoteDonation = new RemoteDonation(static::$system);
@@ -54,7 +56,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $recipients = [['display_name' => 'Test recipient financial type', 'amount' => '2.22']];
     $remoteDonation->recipients->set($recipients);
     $remoteDonation->createdDate->set('2020-03-04T05:06:07Z');
-    $remoteDonation->setDonor(self::$testRemotePerson);
+    $remoteDonation->setDonor($personPair->getRemoteObject());
     $remoteDonation->setFundraisingPage(self::$testFundraisingPage);
     $remoteDonation->recurrence->set(['recurring' => FALSE]);
     $referrerData = [
@@ -70,7 +72,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $localDonation->save();
 
     // Check expectations
-    $this->assertEquals(static::$createdEntities['Contact'][0], $localDonation->contactId->get());
+    $this->assertEquals($contactId, $localDonation->contactId->get());
     $this->assertEquals('2020-03-04T05:06:07Z', $localDonation->receiveDate->get());
     $this->assertEquals('USD', $localDonation->currency->get());
     $this->assertEquals(static::$financialTypeId, $localDonation->financialTypeId->get());
@@ -111,7 +113,8 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $this->assertEquals(['recurring' => FALSE], $remoteDonation->recurrence->get());
   }
   protected function createTestContribution(): int {
-    $contactId = static::$createdEntities['Contact'][0];
+    $personPair = $this->createInSyncPerson();
+    $contactId = $personPair->getLocalObject()->getId();
     // Create a local Contribution.
     $contributionId = civicrm_api3('Order', 'create', [
       'contact_id' => $contactId,
