@@ -115,7 +115,7 @@ class Person extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInte
       return [NULL, NULL, NULL];
     }
 
-    $criteria = [['email', 'eq', $this->emailAddress->get()]];
+    $criteria = [['email_address', 'eq', $this->emailAddress->get()]];
     $peopleWithTheEmail = $this->_system->find($this->getType(), $criteria);
 
     if (0 == $peopleWithTheEmail->rawCurrentCount()) {

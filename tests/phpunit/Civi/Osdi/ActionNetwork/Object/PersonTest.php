@@ -162,7 +162,7 @@ class PersonTest extends \PHPUnit\Framework\TestCase implements
     $name2 = "Different $name1";
     $searchResults = self::$system->find('osdi:people', [
       [
-        'email',
+        'email_address',
         'eq',
         $email2,
       ],
@@ -302,7 +302,7 @@ class PersonTest extends \PHPUnit\Framework\TestCase implements
 
     $remotePeopleWithTheEmail = self::$system->find(
       'osdi:people',
-      [['email', 'eq', $savedPersonEmail]]);
+      [['email_address', 'eq', $savedPersonEmail]]);
 
     self::assertEquals(0, $remotePeopleWithTheEmail->filteredCurrentCount());
   }
@@ -317,7 +317,7 @@ class PersonTest extends \PHPUnit\Framework\TestCase implements
     // FIND
     $searchResults = self::$system->find('osdi:people', [
       [
-        'email',
+        'email_address',
         'eq',
         'testy@test.net',
       ],

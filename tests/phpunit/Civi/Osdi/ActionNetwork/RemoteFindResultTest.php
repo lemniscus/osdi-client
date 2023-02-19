@@ -48,7 +48,7 @@ class RemoteFindResultTest extends \PHPUnit\Framework\TestCase implements
 
     $remotePeopleWithTheEmail = self::$system->find(
       'osdi:people',
-      [['email', 'eq', 'traveler@antique.land']]);
+      [['email_address', 'eq', 'traveler@antique.land']]);
 
     self::assertEquals(0, $remotePeopleWithTheEmail->filteredCurrentCount());
 
@@ -57,7 +57,7 @@ class RemoteFindResultTest extends \PHPUnit\Framework\TestCase implements
 
     $remotePeopleWithTheEmail = self::$system->find(
       'osdi:people',
-      [['email', 'eq', 'traveler@antique.land']]);
+      [['email_address', 'eq', 'traveler@antique.land']]);
 
     self::assertEquals(1, $remotePeopleWithTheEmail->filteredCurrentCount());
   }

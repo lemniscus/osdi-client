@@ -35,13 +35,13 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     $remotePeopleWithTheEmail = self::$remoteSystem->find(
       'osdi:people',
-      [['email', 'eq', $emailAddress]]);
+      [['email_address', 'eq', $emailAddress]]);
 
     if ($remotePeopleWithTheEmail->rawCurrentCount()) {
       $remotePeopleWithTheEmail->rawFirst()->delete();
       $remotePeopleWithTheEmail = self::$remoteSystem->find(
         'osdi:people',
-        [['email', 'eq', $emailAddress]]);
+        [['email_address', 'eq', $emailAddress]]);
     }
 
     self::assertEquals(0, $remotePeopleWithTheEmail->filteredCurrentCount());
@@ -478,13 +478,13 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     $remotePeopleWithTheEmail = self::$remoteSystem->find(
       'osdi:people',
-      [['email', 'eq', $emailAddress]]);
+      [['email_address', 'eq', $emailAddress]]);
 
     if ($remotePeopleWithTheEmail->rawCurrentCount()) {
       $remotePeopleWithTheEmail->rawFirst()->delete();
       $remotePeopleWithTheEmail = self::$remoteSystem->find(
         'osdi:people',
-        [['email', 'eq', $emailAddress]]);
+        [['email_address', 'eq', $emailAddress]]);
     }
 
     self::assertEquals(0, $remotePeopleWithTheEmail->filteredCurrentCount());
@@ -500,7 +500,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     $remotePeopleWithTheEmail = self::$remoteSystem->find(
       'osdi:people',
-      [['email', 'eq', $emailAddress]]);
+      [['email_address', 'eq', $emailAddress]]);
     $remotePersonWithTheEmail = $remotePeopleWithTheEmail->filteredFirst();
     self::$createdRemotePeople[] = $remotePersonWithTheEmail;
 
@@ -609,7 +609,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     $remotePeopleWithTheEmail = self::$remoteSystem->find(
       'osdi:people',
-      [['email', 'eq', $originalRemotePerson->emailAddress->get()]]);
+      [['email_address', 'eq', $originalRemotePerson->emailAddress->get()]]);
     self::$createdRemotePeople[] = $remotePeopleWithTheEmail->filteredFirst();
 
     self::assertEquals(
@@ -755,7 +755,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     $remotePeopleWithEmail1 = self::$remoteSystem->find(
       'osdi:people',
-      [['email', 'eq', $emailOne]]);
+      [['email_address', 'eq', $emailOne]]);
 
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $originalRemotePerson */
     $originalRemotePerson = self::$createdRemotePeople[] =
@@ -768,7 +768,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     $searchResults = self::$remoteSystem->find(
       'osdi:people',
-      [['email', 'eq', $emailTwo]]);
+      [['email_address', 'eq', $emailTwo]]);
 
     $this->assertEquals(0,
       $searchResults->filteredCurrentCount(),
@@ -792,7 +792,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     while ((microtime(TRUE) - $startTime) < 1.5) {
       $remotePeopleWithEmail2 = self::$remoteSystem->find(
         'osdi:people',
-        [['email', 'eq', $emailTwo]]);
+        [['email_address', 'eq', $emailTwo]]);
       if ($remotePeopleWithEmail2->rawCurrentCount() > 0) {
         break;
       }
@@ -844,7 +844,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     $remotePeopleWithEmail1 = self::$remoteSystem->find(
       'osdi:people',
-      [['email', 'eq', $emailOne]]);
+      [['email_address', 'eq', $emailOne]]);
 
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $originalRemotePerson */
     $originalRemotePerson = self::$createdRemotePeople[] =

@@ -65,7 +65,7 @@ class UniqueEmailOrFirstLastEmail extends AbstractMatcher implements MatcherInte
     }
 
     $remoteSystemFindResult = $this->system->find('osdi:people',
-      [['email', 'eq', $email]]);
+      [['email_address', 'eq', $email]]);
 
     return $this->makeSingleOrZeroMatchResult(
       $localObject,
@@ -95,9 +95,9 @@ class UniqueEmailOrFirstLastEmail extends AbstractMatcher implements MatcherInte
     $remoteSystemFindResult = $this->system->find(
       'osdi:people',
       [
-        ['email', 'eq', $email],
+        ['email_address', 'eq', $email],
         ['given_name', 'eq', $firstName],
-        ['last_name', 'eq', $lastName],
+        ['family_name', 'eq', $lastName],
       ]
     );
 
