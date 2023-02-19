@@ -17,8 +17,8 @@ use PHPUnit;
  *
  */
 class DonationBasicTest extends PHPUnit\Framework\TestCase implements
-    \Civi\Test\HeadlessInterface,
-    \Civi\Test\TransactionalInterface {
+  \Civi\Test\HeadlessInterface,
+  \Civi\Test\TransactionalInterface {
 
   use DonationHelperTrait;
 
@@ -33,20 +33,29 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
       ->apply();
   }
 
+  /**
+   * Here we test that
+   *
+   * 1. two new donations at AN are synced to Civi.
+   * 2. add a third donation and re-run the sync; we expect the third donation to come in, and not duplicates.
+   *
+   */
   public function testBatchSyncFromAN() {
-    // NM todo: make it test syncing at least 2 donations
-    // Create fixture
+    $personPair = $this->createInSyncPerson();
+    $contactId = $personPair->getLocalObject()->getId();
+
+    // Create fixture: 2 donations.
     // Don't run the test twice in one second, or this won't work ;-)
-    $rightHereRightNow = date('Y-m-d\TH:i:s\Z');
-    $remoteDonationToday = new RemoteDonation(static::$system);
-    $remoteDonationToday->currency->set('USD');
-    $recipients = [['display_name' => 'Test recipient financial type', 'amount' => '2.22']];
-    $remoteDonationToday->recipients->set($recipients);
-    $remoteDonationToday->createdDate->set($rightHereRightNow);
-    $remoteDonationToday->setDonor(self::$testRemotePerson);
-    $remoteDonationToday->setFundraisingPage(self::$testFundraisingPage);
-    $remoteDonationToday->recurrence->set(['recurring' => FALSE]);
-    $remoteDonationToday->save();
+    $sets = [
+      ['amount' => '1.23', 'when' => date('Y-m-d\TH:i:s\Z') ],
+      ['amount' => '3.45', 'when' => date('Y-m-d\TH:i:s\Z', strtotime('now - 1 day')) ],
+      ['amount' => '7.89', 'when' => date('Y-m-d\TH:i:s\Z', strtotime('now - 1 month')) ],
+    ];
+    $createdRemoteDonationIds = [
+      $this->createRemoteDonationAndGetId($sets[0], $personPair->getRemoteObject()),
+      $this->createRemoteDonationAndGetId($sets[1], $personPair->getRemoteObject()),
+    ];
+    $this->assertCount(2, $createdRemoteDonationIds, 'Failed creating remote fixture');
 
     // Call system under test.
     /** @var \Civi\Osdi\ActionNetwork\BatchSyncer\DonationBasic */
@@ -55,56 +64,146 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
 
     // We should now have the donation we created above. (We may have a load of others,
     // too, if you have run this test a few times within a week).
-    $contributions = \Civi\Api4\Contribution::get(FALSE)
-      ->addWhere('contact_id', '=', static::$createdEntities['Contact'][0])
-      ->addWhere('receive_date', '=', rtrim($rightHereRightNow, 'Z'))
-      ->execute();
-    $this->assertEquals(1, $contributions->countFetched());
-    $cn = $contributions->first();
-    $this->assertEquals(2.22, $cn['total_amount'], "Amount of Contribution created by Remote-to-Local sync differs.");
+    $syncState = \Civi\Api4\OsdiDonationSyncState::get(FALSE)
+    ->addSelect('remote_donation_id', 'contribution_id', 'contribution.total_amount', 'contribution.receive_date')
+    ->addJoin('Contribution AS contribution', 'INNER', ['contribution_id', '=', 'contribution.id'])
+    ->addWhere('remote_donation_id', 'IN', $createdRemoteDonationIds)
+    ->execute()
+    ->indexBy('remote_donation_id')
+    ->getArrayCopy();
+    foreach ($createdRemoteDonationIds as $i => $remoteId) {
+      $this->assertArrayHasKey($remoteId, $syncState, "Missing remote id in dataset $i: $remoteId");
+      $this->assertEquals($sets[$i]['amount'], $syncState[$remoteId]['contribution.total_amount'], "Mismatch of amount on dataset $i");
+      $this->assertEquals(strtr($sets[$i]['when'], ['Z' => '', 'T'=> ' ']), $syncState[$remoteId]['contribution.receive_date'], "Mismatch of receive date on dataset $i");
+    }
+    $countOfDonations = \Civi\Api4\Contribution::get(FALSE)->selectRowCount()->addWhere('contact_id', '=', $contactId)->addWhere('is_test', 'IN', [0, 1])->execute()->count();
+    $this->assertEquals(2, $countOfDonations, "Expected 2 contributions, but got $countOfDonations");
+
+    // Part 2: create third donation.
+    $createdRemoteDonationIds[] = $this->createRemoteDonationAndGetId($sets[2], $personPair->getRemoteObject());
+    $batchSyncer->batchSyncFromRemote();
+
+    $newCountOfDonations = \Civi\Api4\Contribution::get(FALSE)->selectRowCount()->addWhere('contact_id', '=', $contactId)->addWhere('is_test', 'IN', [0, 1])->execute()->count();
+    $this->assertEquals(3, $newCountOfDonations, "Expected 3 donations now but got $newCountOfDonations");
+
+    $syncState2 = \Civi\Api4\OsdiDonationSyncState::get(FALSE)
+    ->addSelect('remote_donation_id', 'contribution_id', 'contribution.total_amount', 'contribution.receive_date')
+    ->addJoin('Contribution AS contribution', 'INNER', ['contribution_id', '=', 'contribution.id'])
+    ->addWhere('remote_donation_id', 'IN', $createdRemoteDonationIds)
+    ->execute()
+    ->indexBy('remote_donation_id')
+    ->getArrayCopy();
+
+    foreach ($createdRemoteDonationIds as $i => $remoteId) {
+      if ($i < 2) {
+        // First two donations' should not have changed
+        $this->assertArrayHasKey($remoteId, $syncState2, "Missing remote id in dataset $i: $remoteId in OsdiDonationSyncState results fetched after repeat sync call");
+        $this->assertEquals($syncState[$remoteId], $syncState2[$remoteId], "Sync state has changed after repeat call");
+      }
+      else {
+        // Third donation is new, should match $set[2]
+        $this->assertArrayHasKey($remoteId, $syncState2, "Missing remote id in dataset $i: $remoteId in OsdiDonationSyncState results fetched after repeat sync call");
+        $this->assertEquals($sets[$i]['amount'], $syncState2[$remoteId]['contribution.total_amount'], "Mismatch of amount on dataset $i");
+        $this->assertEquals(strtr($sets[$i]['when'], ['Z' => '', 'T'=> ' ']), $syncState2[$remoteId]['contribution.receive_date'], "Mismatch of receive date on dataset $i");
+      }
+    }
+
+  }
+
+  protected function createRemoteDonationAndGetId(array $set, $remotePerson): string {
+      $remoteDonationToday = new RemoteDonation(static::$system);
+      $recipients = [['display_name' => 'Test recipient financial type', 'amount' => $set['amount']]];
+      $remoteDonationToday->recipients->set($recipients);
+      $remoteDonationToday->createdDate->set($set['when']);
+      $remoteDonationToday->setDonor($remotePerson);
+      $remoteDonationToday->setFundraisingPage(self::$testFundraisingPage);
+      $remoteDonationToday->recurrence->set(['recurring' => FALSE]);
+      $remoteDonationToday->save();
+      return $remoteDonationToday->getId();
   }
 
   public function testBatchSyncFromCivi() {
-    // NM todo: make it test syncing at least 2 donations
-    // Create a donation in Civi, call sync, load recent donations and check it's there.
+    $personPair = $this->createInSyncPerson();
+    $contactId = $personPair->getLocalObject()->getId();
+    // Create donations in Civi, call sync, load recent donations and check it's there.
     $now = time();
-
-    // Create fixture.
-    // NM todo: add something more unique that we can check for
-    $contribution = civicrm_api3('Order', 'create', [
-      'financial_type_id' => 1,
-      'contact_id' => static::$createdEntities['Contact'][0],
-      'total_amount' => 1.23,
-    ]);
-    civicrm_api3('Payment', 'create', [
-      'contribution_id' => $contribution['id'],
-      'total_amount' => 1.23,
-      'trxn_id' => 'abc',
-    ]);
-
-    // Call system under test
+    $sets = [
+      [['total_amount' => 1.23, 'receive_date' => date('Y-m-d H:i:s', $now - 60*60*24*1)], ['trxn_id' => 'testtrxn_1'], $contactId],
+      [['total_amount' => 4.56, 'receive_date' => date('Y-m-d H:i:s', $now - 60*60*24*1)], ['trxn_id' => 'testtrxn_2'], $contactId],
+      [['total_amount' => 7.89, 'receive_date' => date('Y-m-d H:i:s', $now - 60*60*24*1)], ['trxn_id' => 'testtrxn_3'], $contactId],
+    ];
+    $createdContributionIds = [
+      $this->createLocalContribution(...$sets[0]),
+      $this->createLocalContribution(...$sets[1]),
+    ];
     $batchSyncer = $this->getBatchSyncer();
+    // Call system under test
     $batchSyncer->batchSyncFromLocal();
+    // Checks
+    $this->assertRemoteDonationsMatch(2, $now, $sets, $createdContributionIds, $personPair->getRemoteObject()->getId());
+    // Now add one more contribution and repeat.
+    $createdContributionIds[] = $this->createLocalContribution(...$sets[2]);
+    // Call system under test
+    $batchSyncer->batchSyncFromLocal();
+    // Checks
+    $this->assertRemoteDonationsMatch(3, $now, $sets, $createdContributionIds, $personPair->getRemoteObject()->getId());
+  }
 
-    // Check expectations
-    // There should be a remote donation for this.
+
+  protected function createLocalContribution(array $orderParams, array $paymentParams, int $contactId): int {
+
+    $orderParams += [
+      'receive_date' => date('Y-m-d H:i:s', strtotime('now - 1 day')),
+      'financial_type_id' => 1,
+      'contact_id' => $contactId,
+      'total_amount' => 1.23,
+    ];
+    $contribution = civicrm_api3('Order', 'create', $orderParams);
+
+    $paymentParams += [
+      'contribution_id' => $contribution['id'],
+      'total_amount' => $orderParams['total_amount'],
+      'trxn_date' => $orderParams['receive_date'],
+      'trxn_id' => 'abc',
+    ];
+    civicrm_api3('Payment', 'create', $paymentParams);
+
+    return $contribution['id'];
+  }
+  protected function assertRemoteDonationsMatch(int $expectedCount, int $now, array $sets, array $createdContributionIds, string $remotePersonId) {
+    $contributionIdToSetNo = array_flip($createdContributionIds);
+    // Load all our donation sync status records
+    $remoteIdToContributionId = \Civi\Api4\OsdiDonationSyncState::get(FALSE)
+    ->addSelect('remote_donation_id', 'contribution_id')
+    ->addWhere('contribution_id', 'IN', $createdContributionIds)
+    ->execute()
+    ->indexBy('remote_donation_id')
+    ->column('contribution_id');
+    $this->assertCount($expectedCount, $remoteIdToContributionId);
+
     $donations = static::$system->find('osdi:donations', [
       ['modified_date', 'gt', date('Y-m-d\TH:i:s\Z', $now - 60)],
     ]);
-    // ? how to check if it's the right person?
-    $found = NULL;
+    $found = 0;
+    /** @var RemoteDonation $donation */
     foreach ($donations as $donation) {
-      /** @var RemoteDonation $donation */
-      if ($donation->amount->get() == 1.23) {
-        // Assume it's this one.
-        $found = $donation;
+      if (strpos($donation->donorHref->get(), $remotePersonId) === FALSE) {
+        // This donation is from a previous test as it does not belong to our contact: ignore it.
+        continue;
       }
-      else {
-        print "not this one " . $donation->amount->get() ." nope.\n";
-      }
+      $donationId = $donation->getId();
+
+      $_ = $donation->amount->get() . ' ' . $donation->createdDate->get();
+      $this->assertArrayHasKey($donationId, $remoteIdToContributionId, "A remote donation $_ exists for our test contact that we do not have a sync state for.");
+      $set = $sets[$contributionIdToSetNo[$remoteIdToContributionId[$donationId]]];
+      // Check the amount, date matches.
+      $this->assertEquals($set[0]['total_amount'], $donation->amount->get());
+      $this->assertEquals($set[0]['receive_date'], strtr($donation->createdDate->get(), ['Z' => '', 'T'=> ' ']));
+      $found++;
     }
-    $this->assertNotNull($found);
+    $this->assertEquals($expectedCount, $found);
   }
+
 
   protected function getBatchSyncer(): \Civi\Osdi\ActionNetwork\BatchSyncer\DonationBasic {
     // Call system under test.

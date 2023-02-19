@@ -47,6 +47,8 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
    *
    */
   public function testMapRemoteToNewLocal() {
+    $personPair = $this->createInSyncPerson();
+    $contactId = $personPair->getLocalObject()->getId();
 
     // Create fixture
     $remoteDonation = new RemoteDonation(static::$system);
@@ -54,7 +56,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $recipients = [['display_name' => 'Test recipient financial type', 'amount' => '2.22']];
     $remoteDonation->recipients->set($recipients);
     $remoteDonation->createdDate->set('2020-03-04T05:06:07Z');
-    $remoteDonation->setDonor(self::$testRemotePerson);
+    $remoteDonation->setDonor($personPair->getRemoteObject());
     $remoteDonation->setFundraisingPage(self::$testFundraisingPage);
     $remoteDonation->recurrence->set(['recurring' => FALSE]);
     $referrerData = [
@@ -67,14 +69,23 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     // Call system under test
     $mapper = new DonationBasicMapper(static::$system, static::$personMatcher);
     $localDonation = $mapper->mapRemoteToLocal($remoteDonation);
+    $localDonation->save();
 
     // Check expectations
-    $this->assertEquals(static::$createdEntities['Contact'][0], $localDonation->contactId->get());
+    $this->assertEquals($contactId, $localDonation->contactId->get());
     $this->assertEquals('2020-03-04T05:06:07Z', $localDonation->receiveDate->get());
     $this->assertEquals('USD', $localDonation->currency->get());
     $this->assertEquals(static::$financialTypeId, $localDonation->financialTypeId->get());
     $this->assertNull($localDonation->contributionRecurId->get());
     $this->assertEquals(self::$testFundraisingPage->title->get(), $localDonation->source->get());
+    $expectedPaymentInstrumentID = \CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'payment_instrument_id', 'Credit Card');
+    $this->assertEquals($expectedPaymentInstrumentID, $localDonation->paymentInstrumentId->get());
+
+    // We expect payment instrument label to be null as it is only populated when loaded from db.
+    $this->assertNull($localDonation->paymentInstrumentLabel->get());
+    $localDonation->load();
+    $this->assertEquals('Credit Card', $localDonation->paymentInstrumentLabel->get());
+
   }
 
   /**
@@ -102,7 +113,8 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $this->assertEquals(['recurring' => FALSE], $remoteDonation->recurrence->get());
   }
   protected function createTestContribution(): int {
-    $contactId = static::$createdEntities['Contact'][0];
+    $personPair = $this->createInSyncPerson();
+    $contactId = $personPair->getLocalObject()->getId();
     // Create a local Contribution.
     $contributionId = civicrm_api3('Order', 'create', [
       'contact_id' => $contactId,

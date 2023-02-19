@@ -7,7 +7,9 @@ use Civi\Osdi\LocalObject\Donation as LocalDonation;
 use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
+use Civi\Osdi\Logger;
 use Civi\Osdi\MapperInterface;
+use Civi\Osdi\Exception\CannotMapException;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\Map as MapResult;
@@ -26,7 +28,7 @@ class DonationBasic implements MapperInterface {
 
   protected static array $financialTypesMap;
 
-  protected static array $paymentMethodsMap;
+  protected static array $paymentInstrumentsMap;
 
   public function __construct(
     RemoteSystemInterface $remoteSystem,
@@ -55,8 +57,13 @@ class DonationBasic implements MapperInterface {
       }
       $result->setStatusCode($result::SUCCESS);
     }
+    catch (\Civi\Osdi\Exception\CannotMapException $e) {
+      $result->setStatusCode($result::ERROR);
+      $result->setMessage($e->getMessage());
+    }
     catch (\Throwable $e) {
       $result->setStatusCode($result::ERROR);
+      // Note: here we do nothing with any error message?
     }
 
     $pair->getResultStack()->push($result);
@@ -83,7 +90,7 @@ class DonationBasic implements MapperInterface {
     $personPair->setLocalClass(get_class($localPerson)); // @todo understand why I need to do this?
     $matchResult = $this->personMatcher->tryToFindMatchFor($personPair);
     if (!$matchResult->gotMatch()) {
-      throw new \InvalidArgumentException("Cannot sync a donation whose Contact (ID {$localPerson->getId()}) has no RemotePerson match.");
+      throw new CannotMapException("Cannot sync a donation whose Contact (ID {$localPerson->getId()}) has no RemotePerson match.");
     }
     /** @var RemotePerson */
     $remotePerson = $matchResult->getMatch();
@@ -105,7 +112,7 @@ class DonationBasic implements MapperInterface {
       ][$freq] ?? NULL;
       if (!$period) {
         // @todo what exception to throw?
-        throw new \InvalidArgumentException("Unsupported recurring period '$freq'");
+        throw new CannotMapException("Unsupported recurring period '$freq'");
       }
       $remoteDonation->recurrence->set(['recurring' => TRUE, 'period' => $period]);
     }
@@ -117,7 +124,7 @@ class DonationBasic implements MapperInterface {
     // $remoteDonation->payment = ['method' => 'EFT', 'reference_number' => 'test_payment_1'];
 
     // Fundraising page
-    // @todo $remoteDonation->fundraisingPageHref 
+    // @todo $remoteDonation->fundraisingPageHref
     // This is a challenge: on the Civi side we have just a string;
     // on the remote side we have an object. And we can't look up the
     // object by name.
@@ -133,10 +140,10 @@ class DonationBasic implements MapperInterface {
       $remoteDonation->setFundraisingPage($fundraisingPage);
     }
     else {
-      throw new \InvalidArgumentException("Cannot map local donation: Failed to find remote fundraising page called " . json_encode(self::FUNDRAISING_PAGE_NAME));
+      throw new CannotMapException("Cannot map local donation: Failed to find remote fundraising page called " . json_encode(self::FUNDRAISING_PAGE_NAME));
     }
 
-    // @todo $remoteDonation->referrerData 
+    // @todo $remoteDonation->referrerData
 
     return $remoteDonation;
   }
@@ -160,7 +167,7 @@ class DonationBasic implements MapperInterface {
     $personPair->setLocalClass(LocalPerson::class);
     $matchResult = $this->personMatcher->tryToFindMatchFor($personPair); // xxx
     if (!$matchResult->gotMatch()) {
-      throw new \InvalidArgumentException("Cannot sync a donation whose Person ({$remotePerson->getId()}) has no LocalPerson match.");
+      throw new CannotMapException("Cannot sync a donation whose Person ({$remotePerson->getId()}) has no LocalPerson match.");
     }
     $localPerson = $matchResult->getMatch();
     $localDonation->contactId->set($localPerson->getId());
@@ -181,16 +188,18 @@ class DonationBasic implements MapperInterface {
       // then write a ContributionRecur record on save, where there isn't one.
       // (we'd need to ensure not to create a new recur every contribution.)
       // $period = $remoteDonation->recurrence->get()['period'];
-    } 
+    }
 
     ['method' => $remotePaymentMethod, 'reference_number' => $remoteTrxnId] = $remoteDonation->payment->get();
-    $localDonation->paymentMethodId->set($this->mapRemotePaymentMethodToLocalId($remotePaymentMethod));
+    $localDonation->paymentInstrumentId->set($this->mapRemotePaymentMethodToLocalId($remotePaymentMethod));
+    // $localDonation->paymentMethodId->set($this->mapRemotePaymentMethodToLocalId($remotePaymentMethod));
+
     // @todo possibly use a prefix?
     $localDonation->trxnId->set($remoteTrxnId);
 
     $this->mapRemoteFundraisingPageToLocal($remoteDonation, $localDonation);
 
-    // @todo $remoteDonation->referrerData 
+    // @todo $remoteDonation->referrerData
 
     return $localDonation;
   }
@@ -206,7 +215,7 @@ class DonationBasic implements MapperInterface {
   ): void {
 
     if (!($remoteDonation instanceof RemoteDonation)) {
-      throw new \InvalidArgumentException(__CLASS__ . " requires the remote donation to be an ActionNetwork remote donation, received " . get_class($remoteDonation));
+      throw new CannotMapException(__CLASS__ . " requires the remote donation to be an ActionNetwork remote donation, received " . get_class($remoteDonation));
     }
 
     /** @var RemoteDonation $remoteDonation */
@@ -226,11 +235,11 @@ class DonationBasic implements MapperInterface {
     }
 
     if (count($remoteDonation->recipients->get()) !== 1) {
-      throw new \InvalidArgumentException("Cannot sync a donation that does not have one and only one recipient.");
+      throw new CannotMapException("Cannot sync a donation that does not have one and only one recipient.");
     }
     $financialTypeName = $remoteDonation->recipients->get()[0]['display_name'] ?? NULL;
     if (!$financialTypeName) {
-      throw new \InvalidArgumentException("Cannot sync a donation that does not have a 'display_name' for its recipients.");
+      throw new CannotMapException("Cannot sync a donation that does not have a 'display_name' for its recipients.");
     }
 
     // Refuse to sync if financial type not declared.
@@ -238,7 +247,7 @@ class DonationBasic implements MapperInterface {
     //  expose this? @todo discuss. Note that we're a mapper who "must not
     //  create entities"...)
     if (!isset(static::$financialTypesMap[$financialTypeName])) {
-      throw new \InvalidArgumentException("Cannot sync a donation for '{$financialTypeName}' as there is no matching financial type.");
+      throw new CannotMapException("Cannot sync a donation for '{$financialTypeName}' as there is no matching financial type.");
     }
 
     return (int) static::$financialTypesMap[$financialTypeName];
@@ -246,18 +255,21 @@ class DonationBasic implements MapperInterface {
 
   /**
    *
+   * Note the local 'id' here is found in OptionValue.value, not OptionValue.id
    */
   protected function mapRemotePaymentMethodToLocalId(string $remotePaymentMethod) :int {
-    if (!isset(static::$paymentMethodsMap)) {
-      static::$paymentMethodsMap = \Civi\Api4\OptionValue::get(FALSE)
-      ->addSelect('label')
+    if (!isset(static::$paymentInstrumentsMap)) {
+      static::$paymentInstrumentsMap = \Civi\Api4\OptionValue::get(FALSE)
+      ->addSelect('label', 'value')
       ->addwhere('option_group_id:name', '=', 'payment_instrument')
       ->addWhere('is_active', '=', TRUE)
-      ->execute()->indexBy('label')->column('id');
+      ->addOrderBy('id', 'DESC') // Ensure we pick the first one if there are two with identical labels.
+      ->execute()->indexBy('label')->column('value');
+      // print json_encode(static::$paymentInstrumentsMap, JSON_PRETTY_PRINT);
     }
-    if (empty(static::$paymentMethodsMap[$remotePaymentMethod])) {
-      throw new \InvalidArgumentException("Cannot sync a donation made by '{$remotePaymentMethod}' as there is no matching payment method.");
+    if (empty(static::$paymentInstrumentsMap[$remotePaymentMethod])) {
+      throw new CannotMapException("Cannot sync a donation made by '{$remotePaymentMethod}' as there is no matching payment instrument.");
     }
-    return (int) static::$paymentMethodsMap[$remotePaymentMethod];
+    return (int) static::$paymentInstrumentsMap[$remotePaymentMethod];
   }
 }

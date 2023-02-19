@@ -2,14 +2,18 @@
 
 namespace Civi\Osdi\ActionNetwork\SingleSyncer\Donation;
 
+use Civi\Api4\OsdiDonationSyncState;
 use Civi\Osdi\LocalObject\Donation as LocalDonation;
+use Civi\Osdi\Logger;
 use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
 use Civi\Osdi\ActionNetwork\SingleSyncer\AbstractSingleSyncer;
+use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Factory;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\SingleSyncerInterface;
+use Civi\Osdi\Result\SyncEligibility;
 
 class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
 
@@ -40,5 +44,57 @@ class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterfac
     }
     return $donation;
   }
+
+  protected function saveSyncStateIfNeeded(LocalRemotePair $pair) {
+    $remoteID = $pair->getRemoteObject()->getId();
+    $localID = $pair->getLocalObject()->getId();
+
+    if (empty($localID) || empty($remoteID)) {
+      // We require both to save a sync state
+      return NULL;
+    }
+
+    $exists = OsdiDonationSyncState::get(FALSE)
+    ->addWhere('remote_donation_id', '=', $remoteID)
+    ->addWhere('contribution_id', '=', $localID)
+    ->execute()->first();
+
+    if (!$exists) {
+      OsdiDonationSyncState::save(FALSE)
+      ->setRecords([[
+        'remote_donation_id' => $remoteID,
+        'contribution_id'    => $localID,
+        'sync_profile_id'    => 1,
+        'source'             => $pair->getOrigin()
+      ]])
+      ->execute();
+    }
+    return NULL;
+  }
+
+  /**
+   * We are eligible unless a sync state exists.
+   */
+  protected function getSyncEligibility(LocalRemotePair $pair): SyncEligibility {
+    $syncStateApi = \Civi\Api4\OsdiDonationSyncState::get(FALSE);
+    $origin = $pair->getOrigin();
+    if ($origin === 'remote') {
+      $syncStateApi->addWhere('remote_donation_id', '=', $pair->getRemoteObject()->getId());
+    }
+    else {
+      $syncStateApi->addWhere('contribution_id', '=', $pair->getLocalObject()->getId());
+    }
+    $alreadyInSync = $syncStateApi->execute()->first();
+
+    $result = new SyncEligibility();
+    $result->setStatusCode($alreadyInSync ? SyncEligibility::INELIGIBLE : SyncEligibility::ELIGIBLE);
+    $result->setMessage("Donation from $origin ({$pair->getOriginObject()->getId()}) is " . ($alreadyInSync ? 'already in sync' : 'eligible for sync'));
+    $pair->getResultStack()->push($result);
+    // Logger::logDebug("Donation from $origin ({$pair->getOriginObject()->getId()}) is " . ($alreadyInSync ? 'already in sync' : 'eligible for sync'));
+
+    return $result;
+  }
+
+
 }
 
