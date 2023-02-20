@@ -91,9 +91,26 @@ class RemoteFindResultTest extends \PHPUnit\Framework\TestCase implements
 
     // TEST PROPER, PART A
 
-    $remotePeopleWithTheName = self::$system->find(
-      'osdi:people',
-      [['given_name', 'eq', 'Thing']]);
+    // AN's person filter sometimes takes awhile to catch up with changes
+    for ($start = time(); time() - $start < 4; $hadToRepeat = TRUE) {
+      if (isset($hadToRepeat)) {
+        print "\n" . __FILE__ . ':' . __LINE__ . ": AN search results haven't caught up to changes; trying again\n";
+        usleep(500);
+      }
+
+      $remotePeopleWithTheName = self::$system->find(
+        'osdi:people',
+        [['given_name', 'eq', 'Thing']]);
+
+      foreach ($remotePeopleWithTheName as $person) {
+        if (
+          'One' === $person->familyName->get() &&
+          'subscribed' === $person->emailStatus->get()
+        ) {
+          break 2;
+        }
+      }
+    }
 
     $first = $remotePeopleWithTheName->filteredFirst();
 
@@ -107,9 +124,30 @@ class RemoteFindResultTest extends \PHPUnit\Framework\TestCase implements
     $thingTwo->emailStatus->set('subscribed');
     $thingTwo->save();
 
-    $remotePeopleWithTheName = self::$system->find(
-      'osdi:people',
-      [['given_name', 'eq', 'Thing']]);
+    // AN's person filter sometimes takes awhile to catch up with changes
+    for ($start = time(); time() - $start < 4; $hadToRepeat = TRUE) {
+      if (isset($hadToRepeat)) {
+        print "\n" . __FILE__ . ':' . __LINE__ . ": AN search results haven't caught up to changes; trying again\n";
+        usleep(500);
+      }
+
+      $remotePeopleWithTheName = self::$system->find(
+        'osdi:people',
+        [['given_name', 'eq', 'Thing']]);
+
+      foreach ($remotePeopleWithTheName as $person) {
+        if (
+          ('One' === $person->familyName->get() &&
+           'unsubscribed' !== $person->emailStatus->get())
+          ||
+          ('Two' === $person->familyName->get() &&
+           'subscribed' !== $person->emailStatus->get())
+        ) {
+          break 1;
+        }
+        break 2;
+      }
+    }
 
     $first = $remotePeopleWithTheName->filteredFirst();
 
