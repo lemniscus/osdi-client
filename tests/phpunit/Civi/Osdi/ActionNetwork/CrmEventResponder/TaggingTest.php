@@ -172,7 +172,7 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     self::assertEquals(0, $queue->numberOfItems());
   }
 
-  public function testCreationAndUpdateAreAddedToQueue() {
+  public function testCreationAndUpdateViaApi4AreAddedToQueue() {
     $localTagA = $this->makeLocalTag('a');
     $localTagB = $this->makeLocalTag('b');
     $localPerson = $this->makeLocalPerson(1);
@@ -225,6 +225,63 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     $task = $item->data;
 
     self::assertEquals(\CRM_Queue_Task::class, get_class($task));
+    self::assertEquals("Sync creation of EntityTag with tag id $tagBId, contact id $contactId", $task->title);
+  }
+
+  public function testCreationViaApi3IsAddedToQueueButUpdateIsNot() {
+    $localTagA = $this->makeLocalTag('a');
+    $localTagB = $this->makeLocalTag('b');
+    $localPerson = $this->makeLocalPerson(1);
+
+    array_push(self::$objectsToDelete, $localPerson, $localTagA, $localTagB);
+
+    $queue = Civi\Osdi\Queue::getQueue(TRUE);
+
+    $contactId = $localPerson->getId();
+    $tagAId = $localTagA->getId();
+    $result = civicrm_api3('EntityTag', 'create', [
+      'tag_id' => $tagAId,
+      'entity_table' => 'civicrm_contact',
+      'entity_id' => $contactId,
+    ]);
+    self::assertEquals('1', $result['added']);
+    $entityTagId = civicrm_api3('EntityTag', 'get', [
+      'tag_id' => $tagAId,
+      'entity_table' => 'civicrm_contact',
+      'entity_id' => $contactId,
+    ])['id'];
+
+    $item = $queue->claimItem();
+    self::assertNotNull($item);
+
+    /** @var \CRM_Queue_Task $task */
+    $task = $item->data;
+
+    self::assertEquals(\CRM_Queue_Task::class, get_class($task));
+    self::assertEquals("Sync creation of EntityTag with tag id $tagAId, contact id $contactId", $task->title);
+
+    $queue->deleteItem($item);
+
+    $tagBId = $localTagB->getId();
+    $result = civicrm_api3('EntityTag', 'create', [
+      'id' => $entityTagId,
+      'entity_table' => 'civicrm_contact',
+      'entity_id' => $contactId,
+      'tag_id' => $tagBId,
+    ]);
+    self::assertEquals('1', $result['added']);
+
+    $item = $queue->claimItem();
+    self::assertNotNull($item);
+
+    /** @var \CRM_Queue_Task $task */
+    $task = $item->data;
+
+    self::assertEquals(\CRM_Queue_Task::class, get_class($task));
+
+    // Api3 EntityTag update / create-with-id doesn't actually overwrite the
+    // existing EntityTag; it creates a new one. https://chat.civicrm.org/civicrm/pl/bf95bxg1t78jfy3eugujk7jz7w
+    self::assertNotEquals("Sync update of EntityTag id $entityTagId: delete old version", $task->title);
     self::assertEquals("Sync creation of EntityTag with tag id $tagBId, contact id $contactId", $task->title);
   }
 
@@ -341,7 +398,8 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
       $e = NULL;
       try {
         $taggingThatShouldBeDeleted->load();
-        self::fail('Tagging should have been deleted, so loading it should fail');
+        self::fail('Tagging should have been deleted, so loading it should fail.'
+          . ' Previous test contacts/emails may not have been deleted properly.');
       }
       catch (Civi\Osdi\Exception\EmptyResultException $e) {
       }
@@ -366,8 +424,8 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
       ->execute();
 
     civicrm_api3('EntityTag', 'create', [
-      'contact_id' => $localPerson2->getId(),
       'tag_id' => $localTags['a']->getId(),
+      'contact_id' => $localPerson2->getId(),
     ]);
 
     $contactIds = [$localPerson1->getId(), $localPerson2->getId()];
@@ -385,7 +443,7 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     $expected = ['1a' => '1a', '1b' => '1b', '2a' => '2a', '2b' => '2b'];
     $actual = $this->listTaggings($remotePeople);
 
-    self::assertEquals($expected, $actual);
+    self::assertEquals($expected, $actual, 'Previous test contacts/emails may not have been deleted properly');
   }
 
   public function testUpdateMoreThanOne() {
@@ -427,7 +485,7 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     $expected = ['1b' => '1b', '2b' => '2b'];
     $actual = $this->listTaggings($remotePeople);
 
-    self::assertEquals($expected, $actual);
+    self::assertEquals($expected, $actual, 'Previous test contacts/emails may not have been deleted properly');
   }
 
   public function testUpdateDueToContactMerge_DifferentEmails() {

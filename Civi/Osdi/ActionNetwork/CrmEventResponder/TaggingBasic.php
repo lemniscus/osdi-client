@@ -63,38 +63,35 @@ class TaggingBasic {
     $queue->createItem($task);
   }
 
-  public function postCommit($op, $objectName, $objectId, &$objectRef) {
-    if ($op === 'create') {
-      $this->respondToPostCreation($objectId, $objectRef);
+  public function postCommit($op, $objectName, $objectId, &$objectRefOrArray) {
+    if ($op === 'create' || $op === 'edit') {
+      $this->respondToPostCreation($objectId, $objectRefOrArray);
     }
   }
 
-  protected function respondToPostCreation(int $tagId, array $entityTagHookData) {
-    if ($entityTagHookData[1] !== 'civicrm_contact') {
-      return;
-    }
-
-    $queue = \Civi\Osdi\Queue::getQueue();
-
-    foreach ($entityTagHookData[0] as $contactId) {
-      $taggingAsArray = [
-        'entity_table' => 'civicrm_contact',
-        'entity_id' => $contactId,
-        'tag_id' => $tagId,
-      ];
-
-      if ($this->isCallComingFromInsideTheHouse('save', $taggingAsArray)) {
+  protected function respondToPostCreation(int $tagOrEntityTagId, $objectRefOrArray) {
+    if (is_array($objectRefOrArray)) {
+      $entityTagHookData = $objectRefOrArray;
+      if ($entityTagHookData[1] !== 'civicrm_contact') {
         return;
       }
 
-      $task = new \CRM_Queue_Task(
-        [static::class, 'syncCreationFromQueue'],
-        ['serializedTagging' => $taggingAsArray],
-        E::ts('Sync creation of EntityTag with tag id %1, contact id %2',
-          [1 => $tagId, 2 => $contactId])
-      );
+      $tagId = $tagOrEntityTagId;
+      foreach ($entityTagHookData[0] as $contactId) {
+        $this->queueCreationSync($contactId, $tagId);
+      }
+    }
 
-      $queue->createItem($task);
+    else {
+      /** @var \CRM_Core_BAO_EntityTag $entityTagDao */
+      $entityTagDao = $objectRefOrArray;
+      if ($entityTagDao->entity_table !== 'civicrm_contact') {
+        return;
+      }
+
+      $contactId = $entityTagDao->entity_id;
+      $tagId = $entityTagDao->tag_id;
+      $this->queueCreationSync($contactId, $tagId);
     }
   }
 
@@ -177,6 +174,29 @@ class TaggingBasic {
 
   protected function mapFieldNamesFromDaoToLocalObject(array $a): array {
     return ['id' => $a['id'], 'tagId' => $a['tag_id'], 'contactId' => $a['entity_id']];
+  }
+
+  private function queueCreationSync($contactId, $tagId): void {
+    $queue = \Civi\Osdi\Queue::getQueue();
+
+    $taggingAsArray = [
+      'entity_table' => 'civicrm_contact',
+      'entity_id' => $contactId,
+      'tag_id' => $tagId,
+    ];
+
+    if ($this->isCallComingFromInsideTheHouse('save', $taggingAsArray)) {
+      return;
+    }
+
+    $task = new \CRM_Queue_Task(
+      [static::class, 'syncCreationFromQueue'],
+      ['serializedTagging' => $taggingAsArray],
+      E::ts('Sync creation of EntityTag with tag id %1, contact id %2',
+        [1 => $tagId, 2 => $contactId])
+    );
+
+    $queue->createItem($task);
   }
 
 }
