@@ -63,6 +63,29 @@ class TaggingTest extends \PHPUnit\Framework\TestCase implements
     self::assertEquals($tag, $tagging->getTag());
   }
 
+  public function testSaveDuplicate() {
+    // CREATE
+    $tag = new TagBasic();
+    $tag->name->set('Tagalina');
+    $tag->save();
+
+    $person = new PersonBasic();
+    $person->emailEmail->set('tagteam@dio.de');
+    $person->save();
+
+    $tagging = new TaggingBasic();
+    $tagging->setTag($tag);
+    $tagging->setPerson($person);
+    $tagging->save();
+
+    $tagging = new TaggingBasic();
+    $tagging->setTag($tag);
+    $tagging->setPerson($person);
+    $tagging->save();
+
+    self::assertNotNull($tagging->getId());
+  }
+
   public function testCreate_Save_ReFetch_GetComponents() {
     // CREATE
     $tag = new TagBasic();

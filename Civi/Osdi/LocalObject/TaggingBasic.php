@@ -65,12 +65,19 @@ class TaggingBasic extends AbstractLocalObject implements LocalObjectInterface {
         'Person and Tag must both be saved before saving %s', __CLASS__);
     }
 
-    $returnedRecord = \Civi\Api4\EntityTag::save(FALSE)->addRecord([
-      'id' => $this->getId(),
-      'entity_table' => 'civicrm_contact',
-      'entity_id' => $contactId,
-      'tag_id' => $tagId,
-    ])->execute()->first();
+    $returnedRecord = \Civi\Api4\EntityTag::save(FALSE)
+      ->setMatch([
+        'entity_table',
+        'entity_id',
+        'tag_id',
+      ])
+      ->addRecord([
+        'id' => $this->getId(),
+        'entity_table' => 'civicrm_contact',
+        'entity_id' => $contactId,
+        'tag_id' => $tagId,
+      ])
+      ->execute()->first();
 
     $this->loadFromArray($returnedRecord);
 
