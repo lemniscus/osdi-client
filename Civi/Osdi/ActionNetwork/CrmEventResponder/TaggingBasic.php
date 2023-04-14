@@ -7,6 +7,7 @@ use Civi\Core\DAO\Event\PreDelete;
 use Civi\Core\DAO\Event\PreUpdate;
 use Civi\Osdi\Factory;
 use Civi\Osdi\LocalRemotePair;
+use Civi\Osdi\Logger;
 use CRM_OSDI_ExtensionUtil as E;
 
 class TaggingBasic {
@@ -134,6 +135,10 @@ class TaggingBasic {
     $pair->setOrigin(LocalRemotePair::ORIGIN_LOCAL);
 
     $result = $syncer->oneWayMapAndWrite($pair);
+    if ($result->isError()) {
+      Logger::logError('Error while trying to create remote tagging',
+        $result->toArray());
+    }
     return !($result->isError());
   }
 
@@ -152,6 +157,10 @@ class TaggingBasic {
     $pair->setOrigin(LocalRemotePair::ORIGIN_LOCAL);
 
     $result = $syncer->syncDeletion($pair);
+    if ($result->isError()) {
+      Logger::logError('Error while trying to create remote tagging',
+        $result->toArray());
+    }
     return !($result->isError());
   }
 
