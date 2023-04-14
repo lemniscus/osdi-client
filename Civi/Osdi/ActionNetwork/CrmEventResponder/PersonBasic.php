@@ -98,6 +98,7 @@ class PersonBasic {
 
   public function merge($type, &$data, $idBeingKept = NULL, $idBeingDeleted = NULL, $tables = NULL) {
     if ('cidRefs' === $type) {
+      // Do not merge contacts' OsdiFlags
       unset($data['civicrm_osdi_flag']);
       return;
     }
