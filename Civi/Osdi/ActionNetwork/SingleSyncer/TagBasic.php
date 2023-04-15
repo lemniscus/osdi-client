@@ -2,7 +2,6 @@
 
 namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
-use Civi\Osdi\Factory;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MapperInterface;
@@ -12,6 +11,7 @@ use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\FetchOldOrFindNewMatch as OldOrNewMatchResult;
 use Civi\Osdi\SingleSyncerInterface;
 use Civi\Osdi\Util;
+use Civi\OsdiClient;
 
 class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
 
@@ -23,14 +23,16 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
 
   public function getMapper(): MapperInterface {
     if (empty($this->mapper)) {
-      $this->mapper = Factory::make('Mapper', 'Tag', $this->getRemoteSystem());
+      $this->mapper = OsdiClient::container()
+        ->make('Mapper', 'Tag', $this->getRemoteSystem());
     }
     return $this->mapper;
   }
 
   public function getMatcher(): MatcherInterface {
     if (empty($this->matcher)) {
-      $this->matcher = Factory::make('Matcher', 'Tag', $this->getRemoteSystem());
+      $this->matcher = OsdiClient::container()
+        ->make('Matcher', 'Tag', $this->getRemoteSystem());
     }
     return $this->matcher;
   }
@@ -41,7 +43,7 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
   ): ?LocalRemotePair {
     $side = $pair->isOriginLocal() ? 'local' : 'remote';
     $objectId = $pair->getOriginObject()->getId();
-    $syncProfileId = $syncProfileId ?? $this->getSyncProfile()['id'] ?? 'null';
+    $syncProfileId = $syncProfileId ?? OsdiClient::container()->getSyncProfileId();
     $savedMatches = self::getOrSetAllSavedMatches()[$syncProfileId] ?? [];
     return $savedMatches[$side][$objectId] ?? NULL;
   }
@@ -72,7 +74,7 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
     $localId = $localObject->getId();
     $remoteId = $remoteObject->getId();
     $savedMatches = $this->getOrSetAllSavedMatches();
-    $syncProfileId = $this->getSyncProfile()['id'] ?? 'null';
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
 
     if ($oldMatchForLocal = $savedMatches[$syncProfileId]['local'][$localId] ?? NULL) {
       $oldMatchRemoteId = $oldMatchForLocal->getRemoteObject()->getId();

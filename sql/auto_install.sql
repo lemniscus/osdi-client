@@ -20,8 +20,8 @@ SET FOREIGN_KEY_CHECKS=0;
 DROP TABLE IF EXISTS `civicrm_osdi_deletion`;
 DROP TABLE IF EXISTS `civicrm_osdi_person_sync_state`;
 DROP TABLE IF EXISTS `civicrm_osdi_sync_profile`;
-DROP TABLE IF EXISTS `civicrm_osdi_flag`;
 DROP TABLE IF EXISTS `civicrm_osdi_donation_sync_state`;
+DROP TABLE IF EXISTS `civicrm_osdi_flag`;
 
 SET FOREIGN_KEY_CHECKS=1;
 -- /*******************************************************
@@ -70,9 +70,7 @@ CREATE TABLE `civicrm_osdi_sync_profile` (
   `label` varchar(128) COMMENT 'User-friendly label for the sync configuration',
   `entry_point` varchar(1023) COMMENT 'API entry point (AEP) URL',
   `api_token` varchar(1023) COMMENT 'API token',
-  `remote_system` varchar(127) COMMENT 'class name of Remote System',
-  `matcher` varchar(127) COMMENT 'class name of Matcher',
-  `mapper` varchar(127) COMMENT 'class name of Mapper',
+  `classes` longtext COMMENT 'Three-level associative array (category => key => class name) of classes to register with the OSDI Client\'s container/service locator',
   PRIMARY KEY (`id`)
 )
 ENGINE=InnoDB;

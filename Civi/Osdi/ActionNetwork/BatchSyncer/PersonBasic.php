@@ -4,11 +4,11 @@ namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 
 use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\BatchSyncerInterface;
-use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\Osdi\Logger;
 use Civi\Osdi\PersonSyncState;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\SingleSyncerInterface;
+use Civi\OsdiClient;
 
 class PersonBasic implements BatchSyncerInterface {
 
@@ -32,7 +32,7 @@ class PersonBasic implements BatchSyncerInterface {
     if ($this->isLastProcessStillRunning()) {
       return NULL;
     }
-    Logger::logDebug('Batch AN->Civi sync process ID is ' . getmypid());
+    Logger::logDebug('Batch AN->Civi person sync process ID is ' . getmypid());
 
     if (is_null(\Civi::settings()->get('osdiClient.syncJobEndTime'))) {
       Logger::logDebug('Last sync job did not finish successfully');
@@ -49,12 +49,12 @@ class PersonBasic implements BatchSyncerInterface {
 
     $syncStartTime = time();
     $searchResults = $this->findAndSyncRemoteUpdatesAsNeeded($cutoff);
-    Logger::logDebug('Finished batch AN->Civi sync; count: ' .
+    Logger::logDebug('Finished batch AN->Civi person sync; count: ' .
       $searchResults->rawCurrentCount() . '; time: ' . (time() - $syncStartTime)
       . ' seconds');
 
     $newCutoff = RemoteSystem::formatDateTime($syncStartTime - 30);
-    Logger::logDebug("Setting horizon for next AN->Civi sync to $newCutoff");
+    Logger::logDebug("Setting horizon for next AN->Civi person sync to $newCutoff");
 
     \Civi::settings()->add([
       'osdiClient.syncJobProcessId' => NULL,
@@ -71,10 +71,10 @@ class PersonBasic implements BatchSyncerInterface {
     if ($this->isLastProcessStillRunning()) {
       return NULL;
     }
-    Logger::logDebug('Batch Civi->AN sync process ID is ' . getmypid());
+    Logger::logDebug('Batch Civi->AN person sync process ID is ' . getmypid());
 
     $cutoff = $this->getOrCreateLocalModTimeHorizon();
-    Logger::logDebug("Horizon for Civi->AN sync set to $cutoff");
+    Logger::logDebug("Horizon for Civi->AN person sync set to $cutoff");
 
     \Civi::settings()->add([
       'osdiClient.syncJobProcessId' => getmypid(),
@@ -87,11 +87,11 @@ class PersonBasic implements BatchSyncerInterface {
     [$mostRecentPreSyncModTime, $count] = $this->findAndSyncLocalUpdatesAsNeeded($cutoff);
     Logger::logDebug('Finished batch Civi->AN sync; count: ' . $count);
 
-    Logger::logDebug('The most recent modification time of a Civi record in this' .
+    Logger::logDebug('The most recent modification time of a Civi contact in this' .
       ' sync is ' . ($mostRecentPreSyncModTime ?: 'NULL'));
 
     $newCutoff = $mostRecentPreSyncModTime ?: date('Y-m-d H:i:s', $syncStartTime - 1);
-    Logger::logDebug("Setting horizon for next Civi->AN sync to $newCutoff");
+    Logger::logDebug("Setting horizon for next Civi->AN person sync to $newCutoff");
 
     \Civi::settings()->add([
       'osdiClient.syncJobProcessId' => NULL,
@@ -177,7 +177,9 @@ class PersonBasic implements BatchSyncerInterface {
         $upToDate = [];
       }
 
-      $localPerson = (new LocalPerson($emailRecord['contact_id']))->loadOnce();
+      $localPerson = OsdiClient::container()
+        ->make('LocalObject', 'Person', $emailRecord['contact_id'])
+        ->loadOnce();
 
       Logger::logDebug('Considering Civi id ' . $localPerson->getId() .
         ', mod ' . $localPerson->modifiedDate->get() .

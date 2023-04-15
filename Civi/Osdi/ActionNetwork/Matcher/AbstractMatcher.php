@@ -8,9 +8,19 @@ use Civi\Osdi\Result\MatchResult as MatchResult;
 abstract class AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
   public function tryToFindMatchFor(LocalRemotePair $pair): MatchResult {
-    $result = $pair->isOriginLocal()
-      ? $this->tryToFindMatchForLocalObject($pair)
-      : $this->tryToFindMatchForRemoteObject($pair);
+    try {
+      $result = $pair->isOriginLocal()
+        ? $this->tryToFindMatchForLocalObject($pair)
+        : $this->tryToFindMatchForRemoteObject($pair);
+    }
+    catch (\Throwable $e) {
+      $origin = $pair->isOriginLocal() ?
+        MatchResult::ORIGIN_LOCAL : MatchResult::ORIGIN_REMOTE;
+      $result = new MatchResult($origin);
+      $result->setStatusCode(MatchResult::ERROR_MISC);
+      $result->setMessage($e->getMessage());
+      $result->setContext($e);
+    }
     $pair->getResultStack()->push($result);
     return $result;
   }

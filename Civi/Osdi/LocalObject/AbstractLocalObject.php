@@ -237,7 +237,7 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
       $result->setMessage($statusMessage);
       $result->setReturnedObject($this);
     }
-    catch (\API_Exception $exception) {
+    catch (\CRM_Core_Exception $exception) {
       $result->setStatusCode(SaveResult::ERROR);
       $result->setMessage('exception when saving local record');
       $result->setContext(['exception' => $exception]);

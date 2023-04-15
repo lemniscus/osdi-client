@@ -12,6 +12,8 @@ class MatchResult extends AbstractResult implements \Civi\Osdi\ResultInterface {
 
   const ERROR_INVALID_ID = 'invalid contact id';
 
+  const ERROR_MISC = 'miscellaneous error';
+
   const ERROR_MISSING_DATA = 'one or more required fields are missing from the source contact';
 
   const FOUND_MATCH = 'found match';
@@ -96,6 +98,7 @@ class MatchResult extends AbstractResult implements \Civi\Osdi\ResultInterface {
       [
         self::ERROR_INDETERMINATE,
         self::ERROR_INVALID_ID,
+        self::ERROR_MISC,
         self::ERROR_MISSING_DATA,
       ]
     );

@@ -178,7 +178,14 @@ class Person extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInte
   }*/
 
   public function trySave(): Save {
-    [$statusCode, $statusMessage, $context] = $this->checkForEmailAddressConflict();
+    try {
+      [$statusCode, $statusMessage, $context] = $this->checkForEmailAddressConflict();
+    }
+    catch (\Throwable $e) {
+      $statusCode = SaveResult::ERROR;
+      $statusMessage = $e->getMessage();
+      $context = $e;
+    }
 
     if ($statusCode === SaveResult::ERROR) {
       return new SaveResult($this, $statusCode, $statusMessage, $context);

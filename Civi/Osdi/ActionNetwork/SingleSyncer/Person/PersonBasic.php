@@ -7,7 +7,7 @@ use Civi\Api4\OsdiFlag;
 use Civi\Osdi\ActionNetwork\SingleSyncer\AbstractSingleSyncer;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\Factory;
+use Civi\Osdi\Container;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Logger;
@@ -24,6 +24,7 @@ use Civi\Osdi\Result\Sync;
 use Civi\Osdi\Result\SyncEligibility;
 use Civi\Osdi\SingleSyncerInterface;
 use Civi\Osdi\Util;
+use Civi\OsdiClient;
 
 class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
 
@@ -37,6 +38,10 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
 
   protected array $syncProfile = [];
 
+  /**
+   * @var int|null
+   * @deprecated
+   */
   private ?int $syncProfileId = NULL;
 
   public function __construct(RemoteSystemInterface $remoteSystem) {
@@ -46,9 +51,17 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
   public function fetchOldOrFindNewMatch(LocalRemotePair $pair): OldOrNewMatchResult {
     $result = new OldOrNewMatchResult();
 
-    $syncState = $pair->isOriginLocal()
-      ? PersonSyncState::getForLocalPerson($pair->getLocalObject(), $this->syncProfileId)
-      : PersonSyncState::getForRemotePerson($pair->getRemoteObject(), $this->syncProfileId);
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
+
+    try {
+      $syncState = $pair->isOriginLocal()
+        ? PersonSyncState::getForLocalPerson($pair->getLocalObject(), $syncProfileId)
+        : PersonSyncState::getForRemotePerson($pair->getRemoteObject(), $syncProfileId);
+    }
+    catch (\Throwable $e) {
+      $result->setMessage('error retrieving sync state');
+      return $this->pushResult($pair, $result, $result::ERROR);
+    }
 
     if ($this->fillLocalRemotePairFromSyncState($pair, $syncState)) {
       $result->setSavedMatch($syncState);
@@ -116,12 +129,12 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
   }
 
   public function makeLocalObject($id = NULL): LocalObjectInterface {
-    return Factory::make('LocalObject', 'Person', $id);
+    return \Civi\OsdiClient::container()->make('LocalObject', 'Person', $id);
   }
 
   public function makeRemoteObject($id = NULL): RemoteObjectInterface {
     $system = $this->getRemoteSystem();
-    $person = Factory::make('OsdiObject', 'osdi:people', $system);
+    $person = \Civi\OsdiClient::container()->make('OsdiObject', 'osdi:people', $system);
     if (!is_null($id)) {
       $person->setId($id);
     }
@@ -150,7 +163,8 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     }
 
     $syncState = new PersonSyncState();
-    $syncState->setSyncProfileId($this->syncProfile ? $this->syncProfile['id'] ?? NULL : NULL);
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
+    $syncState->setSyncProfileId($syncProfileId);
     $syncState->setSyncTime(time());
     $syncState->setContactId(
       $localPersonAfter ? $localPersonAfter->getId() : NULL);
@@ -191,7 +205,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
 
     if ($pairAfter->isOriginLocal() && $remotePersonAfter) {
       OsdiDeletion::delete(FALSE)
-        ->addWhere('sync_profile_id', '=', $this->syncProfileId)
+        ->addWhere('sync_profile_id', '=', $syncProfileId)
         ->addWhere('remote_object_id', '=', $remotePersonAfter->getId())
         ->execute();
     }
@@ -250,7 +264,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
       $pair->getTargetObject()->delete();
       if ($pair->isOriginLocal()) {
         $deletionRecord = [
-          'sync_profile_id' => $this->syncProfileId,
+          'sync_profile_id' => OsdiClient::container()->getSyncProfileId(),
           'remote_object_id' => $pair->getTargetObject()->getId(),
         ];
         \Civi\Api4\OsdiDeletion::save(FALSE)
@@ -338,7 +352,8 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
 
   public function getMapper(): MapperInterface {
     if (empty($this->mapper)) {
-      $this->mapper = Factory::make('Mapper', 'Person', $this->getRemoteSystem());
+      $this->mapper = OsdiClient::container()
+        ->make('Mapper', 'Person', $this->getRemoteSystem());
     }
     return $this->mapper;
   }
@@ -350,7 +365,8 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
 
   public function getMatcher(): MatcherInterface {
     if (empty($this->matcher)) {
-      $this->matcher = Factory::make('Matcher', 'Person', $this->getRemoteSystem());
+      $this->matcher = OsdiClient::container()
+        ->make('Matcher', 'Person', $this->getRemoteSystem());
     }
     return $this->matcher;
   }
@@ -364,6 +380,14 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     return $this->remoteSystem;
   }
 
+  /**
+   *
+   * @deprecated
+   *
+   * @param array $syncProfile
+   *
+   * @return $this
+   */
   public function setSyncProfile(array $syncProfile): self {
     $this->syncProfile = $syncProfile;
     if (isset($syncProfile['id'])) {
@@ -388,10 +412,11 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
       return FALSE;
     }
 
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
     $syncProfileClause =
-      empty($this->syncProfileId)
+      empty($syncProfileId)
         ? ['sync_profile_id', 'IS EMPTY']
-        : ['sync_profile_id', '=', $this->syncProfileId];
+        : ['sync_profile_id', '=', $syncProfileId];
 
     $deletionRecords = OsdiDeletion::get(FALSE)
       ->addWhere(...$syncProfileClause)
@@ -403,7 +428,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
   }
 
   protected function fillLocalRemotePairFromSyncState(
-    LocalRemotePair &$pair,
+    LocalRemotePair $pair,
     PersonSyncState $syncState
   ): bool {
     $pair->setPersonSyncState($syncState);

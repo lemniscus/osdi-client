@@ -5,7 +5,6 @@ namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 use Civi\Osdi\ActionNetwork\Object\Tagging as OsdiTaggingObject;
 use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\Exception\InvalidOperationException;
-use Civi\Osdi\Factory;
 use Civi\Osdi\LocalObject\TaggingBasic as LocalTaggingObject;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MapperInterface;
@@ -13,6 +12,7 @@ use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\Result\DeletionSync as DeletionSyncResult;
 use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
 use Civi\Osdi\SingleSyncerInterface;
+use Civi\OsdiClient;
 
 class TaggingBasic extends AbstractSingleSyncer {
 
@@ -38,14 +38,14 @@ class TaggingBasic extends AbstractSingleSyncer {
 
   public function getPersonSyncer(): SingleSyncerInterface {
     if (empty($this->personSyncer)) {
-      $this->personSyncer = Factory::make('SingleSyncer', 'Person', $this->getRemoteSystem());
+      $this->personSyncer = OsdiClient::container()->make('SingleSyncer', 'Person', $this->getRemoteSystem());
     }
     return $this->personSyncer;
   }
 
   public function getTagSyncer(): SingleSyncerInterface {
     if (empty($this->tagSyncer)) {
-      $this->tagSyncer = Factory::make('SingleSyncer', 'Tag', $this->getRemoteSystem());
+      $this->tagSyncer = OsdiClient::container()->make('SingleSyncer', 'Tag', $this->getRemoteSystem());
     }
     return $this->tagSyncer;
   }
@@ -72,7 +72,7 @@ class TaggingBasic extends AbstractSingleSyncer {
   }
 
   private function saveMatch(LocalRemotePair $pair): void {
-    $syncProfileId = self::getSyncProfile()['id'] ?? 'null';
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
     $localId = $pair->getLocalObject()->getId();
     $remoteId = $pair->getRemoteObject()->getId();
 
@@ -81,7 +81,7 @@ class TaggingBasic extends AbstractSingleSyncer {
   }
 
   public function getSavedMatch(LocalRemotePair $pair): ?LocalRemotePair {
-    $profileId = $this->getSyncProfile()['id'] ?? 'null';
+    $profileId = OsdiClient::container()->getSyncProfileId();
     if (empty($objectId = $pair->getOriginObject()->getId())) {
       return NULL;
     }
@@ -90,14 +90,16 @@ class TaggingBasic extends AbstractSingleSyncer {
 
   public function getMapper(): MapperInterface {
     if (empty($this->mapper)) {
-      $this->mapper = Factory::make('Mapper', 'Tagging', $this);
+      $this->mapper = OsdiClient::container()
+        ->make('Mapper', 'Tagging', $this);
     }
     return $this->mapper;
   }
 
   public function getMatcher(): MatcherInterface {
     if (empty($this->matcher)) {
-      $this->matcher = Factory::make('Matcher', 'Tagging', $this);
+      $this->matcher = OsdiClient::container()
+        ->make('Matcher', 'Tagging', $this);
     }
     return $this->matcher;
   }

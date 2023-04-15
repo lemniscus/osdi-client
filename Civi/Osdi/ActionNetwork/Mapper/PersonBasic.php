@@ -10,6 +10,7 @@ use Civi\Osdi\MapperInterface;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\Map as MapResult;
+use Civi\OsdiClient;
 
 class PersonBasic implements MapperInterface {
 
@@ -74,9 +75,10 @@ class PersonBasic implements MapperInterface {
   public function mapRemoteToLocal(
     RemoteObjectInterface $remotePerson,
     LocalObjectInterface $localPerson = NULL
-  ): LocalPerson {
+  ): LocalObjectInterface {
 
-    $localPerson = $localPerson ?? new LocalPerson();
+    $localPerson = $localPerson ??
+      OsdiClient::container()->make('LocalObject', 'Person');
 
     $localPerson->firstName->set($remotePerson->givenName->get());
     $localPerson->lastName->set($remotePerson->familyName->get());
