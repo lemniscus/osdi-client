@@ -4,7 +4,6 @@ namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 
 use Civi\Api4\Contribution;
 use Civi\Osdi\BatchSyncerInterface;
-use Civi\Osdi\Factory;
 use Civi\Osdi\LocalObject\Donation as LocalDonation;
 use Civi\Osdi\Logger;
 use Civi\Osdi\Result\Sync;

@@ -12,6 +12,12 @@ class OsdiClient {
   private static bool $containerSingletonWasMadeWithDefaultSyncProfile = FALSE;
 
   /**
+   * Without the parameter, return the current OsdiClient container. If none
+   * exists, create and initialize it using the default SyncProfile.
+   *
+   * If a SyncProfile parameter is given, replace the current container (if any)
+   * with a new one, and initialize it using the given SyncProfile.
+   *
    * Our intention is to drop the use of BAOs, and use API4 instead, but that
    * will require some changes to RemoteSystemInterface implementations.
    *

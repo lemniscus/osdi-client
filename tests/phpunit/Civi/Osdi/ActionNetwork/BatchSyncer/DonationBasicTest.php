@@ -2,12 +2,12 @@
 
 namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 
-use Civi\Osdi\Factory;
 use Civi\Osdi\ActionNetwork\DonationHelperTrait;
 use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
 use Civi\Osdi\ActionNetwork\Matcher\Donation\Basic as DonationBasicMatcher;
 use Civi\Osdi\ActionNetwork\Mapper\DonationBasic as DonationBasicMapper;
 
+use Civi\OsdiClient;
 use PHPUnit;
 
 /**
@@ -208,13 +208,13 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
   protected function getBatchSyncer(): \Civi\Osdi\ActionNetwork\BatchSyncer\DonationBasic {
     // Call system under test.
     /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\Donation\DonationBasic */
-    $singleSyncer = Factory::singleton('SingleSyncer', 'Donation', self::$system);
+    $singleSyncer = OsdiClient::container()->make('SingleSyncer', 'Donation', self::$system);
     $matcher = new DonationBasicMatcher();
     $singleSyncer->setMatcher($matcher);
     $mapper = new DonationBasicMapper(static::$system, static::$personMatcher);
     $singleSyncer->setMapper($mapper);
     /** @var \Civi\Osdi\ActionNetwork\BatchSyncer\DonationBasic **/
-    $batchSyncer = Factory::singleton('BatchSyncer', 'Donation', $singleSyncer);
+    $batchSyncer = OsdiClient::container()->make('BatchSyncer', 'Donation', $singleSyncer);
 
     return $batchSyncer;
   }

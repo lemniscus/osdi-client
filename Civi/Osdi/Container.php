@@ -15,16 +15,20 @@ class Container {
       'ActionNetwork' => \Civi\Osdi\ActionNetwork\RemoteSystem::class,
     ],
     'LocalObject' => [
+      'Donation' => LocalObject\Donation::class,
       'Person' => LocalObject\PersonBasic::class,
       'Tag' => LocalObject\TagBasic::class,
       'Tagging' => LocalObject\TaggingBasic::class,
     ],
     'OsdiObject' => [
+      'osdi:donations' => ActionNetwork\Object\Donation::class,
+      'osdi:fundraising_pages' => ActionNetwork\Object\FundraisingPage::class,
       'osdi:people' => ActionNetwork\Object\Person::class,
       'osdi:tags' => ActionNetwork\Object\Tag::class,
       'osdi:taggings' => ActionNetwork\Object\Tagging::class,
     ],
     'Mapper' => [
+      'Donation' => ActionNetwork\Mapper\DonationBasic::class,
       'Person' => ActionNetwork\Mapper\PersonBasic::class,
       'Tag' => ActionNetwork\Mapper\TagBasic::class,
       'Tagging' => ActionNetwork\Mapper\TaggingBasic::class,
@@ -35,11 +39,13 @@ class Container {
       'Tagging' => ActionNetwork\Matcher\TaggingBasic::class,
     ],
     'SingleSyncer' => [
+      'Donation' => ActionNetwork\SingleSyncer\Donation\DonationBasic::class,
       'Person' => ActionNetwork\SingleSyncer\Person\PersonBasic::class,
       'Tag' => ActionNetwork\SingleSyncer\TagBasic::class,
       'Tagging' => ActionNetwork\SingleSyncer\TaggingBasic::class,
     ],
     'BatchSyncer' => [
+      'Donation' => ActionNetwork\BatchSyncer\DonationBasic::class,
       'Person' => ActionNetwork\BatchSyncer\PersonBasic::class,
       'Tagging' => ActionNetwork\BatchSyncer\TaggingBasic::class,
     ],
@@ -76,7 +82,7 @@ class Container {
   public function make(string $category, string $key, ...$constructorParams) {
     $class = $this->registry[$category][$key] ?? NULL;
     if (is_null($class)) {
-      throw new InvalidArgumentException();
+      throw new InvalidArgumentException("Factory cannot make '$category', '$key'");
     }
     if (empty($constructorParams)) {
       $constructorParams = $this->getDefaultConstructorParams($category, $key);
