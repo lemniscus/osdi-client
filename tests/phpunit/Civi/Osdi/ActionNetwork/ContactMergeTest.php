@@ -8,6 +8,10 @@ use Civi\Osdi\RemoteObjectInterface;
 use Civi\OsdiClient;
 
 /**
+ * This class does NOT implement TransactionalInterface, because it tests
+ * behavior involving transactions. Therefore it must take care of its own
+ * cleanup.
+ *
  * Syncing a contact merge from Civi to AN does NOT just boil down to syncing a
  * deletion + syncing an update: the AN API doesn't allow true deletions, nor
  * does it allow assets (outreaches, donations, whatever) from one person to be
@@ -110,6 +114,9 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
     $mainLocalPerson = $this->makeLocalPerson(1);
     $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic(self::$system);
     $mainPair = $syncer->matchAndSyncIfEligible($mainLocalPerson);
+    self::assertFalse($mainPair->isError(),
+      "Previous test contacts/emails may not have been deleted properly.\n"
+      . print_r($mainPair->getResultStack()->toArray(), TRUE));
 
     $dupeLocalPerson = new LocalPerson();
     $dupeLocalPerson->emailEmail->set($mainLocalPerson->emailEmail->get());
@@ -168,6 +175,8 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
     $mainLocalPerson->firstName->set('Test Contact Merge - name from main');
     $mainLocalPerson->save();
     $mainPair = $syncer->matchAndSyncIfEligible($mainLocalPerson);
+    self::assertTrue($mainPair->isError(),
+      print_r($mainPair->getResultStack()->toArray(), TRUE));
 
     $dupeLocalPerson = new LocalPerson();
     $dupeLocalPerson->emailEmail->set('contactMergeTest1@test.net');
@@ -267,7 +276,7 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
     $syncState = \Civi\Osdi\PersonSyncState::getForLocalPerson(
       $localPerson, OsdiClient::container()->getSyncProfileId());
     self::assertNotEmpty($syncState->getId());
-    self::assertFalse($syncState->isError());
+    self::assertFalse($syncState->isError(), print_r($syncState->toArray(), TRUE));
     return $syncState;
   }
 
