@@ -2,12 +2,17 @@
 
 namespace Civi\Osdi;
 
-use Civi\Osdi\ActionNetwork\RemoteFindResult;
 use Jsor\HalClient\HalClientInterface;
 use Jsor\HalClient\HalResource;
 
 interface RemoteSystemInterface {
 
+  /**
+   * Get the complete collection of the given type of object from the Remote
+   * System.
+   *
+   * @param string $objectType e.g. 'osdi:people'
+   */
   public function findAll(string $objectType): RemoteFindResult;
 
   public function getClient(): HalClientInterface;

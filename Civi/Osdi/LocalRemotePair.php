@@ -88,6 +88,14 @@ class LocalRemotePair {
     return self::ORIGIN_REMOTE === $this->getOrigin(TRUE);
   }
 
+  /**
+   * Fluent setter for sync origin.
+   *
+   * @param string $origin Sync direction of the pair: either
+   *   LocalRemotePair::ORIGIN_LOCAL or LocalRemotePair::ORIGIN_REMOTE
+   *
+   * @throws \Civi\Osdi\Exception\InvalidArgumentException
+   */
   public function setOrigin(string $origin): self {
     if (!in_array($origin, [self::ORIGIN_LOCAL, self::ORIGIN_REMOTE])) {
       throw new InvalidArgumentException('Invalid origin code: "%s"', $origin);

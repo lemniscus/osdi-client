@@ -20,6 +20,13 @@ class TaggingBasic implements BatchSyncerInterface {
     $this->singleSyncer = $singleSyncer;
   }
 
+  /**
+   * If no blocking process is running, run a batch tagging sync from Action
+   * Network, adding any taggings that don't already exist in Civi, and deleting
+   * any Civi taggings that aren't present on Action Network.
+   *
+   * @return int|null total number of Action Network taggings synced
+   */
   public function batchSyncFromRemote(): ?int {
     /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic $taggingSingleSyncer */
     $taggingSingleSyncer = $this->singleSyncer;
@@ -183,6 +190,12 @@ class TaggingBasic implements BatchSyncerInterface {
     return $totalSuccess;
   }
 
+  /**
+   * Find all syncable tags -- Action Network Tags which have Civi counterparts.
+   * Find all Action Network Taggings for the syncable Tags. Copy all of these
+   * Taggings into Civi, keeping track of which ones are new. Then optionally
+   * delete any remaining Taggings in Civi for syncable Tags.
+   */
   private function batchSyncFromRemoteWithOptionalDeletion(
     \Civi\Osdi\RemoteSystemInterface $system,
     SingleSyncerInterface $tagSingleSyncer,
@@ -275,6 +288,7 @@ class TaggingBasic implements BatchSyncerInterface {
     //    ->execute();
     //}
 
+    // TODO this should not delete EntityTags for ineligible tags!
     $deletedCount = 0;
     foreach ($allEntityTags as $entityTag) {
       if (!in_array($entityTag['id'], $syncedLocalTaggings)) {
@@ -287,6 +301,16 @@ class TaggingBasic implements BatchSyncerInterface {
     Logger::logDebug("Deleted $deletedCount non-matching taggings from Civi");
   }
 
+  /**
+   * Check whether an exclusive sync process is running.
+   *
+   * TODO move this to a different class
+   *
+   * @param string $processName the unique name of a process that needs
+   *   exclusive access to Civi & Action Network for syncing
+   *
+   * @return bool whether another exclusive process is already running
+   */
   private function isBlockedByOtherProcess(string $processName): bool {
     Logger::logDebug("$processName requested");
 

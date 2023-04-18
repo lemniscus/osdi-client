@@ -48,6 +48,14 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     $this->remoteSystem = $remoteSystem;
   }
 
+  /**
+   * Try to find a PersonSyncState for the origin Person. If one exists, try to
+   * use it to fill in empty slots in $pair. If that doesn't work, use our
+   * Matcher to try to find a new match. If one is found, add the target object
+   * to $pair.
+   *
+   * @throws \Civi\Osdi\Exception\InvalidArgumentException
+   */
   public function fetchOldOrFindNewMatch(LocalRemotePair $pair): OldOrNewMatchResult {
     $result = new OldOrNewMatchResult();
 
@@ -148,6 +156,16 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     return $result;
   }
 
+  /**
+   * Create a persistent record of the given Person pair, along with information
+   * about the current time, modification times, status, etc, which may be useful
+   * for future sync processes and error handling. If we've written an active
+   * Person to Action Network, make sure we're not counting them as deleted.
+   *
+   * @throws \CRM_Core_Exception
+   * @throws \Civi\API\Exception\UnauthorizedException
+   * @throws \Civi\Osdi\Exception\InvalidArgumentException
+   */
   protected function savePairToSyncState(LocalRemotePair $pairAfter): PersonSyncState {
     $localPersonAfter = $pairAfter->getLocalObject();
     $remotePersonAfter = $pairAfter->getRemoteObject();
@@ -213,16 +231,20 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     return $syncState;
   }
 
-  protected function saveSyncStateIfNeeded(LocalRemotePair $pair) {
-    //if (empty($pair->getTargetObject()) || empty($pair->getTargetObject()->getId())) {
-    //  return NULL;
-    //}
-
-    $resultStack = $pair->getResultStack();
-
+  /**
+   * If the pair is in an error state, or the pair has gone through a MapAndWrite
+   * process, save information from the pair as a sync state record and return
+   * the sync state object. Otherwise, if the pair was recreated from an
+   * existing sync state object, return that. Otherwise, return NULL.
+   *
+   * @return \Civi\Osdi\PersonSyncState|null
+   */
+  protected function saveSyncStateIfNeeded(LocalRemotePair $pair): ?PersonSyncState {
     if ($pair->isError()) {
       return $this->savePairToSyncState($pair);
     }
+
+    $resultStack = $pair->getResultStack();
 
     $r = $resultStack->getLastOfType(MapAndWriteResult::class);
     if ($r) {
@@ -427,6 +449,10 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     return $wasDeletedByUs;
   }
 
+  /**
+   * If $pair doesn't already include both local and remote Person objects, attempt
+   * to fill them in by loading them via the IDs recorded in the $state.
+   */
   protected function fillLocalRemotePairFromSyncState(
     LocalRemotePair $pair,
     PersonSyncState $syncState
@@ -450,6 +476,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     }
 
     try {
+      // TODO use the Container
       $localObject = $localPerson ??
         (new $localPersonClass($syncState->getContactId()))->load();
       $remoteObject = $remotePerson ??
@@ -461,6 +488,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
       $syncState->delete();
     }
 
+    // TODO use ResultStack
     if (!is_null($localObject) && !is_null($remoteObject)) {
       $pair->setLocalObject($localObject)
         ->setRemoteObject($remoteObject)

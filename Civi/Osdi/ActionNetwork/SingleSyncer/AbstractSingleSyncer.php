@@ -180,6 +180,10 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     return $result;
   }
 
+  /**
+   * Since this class doesn't implement the caching of matches/sync states,
+   * just return NULL.
+   */
   protected function saveSyncStateIfNeeded(LocalRemotePair $pair) {
     return NULL;
   }
@@ -194,6 +198,12 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     return $pair;
   }
 
+  /**
+   * Try to find a match for the origin object. The given pair must not already
+   * contain a target object.
+   *
+   * @throws \Civi\Osdi\Exception\InvalidArgumentException
+   */
   public function fetchOldOrFindNewMatch(LocalRemotePair $pair): OldOrNewMatchResult {
     if (!empty($pair->getTargetObject())) {
       throw new InvalidArgumentException('Parameter to %s must be a ' .

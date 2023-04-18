@@ -68,6 +68,12 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
     return $tag;
   }
 
+  /**
+   * Memorize the association between the Tags given in the LocalRemotePair.
+   * Will persist until Civi's caches are flushed.
+   *
+   * @throws \Civi\Osdi\Exception\InvalidArgumentException
+   */
   public function saveMatch(LocalRemotePair $pair): LocalRemotePair {
     $localObject = $pair->getLocalObject();
     $remoteObject = $pair->getRemoteObject();
@@ -76,12 +82,17 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
     $savedMatches = $this->getOrSetAllSavedMatches();
     $syncProfileId = OsdiClient::container()->getSyncProfileId();
 
-    if ($oldMatchForLocal = $savedMatches[$syncProfileId]['local'][$localId] ?? NULL) {
+    $oldMatchForLocal = $savedMatches[$syncProfileId]['local'][$localId] ?? NULL;
+    if ($oldMatchForLocal) {
+      /** @var \Civi\Osdi\LocalRemotePair $oldMatchForLocal */
       $oldMatchRemoteId = $oldMatchForLocal->getRemoteObject()->getId();
       unset($savedMatches[$syncProfileId]['remote'][$oldMatchRemoteId]);
       unset($savedMatches['persistable'][$syncProfileId][$localId]);
     }
-    if ($oldMatchForRemote = $savedMatches[$syncProfileId]['remote'][$remoteId] ?? NULL) {
+
+    $oldMatchForRemote = $savedMatches[$syncProfileId]['remote'][$remoteId] ?? NULL;
+    if ($oldMatchForRemote) {
+      /** @var \Civi\Osdi\LocalRemotePair $oldMatchForRemote */
       $oldMatchLocalId = $oldMatchForRemote->getLocalObject()->getId();
       unset($savedMatches[$syncProfileId]['local'][$oldMatchLocalId]);
       unset($savedMatches['persistable'][$syncProfileId][$oldMatchLocalId]);
@@ -97,9 +108,14 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
   }
 
   /**
+   * Cache the match between the local and remote Tags, as long as:
+   * - the pair isn't in an error state, and
+   * - the target wasn't fetched from the cache.
+   *
    * @param \Civi\Osdi\LocalRemotePair $pair
    *
    * @return \Civi\Osdi\LocalRemotePair
+   * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
   protected function saveSyncStateIfNeeded(LocalRemotePair $pair) {
     if (empty($pair->getTargetObject()) || empty($pair->getTargetObject()->getId())) {
@@ -131,6 +147,24 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
     return $object;
   }
 
+  /**
+   * Without parameters: return the current cache of Tag matches. The
+   * first time around, this will involve fetching and reconstituting the whole
+   * set of saved matches from Civi's 'long' cache; in this case, all the
+   * LocalRemotePairs will be freshly created, with empty ResultStacks etc.
+   *
+   * With an array parameter: Save the given matches to memory as well as to
+   * Civi's 'long' cache (sql by default), overwriting any existing set of
+   * matches.
+   *
+   * @param array{local: \Civi\Osdi\LocalRemotePair[], remote: \Civi\Osdi\LocalRemotePair[], persistable: int[]} $replacement
+   *   Array of matches to save, containing sub-arrays:
+   *     - 'local': LocalRemotePairs indexed by local Tag ID
+   *     - 'remote': LocalRemotePairs indexed by remote Tag ID
+   *     - 'persistable': remote Tag IDs indexed by local Tag IDs
+   *
+   * @return array{local: \Civi\Osdi\LocalRemotePair[], remote: \Civi\Osdi\LocalRemotePair[], persistable: int[]}
+   */
   private function getOrSetAllSavedMatches($replacement = NULL): array {
     if (is_array($replacement)) {
       $this->matchArray = $replacement;
