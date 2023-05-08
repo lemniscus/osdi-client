@@ -206,15 +206,16 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
 
 
   protected function getBatchSyncer(): \Civi\Osdi\ActionNetwork\BatchSyncer\DonationBasic {
+    $container = OsdiClient::container();
     // Call system under test.
     /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\Donation\DonationBasic */
-    $singleSyncer = OsdiClient::container()->make('SingleSyncer', 'Donation', self::$system);
-    $matcher = new DonationBasicMatcher();
+    $singleSyncer = $container->make('SingleSyncer', 'Donation', self::$system);
+    $matcher = $container->make('Matcher', 'Donation');
     $singleSyncer->setMatcher($matcher);
-    $mapper = new DonationBasicMapper(static::$system, static::$personMatcher);
+    $mapper = $container->make('Mapper', 'Donation');
     $singleSyncer->setMapper($mapper);
     /** @var \Civi\Osdi\ActionNetwork\BatchSyncer\DonationBasic **/
-    $batchSyncer = OsdiClient::container()->make('BatchSyncer', 'Donation', $singleSyncer);
+    $batchSyncer = $container->make('BatchSyncer', 'Donation', $singleSyncer);
 
     return $batchSyncer;
   }

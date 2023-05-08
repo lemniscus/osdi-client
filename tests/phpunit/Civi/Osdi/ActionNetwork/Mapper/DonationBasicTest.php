@@ -2,6 +2,7 @@
 
 namespace Civi\Osdi\ActionNetwork\Mapper;
 
+use Civi\OsdiClient;
 use Civi\Test\HeadlessInterface;
 use Civi\Core\HookInterface;
 use Civi\Osdi\ActionNetwork\Mapper\DonationBasic as DonationBasicMapper;
@@ -30,9 +31,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public function setUp(): void {
-
-    $personMatcher = new PersonMatcher(static::$system);
-    $this->mapper = new DonationBasicMapper(static::$system, $personMatcher);
+    $this->mapper = new DonationBasicMapper(static::$system);
     CRM_OSDI_FixtureHttpClient::resetHistory();
     parent::setUp();
   }
@@ -67,8 +66,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $remoteDonation->save();
 
     // Call system under test
-    $mapper = new DonationBasicMapper(static::$system, static::$personMatcher);
-    $localDonation = $mapper->mapRemoteToLocal($remoteDonation);
+    $localDonation = $this->mapper->mapRemoteToLocal($remoteDonation);
     $localDonation->save();
 
     // Check expectations
@@ -100,8 +98,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $localDonation = new LocalDonation($donationId);
 
     // Call system under test
-    $mapper = new DonationBasicMapper(static::$system, static::$personMatcher);
-    $remoteDonation = $mapper->mapLocalToRemote($localDonation);
+    $remoteDonation = $this->mapper->mapLocalToRemote($localDonation);
 
     // Check expectations
     $this->assertNotEmpty($remoteDonation->donorHref->get());

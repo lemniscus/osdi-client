@@ -2,19 +2,17 @@
 namespace Civi\Osdi\ActionNetwork\Mapper;
 
 use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
-use Civi\Osdi\ActionNetwork\Object\Person as RemotePerson;
-use Civi\Osdi\LocalObject\Donation as LocalDonation;
+use Civi\Osdi\LocalObject\Donation;
 use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
-use Civi\Osdi\Logger;
 use Civi\Osdi\MapperInterface;
 use Civi\Osdi\Exception\CannotMapException;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\Map as MapResult;
-use Civi\Osdi\MatcherInterface;
 use \Civi\Osdi\ActionNetwork\RemoteFindResult;
+use Civi\OsdiClient;
 
 class DonationBasic implements MapperInterface {
 
@@ -22,20 +20,15 @@ class DonationBasic implements MapperInterface {
 
   private RemoteSystemInterface $remoteSystem;
 
-  private MatcherInterface $personMatcher;
-
   protected static RemoteFindResult $remoteFundraisingPages;
 
   protected static array $financialTypesMap;
 
   protected static array $paymentInstrumentsMap;
 
-  public function __construct(
-    RemoteSystemInterface $remoteSystem,
-    MatcherInterface $personMatcher
-  ) {
-    $this->remoteSystem = $remoteSystem;
-    $this->personMatcher = $personMatcher;
+  public function __construct(?RemoteSystemInterface $remoteSystem = NULL) {
+    $this->remoteSystem = $remoteSystem ??
+      OsdiClient::container()->getSingle('RemoteSystem', 'ActionNetwork');
   }
 
   protected function getRemoteFundraisingPages() {
@@ -74,26 +67,30 @@ class DonationBasic implements MapperInterface {
   public function mapLocalToRemote(
     LocalObjectInterface $localDonation,
     RemoteObjectInterface $remoteDonation = NULL
-  ): RemoteDonation {
+  ): RemoteObjectInterface {
+    $container = OsdiClient::container();
 
-    /** @var LocalDonation $localDonation */
+    /** @var \Civi\Osdi\LocalObject\Donation $localDonation */
     $localDonation->loadOnce();
-    /** @var RemoteDonation $remoteDonation */
-    $remoteDonation = $remoteDonation ?? new RemoteDonation($this->remoteSystem);
+    /** @var \Civi\Osdi\ActionNetwork\Object\Donation $remoteDonation */
+    $remoteDonation = $remoteDonation ?? $container->make('OsdiObject',
+      'osdi:donations', $this->remoteSystem);
 
     // Load the contact that the donation belongs to.
-    // @todo factory? (I don't get why factory uses static calls)
-    $localPerson = new LocalPerson($localDonation->contactId->get());
-    // Why do we need this?
+    /** @var \Civi\Osdi\LocalObject\PersonBasic $localPerson */
+    $localPerson = $container->make(
+      'LocalObject', 'Person', $localDonation->contactId->get());
+
     $personPair = new LocalRemotePair($localPerson);
     $personPair->setOrigin(LocalRemotePair::ORIGIN_LOCAL);
-    $personPair->setLocalClass(get_class($localPerson)); // @todo understand why I need to do this?
-    $matchResult = $this->personMatcher->tryToFindMatchFor($personPair);
-    if (!$matchResult->gotMatch()) {
+    /** @var \Civi\Osdi\SingleSyncerInterface $personSyncer */
+    $personSyncer = $container->getSingle('SingleSyncer', 'Person', $this->remoteSystem);
+    $matchResult = $personSyncer->fetchOldOrFindAndSaveNewMatch($personPair);
+    if (!$matchResult->hasMatch()) {
       throw new CannotMapException("Cannot sync a donation whose Contact (ID {$localPerson->getId()}) has no RemotePerson match.");
     }
-    /** @var RemotePerson */
-    $remotePerson = $matchResult->getMatch();
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $remotePerson */
+    $remotePerson = $personPair->getRemoteObject();
     $remoteDonation->donorHref->set($remotePerson->getUrlForRead());
 
     // Simple mappings
@@ -111,7 +108,6 @@ class DonationBasic implements MapperInterface {
         'day'   => 'Daily',
       ][$freq] ?? NULL;
       if (!$period) {
-        // @todo what exception to throw?
         throw new CannotMapException("Unsupported recurring period '$freq'");
       }
       $remoteDonation->recurrence->set(['recurring' => TRUE, 'period' => $period]);
@@ -154,22 +150,24 @@ class DonationBasic implements MapperInterface {
   public function mapRemoteToLocal(
     RemoteObjectInterface $remoteDonation,
     LocalObjectInterface $localDonation = NULL
-  ): LocalDonation {
+  ): LocalObjectInterface {
+    $container = OsdiClient::container();
 
-    /** @var LocalDonation $localDonation */
-    $localDonation = $localDonation ?? new LocalDonation();
+    /** @var \Civi\Osdi\LocalObject\Donation $localDonation */
+    $localDonation = $localDonation ?? $container->make('LocalObject', 'Donation');
 
     // Load the person that the donation belongs to.
-    /** @var RemoteDonation $remoteDonation */
+    /** @var \Civi\Osdi\ActionNetwork\Object\Donation $remoteDonation */
     $remotePerson = $remoteDonation->getDonor();
     $personPair = new LocalRemotePair(NULL, $remotePerson);
     $personPair->setOrigin(LocalRemotePair::ORIGIN_REMOTE);
-    $personPair->setLocalClass(LocalPerson::class);
-    $matchResult = $this->personMatcher->tryToFindMatchFor($personPair); // xxx
-    if (!$matchResult->gotMatch()) {
+    /** @var \Civi\Osdi\SingleSyncerInterface $personSyncer */
+    $personSyncer = $container->getSingle('SingleSyncer', 'Person', $this->remoteSystem);
+    $matchResult = $personSyncer->fetchOldOrFindAndSaveNewMatch($personPair);
+    if (!$matchResult->hasMatch()) {
       throw new CannotMapException("Cannot sync a donation whose Person ({$remotePerson->getId()}) has no LocalPerson match.");
     }
-    $localPerson = $matchResult->getMatch();
+    $localPerson = $personPair->getLocalObject();
     $localDonation->contactId->set($localPerson->getId());
 
     // Simple mappings

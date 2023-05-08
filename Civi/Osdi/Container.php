@@ -34,6 +34,7 @@ class Container {
       'Tagging' => ActionNetwork\Mapper\TaggingBasic::class,
     ],
     'Matcher' => [
+      'Donation' => ActionNetwork\Matcher\Donation\Basic::class,
       'Person' => ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail::class,
       'Tag' => ActionNetwork\Matcher\TagBasic::class,
       'Tagging' => ActionNetwork\Matcher\TaggingBasic::class,
@@ -78,11 +79,19 @@ class Container {
     return NULL;
   }
 
+  public function callStatic(string $category, string $key, string $function, ...$functionParams) {
+    $class = $this->registry[$category][$key] ?? NULL;
+    if (is_null($class)) {
+      throw new InvalidArgumentException("Container does not have a class for '$category', '$key'");
+    }
+    return call_user_func([$class, $function], ...$functionParams);
+  }
+
   #[\ReturnTypeWillChange]
   public function make(string $category, string $key, ...$constructorParams) {
     $class = $this->registry[$category][$key] ?? NULL;
     if (is_null($class)) {
-      throw new InvalidArgumentException("Factory cannot make '$category', '$key'");
+      throw new InvalidArgumentException("Container cannot make '$category', '$key'");
     }
     if (empty($constructorParams)) {
       $constructorParams = $this->getDefaultConstructorParams($category, $key);

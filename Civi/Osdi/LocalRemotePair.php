@@ -182,6 +182,10 @@ class LocalRemotePair {
     return $this;
   }
 
+  /**
+   * @deprecated
+   * @todo remove
+   */
   public function getLocalClass(): ?string {
     return $this->localClass;
   }

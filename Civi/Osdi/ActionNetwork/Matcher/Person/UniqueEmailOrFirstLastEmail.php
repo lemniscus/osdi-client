@@ -14,24 +14,18 @@ use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\Result\MatchResult as MatchResult;
+use Civi\OsdiClient;
 
 class UniqueEmailOrFirstLastEmail extends AbstractMatcher implements MatcherInterface {
 
   protected RemoteSystem $system;
 
-  protected string $localPersonClass;
-
-  public function __construct(
-    \Civi\Osdi\RemoteSystemInterface $system,
-    string $localPersonClass = NULL
-  ) {
+  public function __construct(\Civi\Osdi\RemoteSystemInterface $system) {
     /** @var \Civi\Osdi\ActionNetwork\RemoteSystem $system */
     $this->system = $system;
-    $this->localPersonClass = $localPersonClass ?? LocalPerson::class;
   }
 
   public function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult {
-    $this->localPersonClass = $pair->getLocalClass();
     $localObject = $pair->getLocalObject();
     try {
       $localObject->loadOnce();
@@ -120,7 +114,6 @@ class UniqueEmailOrFirstLastEmail extends AbstractMatcher implements MatcherInte
   }
 
   public function tryToFindMatchForRemoteObject(LocalRemotePair $pair): MatchResult {
-    $this->localPersonClass = $pair->getLocalClass();
     $remoteObject = $pair->getRemoteObject();
 
     if (empty($email = $remoteObject->emailAddress->get())) {
@@ -137,7 +130,8 @@ class UniqueEmailOrFirstLastEmail extends AbstractMatcher implements MatcherInte
     if ($civiContactsWithEmail->count() === 1) {
       return new MatchResult(
         MatchResult::ORIGIN_REMOTE,
-        new $this->localPersonClass($civiContactsWithEmail->first()['id']),
+        OsdiClient::container()->make(
+          'LocalObject', 'Person', $civiContactsWithEmail->first()['id']),
         $remoteObject,
         NULL,
         'Matched by unique email address'
@@ -187,7 +181,8 @@ class UniqueEmailOrFirstLastEmail extends AbstractMatcher implements MatcherInte
 
     return new MatchResult(
       MatchResult::ORIGIN_REMOTE,
-      new $this->localPersonClass($civiApi4Result->first()['id']),
+      OsdiClient::container()->make(
+        'LocalObject', 'Person', $civiApi4Result->first()['id']),
       $remotePerson,
       NULL,
       'Matched on email, first name and last name'
@@ -202,7 +197,8 @@ class UniqueEmailOrFirstLastEmail extends AbstractMatcher implements MatcherInte
     $apiParams = [
       'checkPermissions' => FALSE,
       'select' => ['id'],
-      'join' => call_user_func([$this->localPersonClass, 'getJoins']),
+      'join' => OsdiClient::container()->callStatic(
+        'LocalObject', 'Person', 'getJoins'),
       'groupBy' => ['id'],
     ];
     $apiParams['where'] = [

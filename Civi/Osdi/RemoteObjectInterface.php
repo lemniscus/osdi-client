@@ -9,7 +9,7 @@ interface RemoteObjectInterface extends CrudObjectInterface {
   public function __construct(RemoteSystemInterface $system,
                               ?HalResource $resource = NULL);
 
-  public static function loadFromId(string $id, RemoteSystemInterface $system);
+  public static function loadFromId(string $id, ?RemoteSystemInterface $system = NULL);
 
   public function getAll(): array;
 

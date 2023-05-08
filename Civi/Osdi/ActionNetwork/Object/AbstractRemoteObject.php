@@ -8,6 +8,7 @@ use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\Save as SaveResult;
+use Civi\OsdiClient;
 use CRM_OSDI_ExtensionUtil as E;
 use Jsor\HalClient\HalResource;
 
@@ -144,7 +145,9 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
     return $this;
   }
 
-  public static function loadFromId(string $id, RemoteSystemInterface $system): self {
+  public static function loadFromId(string $id, ?RemoteSystemInterface $system = NULL): self {
+    $system = $system ??
+      OsdiClient::container()->getSingle('RemoteSystem', 'ActionNetwork');
     $object = new static($system);
     $object->setId($id);
     return $object->load();

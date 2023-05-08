@@ -347,18 +347,6 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     return $flags->count();
   }
 
-  private function typeCheckLocalPerson(LocalObjectInterface $object): \Civi\Osdi\LocalObject\PersonBasic {
-    Util::assertClass($object, \Civi\Osdi\LocalObject\PersonBasic::class);
-    /** @var \Civi\Osdi\LocalObject\PersonBasic $object */
-    return $object;
-  }
-
-  private function typeCheckRemotePerson(RemoteObjectInterface $object): \Civi\Osdi\ActionNetwork\Object\Person {
-    Util::assertClass($object, \Civi\Osdi\ActionNetwork\Object\Person::class);
-    /** @var \Civi\Osdi\ActionNetwork\Object\Person $object */
-    return $object;
-  }
-
   protected function getLocalObjectClass(): string {
     return \Civi\Osdi\LocalObject\PersonBasic::class;
   }
@@ -464,35 +452,25 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     }
 
     $localPerson = $pair->getLocalObject();
-    $localPersonClass = $pair->getLocalClass();
     $remotePerson = $pair->getRemoteObject();
-    $remotePersonClass = $pair->getRemoteClass();
-
-    if (!is_null($localPerson)) {
-      Util::assertClass($localPerson, $localPersonClass);
-    }
-    if (!is_null($remotePerson)) {
-      Util::assertClass($remotePerson, $remotePersonClass);
-    }
 
     try {
-      // TODO use the Container
+      $container = OsdiClient::container();
       $localObject = $localPerson ??
-        (new $localPersonClass($syncState->getContactId()))->load();
+        $container->make('LocalObject', 'Person',
+          $syncState->getContactId())->loadOnce();
+
+      /** @var \Civi\Osdi\ActionNetwork\Object\Person $remoteObject */
       $remoteObject = $remotePerson ??
-        call_user_func(
-          [$remotePersonClass, 'loadFromId'],
-          $syncState->getRemotePersonId(), $this->getRemoteSystem());
+        $container->callStatic('OsdiObject', 'osdi:people',
+          'loadFromId', $syncState->getRemotePersonId());
     }
     catch (InvalidArgumentException | EmptyResultException $e) {
       $syncState->delete();
     }
 
-    // TODO use ResultStack
     if (!is_null($localObject) && !is_null($remoteObject)) {
-      $pair->setLocalObject($localObject)
-        ->setRemoteObject($remoteObject)
-        ->setMessage('fetched saved match');
+      $pair->setLocalObject($localObject)->setRemoteObject($remoteObject);
       return TRUE;
     }
 
