@@ -5,7 +5,7 @@ namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 use Civi;
 use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\OsdiClient;
-use CRM_OSDI_ActionNetwork_TestUtils;
+use OsdiClient\ActionNetwork\TestUtils;
 use PHPUnit;
 
 /**
@@ -39,7 +39,7 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
   }
 
   public function setUp(): void {
-    self::$system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    self::$system = TestUtils::createRemoteSystem();
     parent::setUp();
   }
 

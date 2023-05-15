@@ -86,7 +86,7 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
   }
 
   protected function setUp(): void {
-    self::$system = \CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    self::$system = \OsdiClient\ActionNetwork\TestUtils::createRemoteSystem();
     self::$mergeEmailFromDupe = FALSE;
     self::$mergeNameFromDupe = FALSE;
     \Civi\Osdi\Queue::getQueue(TRUE);

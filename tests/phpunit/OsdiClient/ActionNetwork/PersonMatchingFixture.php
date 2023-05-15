@@ -1,8 +1,11 @@
 <?php
 
+namespace OsdiClient\ActionNetwork;
+
+use API_Exception;
 use PHPUnit\Framework\TestCase;
 
-class CRM_OSDI_Fixture_PersonMatching {
+class PersonMatchingFixture {
 
   public static string $personClass;
 
@@ -46,11 +49,16 @@ class CRM_OSDI_Fixture_PersonMatching {
           'first_name',
           'last_name',
           'email.email',
-          'address.street_address'
+          'address.street_address',
         ],
         'join' => [
           ['Email AS email', TRUE],
-          ['Address AS address', 'LEFT', NULL, ['address.is_primary', '=', TRUE]],
+          [
+            'Address AS address',
+            'LEFT',
+            NULL,
+            ['address.is_primary', '=', TRUE],
+          ],
         ],
         'where' => [
           ['id', '=', $id],
@@ -147,7 +155,10 @@ class CRM_OSDI_Fixture_PersonMatching {
   }
 
   public static function setUpRemotePerson_TwoLocalContactsMatchingByEmail_OneAlsoMatchingByName($system): array {
-    [$savedRemotePerson, $idOfMatchingContact] = self::setUpExactlyOneMatchByEmailAndName($system);
+    [
+      $savedRemotePerson,
+      $idOfMatchingContact,
+    ] = self::setUpExactlyOneMatchByEmailAndName($system);
 
     $emailAddress = $savedRemotePerson->emailAddress->get();
 

@@ -4,8 +4,8 @@ namespace Civi\Osdi\ActionNetwork\SingleSyncer\Person;
 
 use Civi\Osdi\ActionNetwork\Object\Person as ANPerson;
 use Civi\Osdi\ActionNetwork\SingleSyncer\PersonTestAbstract;
-use CRM_OSDI_ActionNetwork_TestUtils;
-use CRM_OSDI_Fixture_PersonMatching as PersonMatchFixture;
+use OsdiClient\ActionNetwork\TestUtils;
+use OsdiClient\ActionNetwork\PersonMatchingFixture as PersonMatchFixture;
 
 /**
  * @group headless
@@ -19,13 +19,13 @@ class PersonBasicTest extends PersonTestAbstract implements
   }
 
   public function setUp(): void {
-    self::$remoteSystem = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    self::$remoteSystem = TestUtils::createRemoteSystem();
 
     PersonMatchFixture::$personClass = ANPerson::class;
     PersonMatchFixture::$remoteSystem = self::$remoteSystem;
 
     self::$syncer = new PersonBasic(self::$remoteSystem);
-    self::$syncer->setSyncProfile(CRM_OSDI_ActionNetwork_TestUtils::createSyncProfile());
+    self::$syncer->setSyncProfile(TestUtils::createSyncProfile());
 
     parent::setUp();;
   }

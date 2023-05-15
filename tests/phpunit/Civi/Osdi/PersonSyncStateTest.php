@@ -4,7 +4,7 @@ namespace Civi\Osdi;
 
 use Civi\Api4\Contact;
 use Civi\Api4\OsdiPersonSyncState;
-use CRM_OSDI_ActionNetwork_TestUtils;
+use OsdiClient\ActionNetwork\TestUtils;
 use PHPUnit;
 
 /**
@@ -21,7 +21,7 @@ class PersonSyncStateTest extends PHPUnit\Framework\TestCase implements
   }
 
   protected function setUp(): void {
-    self::$system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    self::$system = TestUtils::createRemoteSystem();
     parent::setUp();
   }
 

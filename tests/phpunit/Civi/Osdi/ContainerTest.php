@@ -4,7 +4,7 @@ namespace Civi\Osdi;
 
 use Civi\Api4\OsdiSyncProfile;
 use Civi\OsdiClient;
-use CRM_OSDI_ActionNetwork_TestUtils;
+use OsdiClient\ActionNetwork\TestUtils;
 use PHPUnit;
 
 /**
@@ -21,7 +21,7 @@ class ContainerTest extends PHPUnit\Framework\TestCase implements
   }
 
   protected function setUp(): void {
-    self::$system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    self::$system = TestUtils::createRemoteSystem();
     parent::setUp();
   }
 
@@ -77,9 +77,9 @@ class ContainerTest extends PHPUnit\Framework\TestCase implements
     $obj = OsdiClient::container()->make('SingleSyncer', 'Tag', self::$system);
     self::assertEquals(ActionNetwork\SingleSyncer\TagBasic::class, get_class($obj));
 
-    \Civi\OsdiClient::container()->register('SingleSyncer', 'Tag', CRM_OSDI_ActionNetwork_TestUtils::class);
+    \Civi\OsdiClient::container()->register('SingleSyncer', 'Tag', TestUtils::class);
     $obj = OsdiClient::container()->make('SingleSyncer', 'Tag');
-    self::assertEquals(CRM_OSDI_ActionNetwork_TestUtils::class, get_class($obj));
+    self::assertEquals(TestUtils::class, get_class($obj));
   }
 
   public function testCanMake() {

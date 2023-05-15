@@ -1,9 +1,14 @@
 <?php
 
+namespace OsdiClient\ActionNetwork;
+
+use Civi;
+use CRM_OSDI_BAO_SyncProfile;
 use GuzzleHttp\Client;
+use Jsor;
 use Jsor\HalClient\HttpClient\Guzzle6HttpClient;
 
-class CRM_OSDI_ActionNetwork_TestUtils {
+class TestUtils {
 
   public static function createRemoteSystem(): \Civi\Osdi\ActionNetwork\RemoteSystem {
     $syncProfile = new CRM_OSDI_BAO_SyncProfile();

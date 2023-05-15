@@ -8,8 +8,8 @@ use Civi\Osdi\Result\FetchOldOrFindNewMatch;
 use Civi\Osdi\Result\MapAndWrite;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\Result\SyncEligibility;
-use CRM_OSDI_ActionNetwork_TestUtils;
-use CRM_OSDI_FixtureHttpClient;
+use OsdiClient\ActionNetwork\TestUtils;
+use OsdiClient\FixtureHttpClient;
 use PHPUnit;
 
 /**
@@ -30,7 +30,7 @@ class TagBasicTest extends PHPUnit\Framework\TestCase implements
   }
 
   public static function setUpBeforeClass(): void {
-    self::$remoteSystem = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    self::$remoteSystem = TestUtils::createRemoteSystem();
     $syncer = self::makeNewSyncer();
     self::$syncer = $syncer;
 
@@ -38,7 +38,7 @@ class TagBasicTest extends PHPUnit\Framework\TestCase implements
   }
 
   protected function setUp(): void {
-    CRM_OSDI_FixtureHttpClient::resetHistory();
+    FixtureHttpClient::resetHistory();
   }
 
   protected function tearDown(): void {

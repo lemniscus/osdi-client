@@ -5,7 +5,7 @@ namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 use Civi;
 use Civi\Api4\EntityTag;
 use Civi\Osdi\Container;
-use CRM_OSDI_ActionNetwork_TestUtils;
+use OsdiClient\ActionNetwork\TestUtils;
 use PHPUnit;
 
 /**
@@ -24,7 +24,7 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
   }
 
   protected function setUp(): void {
-    self::$remoteSystem = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    self::$remoteSystem = TestUtils::createRemoteSystem();
     self::$syncer = self::makeNewSyncer();
     parent::setUp();
   }

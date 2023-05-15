@@ -1,10 +1,12 @@
 <?php
 
+namespace OsdiClient;
+
 use GuzzleHttp\Psr7\Response;
 use Jsor\HalClient\HttpClient\HttpClientInterface;
 use Psr\Http\Message\RequestInterface;
 
-class CRM_OSDI_FixtureHttpClient implements HttpClientInterface {
+class FixtureHttpClient implements HttpClientInterface {
 
   private $homunculus;
 
@@ -13,7 +15,7 @@ class CRM_OSDI_FixtureHttpClient implements HttpClientInterface {
   }
 
   public static function resetHistory() {
-    $fixtureDir = __DIR__ . '/Fixture/httpResponses/';
+    $fixtureDir = __DIR__ . '/FixtureHttpClient/httpResponses/';
     $historyFile = $fixtureDir . 'history';
     if (file_exists($historyFile)) {
       unlink($historyFile);
@@ -21,7 +23,7 @@ class CRM_OSDI_FixtureHttpClient implements HttpClientInterface {
   }
 
   public function send(RequestInterface $request) {
-    $fixtureDir = __DIR__ . '/Fixture/httpResponses/';
+    $fixtureDir = __DIR__ . '/FixtureHttpClient/httpResponses/';
     $historyFile = $fixtureDir . 'history';
     $headers = $this->getRelevantHeaders($request);
     $request = $this->withPersistableBody($request);

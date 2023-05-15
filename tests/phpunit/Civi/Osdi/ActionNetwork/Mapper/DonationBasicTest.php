@@ -3,16 +3,16 @@
 namespace Civi\Osdi\ActionNetwork\Mapper;
 
 use Civi\OsdiClient;
-use Civi\Test\HeadlessInterface;
 use Civi\Core\HookInterface;
+use Civi\Osdi\ActionNetwork\DonationHelperTrait;
 use Civi\Osdi\ActionNetwork\Mapper\DonationBasic as DonationBasicMapper;
-use Civi\Osdi\LocalObject\Donation as LocalDonation;
 use Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail as PersonMatcher;
 use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
-use Civi\Osdi\ActionNetwork\DonationHelperTrait;
 
+use Civi\Osdi\LocalObject\Donation as LocalDonation;
+use Civi\Test\HeadlessInterface;
 use Civi\Test\TransactionalInterface;
-use CRM_OSDI_FixtureHttpClient;
+use OsdiClient\FixtureHttpClient;
 
 /**
  * Test \Civi\Osdi\RemoteSystemInterface
@@ -32,7 +32,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
 
   public function setUp(): void {
     $this->mapper = new DonationBasicMapper(static::$system);
-    CRM_OSDI_FixtureHttpClient::resetHistory();
+    FixtureHttpClient::resetHistory();
     parent::setUp();
   }
 

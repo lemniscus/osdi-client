@@ -8,8 +8,8 @@ use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Core\HookInterface;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\TransactionalInterface;
-use CRM_OSDI_ActionNetwork_TestUtils;
-use CRM_OSDI_FixtureHttpClient;
+use OsdiClient\ActionNetwork\TestUtils;
+use OsdiClient\FixtureHttpClient;
 
 /**
  * @group headless
@@ -31,8 +31,8 @@ class FundraisingPageTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public function setUp(): void {
-    $this->system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
-    CRM_OSDI_FixtureHttpClient::resetHistory();
+    $this->system = TestUtils::createRemoteSystem();
+    FixtureHttpClient::resetHistory();
     parent::setUp();
   }
 

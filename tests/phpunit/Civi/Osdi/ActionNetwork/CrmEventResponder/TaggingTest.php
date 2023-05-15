@@ -3,7 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\CrmEventResponder;
 
 use Civi;
-use CRM_OSDI_ActionNetwork_TestUtils;
+use OsdiClient\ActionNetwork\TestUtils;
 use PHPUnit;
 
 /**
@@ -25,7 +25,7 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
   }
 
   protected function setUp(): void {
-    self::$remoteSystem = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    self::$remoteSystem = TestUtils::createRemoteSystem();
     Civi\Osdi\Queue::getQueue(TRUE);
 
     \CRM_Core_DAO::singleValueQuery('DELETE FROM civicrm_contact

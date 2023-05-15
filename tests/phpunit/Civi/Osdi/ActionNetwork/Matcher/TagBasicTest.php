@@ -5,8 +5,8 @@ namespace Civi\Osdi\ActionNetwork\Matcher;
 use Civi\Osdi\ActionNetwork\Object\Tag;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\RemoteObjectInterface;
-use CRM_OSDI_ActionNetwork_TestUtils;
-use CRM_OSDI_Fixture_PersonMatching as PersonMatchFixture;
+use OsdiClient\ActionNetwork\TestUtils;
+use OsdiClient\ActionNetwork\PersonMatchingFixture as PersonMatchFixture;
 use PHPUnit;
 
 /**
@@ -27,7 +27,7 @@ class TagBasicTest extends PHPUnit\Framework\TestCase implements
   public static function setUpBeforeClass(): void {
     PersonMatchFixture::$personClass = \Civi\Osdi\ActionNetwork\Object\Person::class;
 
-    self::$remoteSystem = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    self::$remoteSystem = TestUtils::createRemoteSystem();
     self::$matcher = self::makeNewMatcher();
   }
 

@@ -5,14 +5,13 @@ namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 use Civi\Api4\Contact;
 use Civi\Api4\OsdiFlag;
 use Civi\Osdi\ActionNetwork\Object\Person as ANPerson;
-use Civi\Osdi\Container;
 use Civi\Osdi\PersonSyncState;
 use Civi\Osdi\Result\FetchOldOrFindNewMatch;
 use Civi\Osdi\Result\MapAndWrite;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\Result\SyncEligibility;
 use Civi\OsdiClient;
-use CRM_OSDI_Fixture_PersonMatching as PersonMatchFixture;
+use OsdiClient\ActionNetwork\PersonMatchingFixture as PersonMatchFixture;
 
 abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
@@ -444,7 +443,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     $differentSystemAEP = $defaultSystemAEP . 'with suffix';
     $client = new \Jsor\HalClient\HalClient(
-      $differentSystemAEP, new \CRM_OSDI_FixtureHttpClient()
+      $differentSystemAEP, new \OsdiClient\FixtureHttpClient()
     );
     $differentSystem = new \Civi\Osdi\ActionNetwork\RemoteSystem(
       NULL,

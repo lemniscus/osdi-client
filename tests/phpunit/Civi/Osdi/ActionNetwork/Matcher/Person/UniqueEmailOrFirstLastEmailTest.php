@@ -5,9 +5,9 @@ namespace Civi\Osdi\ActionNetwork\Matcher\Person;
 use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\TransactionalInterface;
-use CRM_OSDI_ActionNetwork_TestUtils;
-use CRM_OSDI_Fixture_PersonMatching as F;
-use CRM_OSDI_FixtureHttpClient;
+use OsdiClient\ActionNetwork\PersonMatchingFixture as F;
+use OsdiClient\ActionNetwork\TestUtils;
+use OsdiClient\FixtureHttpClient;
 
 /**
  * Test \Civi\Osdi\RemoteSystemInterface
@@ -31,10 +31,10 @@ class UniqueEmailOrFirstLastEmailTest extends \PHPUnit\Framework\TestCase implem
   }
 
   public function setUp(): void {
-    $this->system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    $this->system = TestUtils::createRemoteSystem();
     F::$remoteSystem = $this->system;
     $this->matcher = $this->createMatcher($this->system);
-    CRM_OSDI_FixtureHttpClient::resetHistory();
+    FixtureHttpClient::resetHistory();
     parent::setUp();
   }
 

@@ -3,12 +3,12 @@
 namespace Civi\Osdi\ActionNetwork\Mapper;
 
 use Civi;
+use Civi\Core\HookInterface;
 use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\Test\HeadlessInterface;
-use Civi\Core\HookInterface;
 use Civi\Test\TransactionalInterface;
-use CRM_OSDI_ActionNetwork_TestUtils;
-use CRM_OSDI_FixtureHttpClient;
+use OsdiClient\ActionNetwork\TestUtils;
+use OsdiClient\FixtureHttpClient;
 
 /**
  * Test \Civi\Osdi\RemoteSystemInterface
@@ -35,9 +35,9 @@ class PersonBasicTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public function setUp(): void {
-    $this->system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    $this->system = TestUtils::createRemoteSystem();
     $this->mapper = $this->createMapper($this->system);
-    CRM_OSDI_FixtureHttpClient::resetHistory();
+    FixtureHttpClient::resetHistory();
     parent::setUp();
   }
 

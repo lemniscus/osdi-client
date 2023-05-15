@@ -4,8 +4,8 @@ namespace Civi\Osdi\ActionNetwork;
 
 use Civi\Test\HeadlessInterface;
 use Civi\Test\TransactionalInterface;
-use CRM_OSDI_ActionNetwork_TestUtils;
-use CRM_OSDI_FixtureHttpClient;
+use OsdiClient\ActionNetwork\TestUtils;
+use OsdiClient\FixtureHttpClient;
 
 /**
  * @group headless
@@ -24,11 +24,11 @@ class RemoteFindResultTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public static function setUpBeforeClass(): void {
-    self::$system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    self::$system = TestUtils::createRemoteSystem();
   }
 
   public function setUp(): void {
-    CRM_OSDI_FixtureHttpClient::resetHistory();
+    FixtureHttpClient::resetHistory();
     parent::setUp();
   }
 

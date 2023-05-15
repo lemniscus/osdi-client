@@ -37,10 +37,10 @@ trait DonationHelperTrait {
    * Create test recipient financial type in static::$financialTypeId
    */
   public static function setUpBeforeClass(): void {
-    static::$system = \CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    static::$system = \OsdiClient\ActionNetwork\TestUtils::createRemoteSystem();
     static::$personMatcher = new UniqueEmailOrFirstLastEmail(static::$system);
 
-    \CRM_OSDI_ActionNetwork_TestUtils::createSyncProfile();
+    \OsdiClient\ActionNetwork\TestUtils::createSyncProfile();
 
 
     // Ensure we have the default fundraising page.

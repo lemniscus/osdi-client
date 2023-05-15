@@ -5,7 +5,7 @@ namespace Civi\Osdi\ActionNetwork\CrmEventResponder;
 use Civi;
 use Civi\Osdi\ActionNetwork\Object\Person as RemotePerson;
 use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
-use CRM_OSDI_ActionNetwork_TestUtils;
+use OsdiClient\ActionNetwork\TestUtils;
 
 /**
  * @group headless
@@ -45,7 +45,7 @@ class PersonBasicTest extends \PHPUnit\Framework\TestCase implements
   }
 
   protected function setUp(): void {
-    self::$system = CRM_OSDI_ActionNetwork_TestUtils::createRemoteSystem();
+    self::$system = TestUtils::createRemoteSystem();
     self::$mergeEmailFromDupe = FALSE;
     Civi\Osdi\Queue::getQueue(TRUE);
     parent::setUp();
