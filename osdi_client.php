@@ -91,59 +91,12 @@ function osdi_client_civicrm_install() {
 }
 
 /**
- * Implements hook_civicrm_postInstall().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_postInstall
- */
-function osdi_client_civicrm_postInstall() {
-  _osdi_client_civix_civicrm_postInstall();
-}
-
-/**
- * Implements hook_civicrm_uninstall().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_uninstall
- */
-function osdi_client_civicrm_uninstall() {
-  _osdi_client_civix_civicrm_uninstall();
-}
-
-/**
  * Implements hook_civicrm_enable().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_enable
  */
 function osdi_client_civicrm_enable() {
   _osdi_client_civix_civicrm_enable();
-}
-
-/**
- * Implements hook_civicrm_disable().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_disable
- */
-function osdi_client_civicrm_disable() {
-  _osdi_client_civix_civicrm_disable();
-}
-
-/**
- * Implements hook_civicrm_upgrade().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_upgrade
- */
-function osdi_client_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
-  return _osdi_client_civix_civicrm_upgrade($op, $queue);
-}
-
-/**
- * Implements hook_civicrm_entityTypes().
- *
- * Declare entity types provided by this module.
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_entityTypes
- */
-function osdi_client_civicrm_entityTypes(&$entityTypes) {
-  _osdi_client_civix_civicrm_entityTypes($entityTypes);
 }
 
 // --- Functions below this ship commented out. Uncomment as required. ---
