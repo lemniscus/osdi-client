@@ -39,14 +39,10 @@ class TestUtils {
   public static function createSyncProfile(): array {
     return \Civi\Api4\OsdiSyncProfile::create(FALSE)
       ->addValue('is_default', TRUE)
-      ->addValue('remote_system', 'Civi\Osdi\ActionNetwork\RemoteSystem')
-      ->addValue('entry_point', 'http://foo')
-      ->addValue(
-        'matcher',
-        \Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail::class)
-      ->addValue(
-        'mapper',
-        \Civi\Osdi\ActionNetwork\Mapper\PersonBasic::class)
+      ->addValue('label', 'SyncProfile created by ' . __CLASS__)
+      ->addValue('entry_point', 'https://actionnetwork.org/api/v2/')
+      ->addValue('api_token', file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . 'apiToken'))
+      ->addValue('classes', [])
       ->execute()->single();
   }
 

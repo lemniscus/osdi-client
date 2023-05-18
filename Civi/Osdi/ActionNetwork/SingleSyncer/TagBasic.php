@@ -17,24 +17,10 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
 
   protected ?array $matchArray = NULL;
 
-  public function __construct(RemoteSystemInterface $remoteSystem) {
-    $this->remoteSystem = $remoteSystem;
-  }
-
-  public function getMapper(): MapperInterface {
-    if (empty($this->mapper)) {
-      $this->mapper = OsdiClient::container()
-        ->make('Mapper', 'Tag', $this->getRemoteSystem());
-    }
-    return $this->mapper;
-  }
-
-  public function getMatcher(): MatcherInterface {
-    if (empty($this->matcher)) {
-      $this->matcher = OsdiClient::container()
-        ->make('Matcher', 'Tag', $this->getRemoteSystem());
-    }
-    return $this->matcher;
+  public function __construct(?RemoteSystemInterface $remoteSystem = NULL) {
+    $this->remoteSystem = $remoteSystem ?? OsdiClient::container()->getSingle(
+      'RemoteSystem', 'ActionNetwork');
+    $this->registryKey = 'Tag';
   }
 
   public function getSavedMatch(

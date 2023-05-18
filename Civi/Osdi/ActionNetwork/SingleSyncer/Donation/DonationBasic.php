@@ -18,8 +18,10 @@ class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterfac
 
   protected RemoteSystemInterface $remoteSystem;
 
-  public function __construct(RemoteSystemInterface $remoteSystem) {
-    $this->remoteSystem = $remoteSystem;
+  public function __construct(?RemoteSystemInterface $remoteSystem = NULL) {
+    $this->remoteSystem = $remoteSystem ?? OsdiClient::container()->getSingle(
+      'RemoteSystem', 'ActionNetwork');
+    $this->registryKey = 'Donation';
   }
 
   protected function getLocalObjectClass(): string {

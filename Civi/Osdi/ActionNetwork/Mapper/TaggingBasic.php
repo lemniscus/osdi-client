@@ -5,6 +5,7 @@ namespace Civi\Osdi\ActionNetwork\Mapper;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Result\Map as MapResult;
 use Civi\Osdi\SingleSyncerInterface;
+use Civi\OsdiClient;
 
 class TaggingBasic implements \Civi\Osdi\MapperInterface {
 
@@ -15,7 +16,8 @@ class TaggingBasic implements \Civi\Osdi\MapperInterface {
   protected ?SingleSyncerInterface $taggingSyncer;
 
   public function __construct(?SingleSyncerInterface $taggingSyncer = NULL) {
-    $this->taggingSyncer = $taggingSyncer;
+    $this->taggingSyncer = $taggingSyncer ?? OsdiClient::container()->getSingle(
+      'SingleSyncer', 'Tagging');
   }
 
   public function mapOneWay(LocalRemotePair $taggingPair): MapResult {

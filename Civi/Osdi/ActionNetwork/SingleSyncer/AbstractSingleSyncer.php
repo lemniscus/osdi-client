@@ -16,6 +16,7 @@ use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
 use Civi\Osdi\Result\Sync as SyncResult;
 use Civi\Osdi\Result\SyncEligibility;
 use Civi\Osdi\ResultInterface;
+use Civi\OsdiClient;
 
 abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface {
 
@@ -27,23 +28,23 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
 
   protected ?MapperInterface $mapper = NULL;
 
+  protected ?string $registryKey = NULL;
+
   public function getMapper(): MapperInterface {
     if (empty($this->mapper)) {
-      $mapperClass = $this->getSyncProfile()['mapper'];
-      $this->mapper = new $mapperClass($this->getRemoteSystem());
+      $this->mapper = OsdiClient::container()->getSingle('Mapper', $this->registryKey);
     }
     return $this->mapper;
   }
 
-  public function setMapper(?MapperInterface $mapper): AbstractSingleSyncer {
+  public function setMapper(?MapperInterface $mapper): self {
     $this->mapper = $mapper;
     return $this;
   }
 
   public function getMatcher(): MatcherInterface {
     if (empty($this->matcher)) {
-      $matcherClass = $this->getSyncProfile()['matcher'];
-      $this->matcher = new $matcherClass($this->getRemoteSystem());
+      $this->matcher = OsdiClient::container()->getSingle('Matcher', $this->registryKey);
     }
     return $this->matcher;
   }

@@ -7,6 +7,7 @@ use Civi\Osdi\CrudObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Result\MatchResult as MatchResult;
 use Civi\Osdi\SingleSyncerInterface;
+use Civi\OsdiClient;
 
 class TaggingBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
@@ -15,9 +16,10 @@ class TaggingBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterfac
   protected SingleSyncerInterface $taggingSyncer;
 
   public function __construct(
-    SingleSyncerInterface $taggingSyncer
+    ?SingleSyncerInterface $taggingSyncer = NULL
   ) {
-    $this->taggingSyncer = $taggingSyncer;
+    $this->taggingSyncer = $taggingSyncer ?? OsdiClient::container()->getSingle(
+      'SingleSyncer', 'Tagging');
   }
 
   public function tryToFindMatchForLocalObject(LocalRemotePair $taggingPair): MatchResult {

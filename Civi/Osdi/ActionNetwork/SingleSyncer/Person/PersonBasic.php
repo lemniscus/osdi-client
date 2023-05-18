@@ -44,8 +44,10 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
    */
   private ?int $syncProfileId = NULL;
 
-  public function __construct(RemoteSystemInterface $remoteSystem) {
-    $this->remoteSystem = $remoteSystem;
+  public function __construct(?RemoteSystemInterface $remoteSystem = NULL) {
+    $this->remoteSystem = $remoteSystem ?? OsdiClient::container()->getSingle(
+      'RemoteSystem', 'ActionNetwork');
+    $this->registryKey = 'Person';
   }
 
   /**
@@ -353,41 +355,6 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
 
   protected function getRemoteObjectClass(): string {
     return \Civi\Osdi\ActionNetwork\Object\Person::class;
-  }
-
-  public function setMapper(?MapperInterface $mapper): self {
-    $this->mapper = $mapper;
-    return $this;
-  }
-
-  public function getMapper(): MapperInterface {
-    if (empty($this->mapper)) {
-      $this->mapper = OsdiClient::container()
-        ->make('Mapper', 'Person', $this->getRemoteSystem());
-    }
-    return $this->mapper;
-  }
-
-  public function setMatcher(?MatcherInterface $matcher): self {
-    $this->matcher = $matcher;
-    return $this;
-  }
-
-  public function getMatcher(): MatcherInterface {
-    if (empty($this->matcher)) {
-      $this->matcher = OsdiClient::container()
-        ->make('Matcher', 'Person', $this->getRemoteSystem());
-    }
-    return $this->matcher;
-  }
-
-  public function setRemoteSystem(RemoteSystemInterface $remoteSystem): self {
-    $this->remoteSystem = $remoteSystem;
-    return $this;
-  }
-
-  public function getRemoteSystem(): RemoteSystemInterface {
-    return $this->remoteSystem;
   }
 
   /**

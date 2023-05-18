@@ -3,11 +3,13 @@
 namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 
 use Civi\Api4\Contribution;
+use Civi\Osdi\ActionNetwork\RemoteFindResult;
 use Civi\Osdi\BatchSyncerInterface;
 use Civi\Osdi\LocalObject\Donation as LocalDonation;
 use Civi\Osdi\Logger;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\SingleSyncerInterface;
+use Civi\OsdiClient;
 
 class DonationBasic implements BatchSyncerInterface {
 
@@ -18,10 +20,14 @@ class DonationBasic implements BatchSyncerInterface {
   }
 
   public function getSingleSyncer(): ?SingleSyncerInterface {
+    if (!$this->singleSyncer) {
+      $this->singleSyncer = OsdiClient::container()->getSingle(
+        'SingleSyncer', 'Donation');
+    }
     return $this->singleSyncer;
   }
 
-  public function setSingleSyncer(SingleSyncerInterface $singleSyncer): void {
+  public function setSingleSyncer(?SingleSyncerInterface $singleSyncer): void {
     $this->singleSyncer = $singleSyncer;
   }
 
@@ -70,8 +76,8 @@ class DonationBasic implements BatchSyncerInterface {
     return $count;
   }
 
-  protected function findAndSyncNewRemoteDonations(string $cutoff): \Civi\Osdi\ActionNetwork\RemoteFindResult {
-    $searchResults = $this->singleSyncer->getRemoteSystem()->find('osdi:donations', [
+  protected function findAndSyncNewRemoteDonations(string $cutoff): RemoteFindResult {
+    $searchResults = $this->getSingleSyncer()->getRemoteSystem()->find('osdi:donations', [
       [
         'modified_date',
         'gt',
@@ -84,7 +90,7 @@ class DonationBasic implements BatchSyncerInterface {
         ', mod ' . $remoteDonation->modifiedDate->get());
 
       try {
-        $pair = $this->singleSyncer->matchAndSyncIfEligible($remoteDonation);
+        $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($remoteDonation);
         $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
       }
       catch (\Throwable $e) {
@@ -121,7 +127,7 @@ class DonationBasic implements BatchSyncerInterface {
       try {
         // artfulrobot: @todo all cases are eligible unless I were to implement getSyncEligibility
         $localDonation = LocalDonation::fromId($contribution['id']);
-        $pair = $this->singleSyncer->matchAndSyncIfEligible($localDonation);
+        $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($localDonation);
         $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
         $codeAndMessage = $syncResult->getStatusCode() . ' - ' . $syncResult->getMessage();
         Logger::logDebug("Result for Contribution {$contribution['id']}: $codeAndMessage");

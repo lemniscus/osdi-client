@@ -9,6 +9,7 @@ use Civi\Osdi\LocalObject\TaggingBasic as LocalTaggingObject;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MapperInterface;
 use Civi\Osdi\MatcherInterface;
+use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\DeletionSync as DeletionSyncResult;
 use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
 use Civi\Osdi\SingleSyncerInterface;
@@ -22,8 +23,10 @@ class TaggingBasic extends AbstractSingleSyncer {
 
   protected ?SingleSyncerInterface $tagSyncer = NULL;
 
-  public function __construct(RemoteSystem $remoteSystem) {
-    $this->remoteSystem = $remoteSystem;
+  public function __construct(?RemoteSystemInterface $remoteSystem = NULL) {
+    $this->remoteSystem = $remoteSystem ?? OsdiClient::container()->getSingle(
+      'RemoteSystem', 'ActionNetwork');
+    $this->registryKey = 'Tagging';
   }
 
   public function setPersonSyncer(SingleSyncerInterface $personSyncer): self {
@@ -86,22 +89,6 @@ class TaggingBasic extends AbstractSingleSyncer {
       return NULL;
     }
     return self::$savedMatches[$profileId][$pair->getOrigin()][$objectId] ?? NULL;
-  }
-
-  public function getMapper(): MapperInterface {
-    if (empty($this->mapper)) {
-      $this->mapper = OsdiClient::container()
-        ->make('Mapper', 'Tagging', $this);
-    }
-    return $this->mapper;
-  }
-
-  public function getMatcher(): MatcherInterface {
-    if (empty($this->matcher)) {
-      $this->matcher = OsdiClient::container()
-        ->make('Matcher', 'Tagging', $this);
-    }
-    return $this->matcher;
   }
 
   protected function getLocalObjectClass(): string {

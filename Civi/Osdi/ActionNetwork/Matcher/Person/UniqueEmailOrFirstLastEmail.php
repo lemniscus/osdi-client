@@ -8,11 +8,11 @@ use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\Exception\AmbiguousResultException;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\RemoteObjectInterface;
+use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\MatchResult as MatchResult;
 use Civi\OsdiClient;
 
@@ -20,9 +20,9 @@ class UniqueEmailOrFirstLastEmail extends AbstractMatcher implements MatcherInte
 
   protected RemoteSystem $system;
 
-  public function __construct(\Civi\Osdi\RemoteSystemInterface $system) {
-    /** @var \Civi\Osdi\ActionNetwork\RemoteSystem $system */
-    $this->system = $system;
+  public function __construct(?RemoteSystemInterface $remoteSystem = NULL) {
+    $this->system = $remoteSystem ?? OsdiClient::container()->getSingle(
+      'RemoteSystem', 'ActionNetwork');
   }
 
   public function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult {

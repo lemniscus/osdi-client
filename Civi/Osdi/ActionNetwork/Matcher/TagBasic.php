@@ -5,13 +5,15 @@ namespace Civi\Osdi\ActionNetwork\Matcher;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\MatchResult as MatchResult;
+use Civi\OsdiClient;
 
 class TagBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
   protected RemoteSystemInterface $system;
 
-  public function __construct(RemoteSystemInterface $system) {
-    $this->system = $system;
+  public function __construct(?RemoteSystemInterface $system = NULL) {
+    $this->system = $system ?? OsdiClient::container()->getSingle(
+      'RemoteSystem', 'ActionNetwork');
   }
 
   protected function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult {
