@@ -25,6 +25,7 @@ class Basic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
     ->execute()->first();
 
     if ($syncState) {
+      // @todo use Container
       $remoteClass = $pair->getRemoteClass();
       /** @var \Civi\Osdi\ActionNetwork\Object\Donation */
       $remoteObject = $remoteClass::fromId($syncState['remote_donation_id']);

@@ -31,8 +31,12 @@ class DonationBasic implements BatchSyncerInterface {
     $this->singleSyncer = $singleSyncer;
   }
 
+  /**
+   * Find new Action Network donations since last sync; copy them into Civi.
+   *
+   * @return int|null how many remote donations were processed
+   */
   public function batchSyncFromRemote(): ?int {
-
     $syncStartTime = time();
     $cutoff = $this->getCutOff('remote');
     $searchResults = $this->findAndSyncNewRemoteDonations($cutoff);
@@ -45,26 +49,32 @@ class DonationBasic implements BatchSyncerInterface {
   }
 
   /**
-   * Return a date 1 week before the last Contribution that was synced in the given direction.
+   * Return a date 2 days before the last Contribution/Donation that was synced
+   * in the given direction. The 2-day window is intended to account for any
+   * lag in Contributions/Donations posting/showing as "completed".
    *
-   * Defaults to 1 week ago today, if none.
+   * Defaults to 2 days before today, if none.
    *
    * @return string Y-m-d format date.
    */
   protected function getCutOff(string $source): string {
     if (!in_array($source, ['remote', 'local'])) {
-      throw new \InvalidArgumentException("getCutOff requires either 'remote' or 'local' as its argument.");
+      throw new \InvalidArgumentException(
+        "getCutOff requires either 'remote' or 'local' as its argument.");
     }
 
     $result = \Civi\Api4\Contribution::get(FALSE)
-    ->addSelect('MAX(receive_date) AS last_receive_date')
-    ->addJoin('OsdiDonationSyncState AS osdi_donation_sync_state', 'INNER', NULL, ['id', '=', 'osdi_donation_sync_state.contribution_id'])
-    ->addWhere('osdi_donation_sync_state.source', '=', $source)
-    ->execute()->first();
+      ->addSelect('MAX(receive_date) AS last_receive_date')
+      ->addJoin(
+        'OsdiDonationSyncState AS osdi_donation_sync_state',
+        'INNER',
+        NULL,
+        ['id', '=', 'osdi_donation_sync_state.contribution_id'])
+      ->addWhere('osdi_donation_sync_state.source', '=', $source)
+      ->execute()->first();
 
     $latest = $result ? $result['last_receive_date'] : date('Y-m-d');
 
-    // $cutoff = date('Y-m-d', strtotime("$latest - 1 week"));
     $cutoff = date('Y-m-d', strtotime("$latest - 2 day"));
     Logger::logDebug("Using $cutoff for $source donation sync");
     return $cutoff;
@@ -126,6 +136,7 @@ class DonationBasic implements BatchSyncerInterface {
 
       try {
         // artfulrobot: @todo all cases are eligible unless I were to implement getSyncEligibility
+        // todo avoid reloading from db? we already pulled the data
         $localDonation = LocalDonation::fromId($contribution['id']);
         $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($localDonation);
         $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);

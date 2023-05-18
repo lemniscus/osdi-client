@@ -1,10 +1,6 @@
 <?php
 namespace Civi\Osdi\ActionNetwork\Object;
 
-use Civi\Osdi\ActionNetwork\Object\Donation;
-use Civi\Osdi\ActionNetwork\Object\Person;
-use Civi\Osdi\ActionNetwork\Object\FundraisingPage;
-use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Core\HookInterface;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\TransactionalInterface;

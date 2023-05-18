@@ -55,20 +55,24 @@ class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterfac
       return NULL;
     }
 
+    // TODO add SyncProfile into the mix
+    // and make this an OR, checking whether we've got the same combo
     $exists = OsdiDonationSyncState::get(FALSE)
-    ->addWhere('remote_donation_id', '=', $remoteID)
-    ->addWhere('contribution_id', '=', $localID)
-    ->execute()->first();
+      ->addWhere('remote_donation_id', '=', $remoteID)
+      ->addWhere('contribution_id', '=', $localID)
+      ->execute()->first();
 
     if (!$exists) {
       OsdiDonationSyncState::save(FALSE)
-      ->setRecords([[
-        'remote_donation_id' => $remoteID,
-        'contribution_id'    => $localID,
-        'sync_profile_id'    => OsdiClient::container()->getSyncProfileId(),
-        'source'             => $pair->getOrigin()
-      ]])
-      ->execute();
+        ->setRecords([
+          [
+            'remote_donation_id' => $remoteID,
+            'contribution_id'    => $localID,
+            'sync_profile_id'    => OsdiClient::container()->getSyncProfileId(),
+            'source'             => $pair->getOrigin(),
+          ],
+        ])
+        ->execute();
     }
     return NULL;
   }
@@ -95,7 +99,6 @@ class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterfac
 
     return $result;
   }
-
 
 }
 
