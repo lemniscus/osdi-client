@@ -110,18 +110,6 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
 
   }
 
-  protected function createRemoteDonationAndGetId(array $set, $remotePerson): string {
-      $remoteDonationToday = new RemoteDonation(static::$system);
-      $recipients = [['display_name' => 'Test recipient financial type', 'amount' => $set['amount']]];
-      $remoteDonationToday->recipients->set($recipients);
-      $remoteDonationToday->createdDate->set($set['when']);
-      $remoteDonationToday->setDonor($remotePerson);
-      $remoteDonationToday->setFundraisingPage(self::$testFundraisingPage);
-      $remoteDonationToday->recurrence->set(['recurring' => FALSE]);
-      $remoteDonationToday->save();
-      return $remoteDonationToday->getId();
-  }
-
   public function testBatchSyncFromCivi() {
     [$remotePersonOneId, $now, $localSets, $createdContributionIds]
       = $this->setUpCiviToAnSyncFixture();
@@ -171,27 +159,6 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
       $createdContributionIds, $remotePersonOneId);
   }
 
-
-  protected function createLocalContribution(array $orderParams, array $paymentParams, int $contactId): int {
-
-    $orderParams += [
-      'receive_date' => date('Y-m-d H:i:s', strtotime('now - 1 day')),
-      'financial_type_id' => 1,
-      'contact_id' => $contactId,
-      'total_amount' => 1.23,
-    ];
-    $contribution = civicrm_api3('Order', 'create', $orderParams);
-
-    $paymentParams += [
-      'contribution_id' => $contribution['id'],
-      'total_amount' => $orderParams['total_amount'],
-      'trxn_date' => $orderParams['receive_date'],
-      'trxn_id' => 'abc',
-    ];
-    civicrm_api3('Payment', 'create', $paymentParams);
-
-    return $contribution['id'];
-  }
   protected function assertRemoteDonationsMatch(int $expectedCount, int $now, array $sets, array $createdContributionIds, string $remotePersonId) {
     $contributionIdToSetNo = array_flip($createdContributionIds);
     // Load all our donation sync status records
@@ -226,6 +193,38 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
     $this->assertEquals($expectedCount, $found);
   }
 
+  protected function createLocalContribution(array $orderParams, array $paymentParams, int $contactId): int {
+
+    $orderParams += [
+      'receive_date' => date('Y-m-d H:i:s', strtotime('now - 1 day')),
+      'financial_type_id' => 1,
+      'contact_id' => $contactId,
+      'total_amount' => 1.23,
+    ];
+    $contribution = civicrm_api3('Order', 'create', $orderParams);
+
+    $paymentParams += [
+      'contribution_id' => $contribution['id'],
+      'total_amount' => $orderParams['total_amount'],
+      'trxn_date' => $orderParams['receive_date'],
+      'trxn_id' => 'abc',
+    ];
+    civicrm_api3('Payment', 'create', $paymentParams);
+
+    return $contribution['id'];
+  }
+
+  protected function createRemoteDonationAndGetId(array $set, $remotePerson): string {
+      $remoteDonationToday = new RemoteDonation(static::$system);
+      $recipients = [['display_name' => 'Test recipient financial type', 'amount' => $set['amount']]];
+      $remoteDonationToday->recipients->set($recipients);
+      $remoteDonationToday->createdDate->set($set['when']);
+      $remoteDonationToday->setDonor($remotePerson);
+      $remoteDonationToday->setFundraisingPage(self::$testFundraisingPage);
+      $remoteDonationToday->recurrence->set(['recurring' => FALSE]);
+      $remoteDonationToday->save();
+      return $remoteDonationToday->getId();
+  }
 
   protected function getBatchSyncer(): \Civi\Osdi\ActionNetwork\BatchSyncer\DonationBasic {
     $container = OsdiClient::container();
