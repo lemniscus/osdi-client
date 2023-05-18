@@ -1,9 +1,35 @@
 <?php
 
-use Civi\Osdi\Factory;
+use Civi\OsdiClient;
+use CRM_OSDI_ExtensionUtil as E;
 
 /**
- * Job.Osdiclientbatchsynccontacts API
+ * Job.Osdiclientbatchsyncdonations API specification
+ * This is used for documentation and validation.
+ *
+ * @param array $spec description of fields supported by this API call, in the
+ *   format returned by the api v3 getFields action
+ *
+ */
+function _civicrm_api3_job_Osdiclientbatchsyncdonations_spec(&$spec) {
+  $spec['sync_profile_id'] = [
+    'title' => E::ts('Sync Profile ID'),
+    'type' => CRM_Utils_Type::T_INT,
+    'api.required' => TRUE,
+  ];
+  $spec['origin'] = [
+    'title' => E::ts('Origin'),
+    'description' => E::ts('Which system(s) to sync from, in which order. '
+      . 'Acceptable values: '
+      . '"local", "remote", "local,remote" or "remote,local". '
+      . 'Default: "remote,local".'),
+    'type' => CRM_Utils_Type::T_STRING,
+    'api.required' => FALSE,
+  ];
+}
+
+/**
+ * Job.Osdiclientbatchsyncdonations API
  *
  * @param array $params
  *
@@ -15,18 +41,42 @@ use Civi\Osdi\Factory;
  * @throws API_Exception
  */
 function civicrm_api3_job_Osdiclientbatchsyncdonations($params) {
-  if (empty($params['api_token'])) {
-    throw new Exception('Cannot sync with Action Network without an API token');
+  $origins = array_map('trim', explode(',', $params['origin'] ?? ''));
+  if (count($origins) === 0) {
+    $origins = ['remote', 'local'];
+  }
+  elseif (count($origins) > 2) {
+    throw new \Civi\Osdi\Exception\InvalidArgumentException(
+      'Too many origins passed to Job.Osdiclientbatchsyncdonations.'
+      . ' There should be no more than two.');
+  }
+  else {
+    foreach ($origins as $origin) {
+      if (!in_array($origin, ['local', 'remote'])) {
+        throw new \Civi\Osdi\Exception\InvalidArgumentException(
+          'Invalid origin passed to Job.Osdiclientbatchsyncdonations: %s',
+          $origin
+        );
+      }
+    }
   }
 
-  $system = Factory::initializeRemoteSystem($params['api_token']);
+  $container = OsdiClient::container($params['sync_profile_id']);
+  $batchSyncer = $container->getSingle('BatchSyncer', 'Donation');
 
-  $singleSyncer = Factory::singleton('SingleSyncer', 'Donation', $system);
-  $batchSyncer = Factory::singleton('BatchSyncer', 'Donation', $singleSyncer);
-
+  $message = [];
   try {
-    $countFromRemote = $batchSyncer->batchSyncFromRemote();
-    $countFromLocal = $batchSyncer->batchSyncFromLocal();
+    foreach ($origins as $origin) {
+      if ('remote' === $origin) {
+        $countFromRemote = $batchSyncer->batchSyncFromRemote();
+        $message[] = "AN->Civi: $countFromRemote";
+      }
+      elseif ('local' === $origin) {
+        $countFromLocal = $batchSyncer->batchSyncFromLocal();
+        $message[] = "Civi->AN: $countFromLocal";
+      }
+    }
+
   }
   catch (Throwable $e) {
     return civicrm_api3_create_error(
@@ -36,7 +86,7 @@ function civicrm_api3_job_Osdiclientbatchsyncdonations($params) {
   }
 
   return civicrm_api3_create_success(
-    "AN->Civi: $countFromRemote, Civi->AN: $countFromLocal",
+    implode(', ', $message),
     $params,
     'Job',
     'civicrm_api3_job_Osdiclientbatchsyncdonations');

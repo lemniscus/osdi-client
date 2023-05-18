@@ -149,6 +149,41 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
     $this->assertRemoteDonationsMatch(3, $now, $sets, $createdContributionIds, $personPair->getRemoteObject()->getId());
   }
 
+  public function testBatchSyncViaApiCall() {
+    $personPair = $this->createInSyncPerson();
+    $contactId = $personPair->getLocalObject()->getId();
+    // Create donations in Civi, call sync, load recent donations and check it's there.
+    $now = time();
+    $yesterday = date('Y-m-d H:i:s', $now - 60 * 60 * 24 * 1);
+    $sets = [
+      [['total_amount' => 1.23, 'receive_date' => $yesterday], ['trxn_id' => 'testtrxn_1'], $contactId],
+      [['total_amount' => 4.56, 'receive_date' => $yesterday], ['trxn_id' => 'testtrxn_2'], $contactId],
+      [['total_amount' => 7.89, 'receive_date' => $yesterday], ['trxn_id' => 'testtrxn_3'], $contactId],
+    ];
+    $createdContributionIds = [
+      $this->createLocalContribution(...$sets[0]),
+      $this->createLocalContribution(...$sets[1]),
+    ];
+
+    // Call system under test
+    $syncProfileId = \OsdiClient\ActionNetwork\TestUtils::createSyncProfile()['id'];
+    $result = civicrm_api3('Job', 'osdiclientbatchsyncdonations',
+      ['debug' => 1, 'origin' => 'local', 'sync_profile_id' => $syncProfileId]);
+
+    // Checks
+    $this->assertRemoteDonationsMatch(2, $now, $sets, $createdContributionIds, $personPair->getRemoteObject()->getId());
+
+    // Now add one more contribution and repeat.
+    $createdContributionIds[] = $this->createLocalContribution(...$sets[2]);
+
+    // Call system under test
+    $result = civicrm_api3('Job', 'osdiclientbatchsyncdonations',
+      ['debug' => 1, 'origin' => 'local', 'sync_profile_id' => $syncProfileId]);
+
+    // Checks
+    $this->assertRemoteDonationsMatch(3, $now, $sets, $createdContributionIds, $personPair->getRemoteObject()->getId());
+  }
+
 
   protected function createLocalContribution(array $orderParams, array $paymentParams, int $contactId): int {
 
