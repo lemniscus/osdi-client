@@ -34,7 +34,7 @@ class OsdiClient {
       $syncProfileBAO = new \CRM_OSDI_BAO_SyncProfile();
       $syncProfileBAO->id = $mixedSyncProfileParam;
       if (!$syncProfileBAO->find(TRUE)) {
-        throw new InvalidArgumentException();
+        throw new InvalidArgumentException("Invalid Sync Profile id: $mixedSyncProfileParam");
       }
     }
     elseif (is_null($mixedSyncProfileParam)) {
