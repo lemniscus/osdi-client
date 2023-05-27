@@ -130,7 +130,15 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
 
   public function delete(RemoteObjectInterface $osdiObject) {
     $endpoint = $this->linkify($osdiObject->getUrlForDelete());
-    return $endpoint->delete();
+    try {
+      return $endpoint->delete();
+    }
+    catch (BadResponseException $e) {
+      if (404 !== $e->getCode()) {
+        throw $e;
+      }
+      return NULL;
+    }
   }
 
   /**
