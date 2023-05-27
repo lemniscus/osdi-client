@@ -1,6 +1,24 @@
 <?php
 
+use Civi\Osdi\Director;
+use Civi\OsdiClient;
 use CRM_OSDI_ExtensionUtil as E;
+
+/**
+ * Job.Osdiclientprocessqueue API specification
+ * This is used for documentation and validation.
+ *
+ * @param array $spec description of fields supported by this API call, in the
+ *   format returned by the api v3 getFields action
+ *
+ */
+function _civicrm_api3_job_Osdiclientprocessqueue_spec(&$spec) {
+  $spec['sync_profile_id'] = [
+    'title' => E::ts('Sync Profile ID'),
+    'type' => CRM_Utils_Type::T_INT,
+    'api.required' => TRUE,
+  ];
+}
 
 /**
  * Job.Osdiclientprocessqueue API
@@ -15,23 +33,32 @@ use CRM_OSDI_ExtensionUtil as E;
  * @throws API_Exception
  */
 function civicrm_api3_job_Osdiclientprocessqueue($params) {
-  \Civi\OsdiClient::containerWithDefaultSyncProfile();
+  if (!Director::acquireLock('Run queued tasks')) {
+    return NULL;
+  }
 
-  $queue = \Civi\Osdi\Queue::getQueue();
-  $queueName = $queue->getName();
-  $runItemsAction = \Civi\Api4\Queue::runItems(FALSE)->setQueue($queueName);
-  $statusSummary = [];
+  try {
+    OsdiClient::container($params['sync_profile_id']);
 
-  while ($queue->numberOfItems() > 0) {
-    try {
-      $result = $runItemsAction->execute()->single();
+    $queue = \Civi\Osdi\Queue::getQueue();
+    $queueName = $queue->getName();
+    $runItemsAction = \Civi\Api4\Queue::runItems(FALSE)->setQueue($queueName);
+    $statusSummary = [];
+
+    while ($queue->numberOfItems() > 0) {
+      try {
+        $result = $runItemsAction->execute()->single();
+      }
+      catch (Throwable $e) {
+        throw $e;
+      }
+      $outcome = $result['outcome'];
+      $statusSummary[$outcome] = $statusSummary[$outcome] ?? 0;
+      $statusSummary[$outcome]++;
     }
-    catch (Throwable $e) {
-      throw $e;
-    }
-    $outcome = $result['outcome'];
-    $statusSummary[$outcome] = $statusSummary[$outcome] ?? 0;
-    $statusSummary[$outcome]++;
+  }
+  finally {
+    Director::releaseLock();
   }
 
   return civicrm_api3_create_success($statusSummary, $params, 'Job', 'Osdiclientprocessqueue');

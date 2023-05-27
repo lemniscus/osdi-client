@@ -5,6 +5,7 @@ namespace Civi\Osdi\ActionNetwork\CrmEventResponder;
 use Civi;
 use Civi\Osdi\ActionNetwork\Object\Person as RemotePerson;
 use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
+use Civi\OsdiClient;
 use OsdiClient\ActionNetwork\TestUtils;
 
 /**
@@ -82,8 +83,10 @@ class PersonBasicTest extends \PHPUnit\Framework\TestCase implements
   }
 
   private function runQueueViaCiviApi3(): void {
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
+
     $queueJobResult = civicrm_api3('Job', 'osdiclientprocessqueue',
-      ['debug' => 1, 'api_token' => ACTION_NETWORK_TEST_API_TOKEN]);
+      ['debug' => 1, 'sync_profile_id' => $syncProfileId]);
 
     self::assertEquals(0, $queueJobResult['is_error']);
   }

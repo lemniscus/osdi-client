@@ -3,6 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\CrmEventResponder;
 
 use Civi;
+use Civi\OsdiClient;
 use OsdiClient\ActionNetwork\TestUtils;
 use PHPUnit;
 
@@ -385,8 +386,10 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
       FALSE
     );
 
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
+
     $result = civicrm_api3('Job', 'osdiclientprocessqueue',
-      ['debug' => 1, 'api_token' => ACTION_NETWORK_TEST_API_TOKEN]);
+      ['debug' => 1, 'sync_profile_id' => $syncProfileId]);
 
     self::assertEquals(0, $result['is_error']);
 
@@ -431,8 +434,10 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
       'civicrm_contact',
       FALSE);
 
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
+
     $result = civicrm_api3('Job', 'osdiclientprocessqueue',
-      ['debug' => 1, 'api_token' => ACTION_NETWORK_TEST_API_TOKEN]);
+      ['debug' => 1, 'sync_profile_id' => $syncProfileId]);
 
     self::assertEquals(0, $result['is_error']);
 
@@ -473,8 +478,10 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
         ->execute();
     }
 
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
+
     $result = civicrm_api3('Job', 'osdiclientprocessqueue',
-      ['debug' => 1, 'api_token' => ACTION_NETWORK_TEST_API_TOKEN]);
+      ['debug' => 1, 'sync_profile_id' => $syncProfileId]);
 
     self::assertEquals(0, $result['is_error']);
 
@@ -506,8 +513,10 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
       'mode' => "aggressive",
     ]);
 
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
+
     $result = civicrm_api3('Job', 'osdiclientprocessqueue',
-      ['debug' => 1, 'api_token' => ACTION_NETWORK_TEST_API_TOKEN]);
+      ['debug' => 1, 'sync_profile_id' => $syncProfileId]);
 
     self::assertEquals(0, $result['is_error']);
 

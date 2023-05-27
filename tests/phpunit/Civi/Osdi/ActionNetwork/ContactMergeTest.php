@@ -396,8 +396,10 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
   }
 
   private function runQueueViaCiviApi3(): void {
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
+
     $queueJobResult = civicrm_api3('Job', 'osdiclientprocessqueue',
-      ['debug' => 1, 'api_token' => ACTION_NETWORK_TEST_API_TOKEN]);
+      ['debug' => 1, 'sync_profile_id' => $syncProfileId]);
 
     self::assertEquals(0, $queueJobResult['is_error']);
   }
