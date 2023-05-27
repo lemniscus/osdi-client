@@ -5,8 +5,8 @@ namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 use Civi\Api4\EntityTag;
 use Civi\Api4\Tag;
 use Civi\Osdi\BatchSyncerInterface;
+use Civi\Osdi\Director;
 use Civi\Osdi\Exception\InvalidOperationException;
-use Civi\Osdi\Container;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Logger;
@@ -33,98 +33,40 @@ class TaggingBasic implements BatchSyncerInterface {
    * @return int|null total number of Action Network taggings synced
    */
   public function batchSyncFromRemote(): ?int {
-    /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic $taggingSingleSyncer */
-    $taggingSingleSyncer = $this->getSingleSyncer();
-    $tagSingleSyncer = $taggingSingleSyncer->getTagSyncer();
-    $system = $taggingSingleSyncer->getRemoteSystem();
-
-    $processName = 'Batch AN->Civi tagging sync';
-    if ($this->isBlockedByOtherProcess($processName)) {
+    if (!Director::acquireLock('Batch AN->Civi tagging sync')) {
       return NULL;
     }
 
-    $totalTaggingCount = count($this->batchSyncFromRemoteWithOptionalDeletion(
-      $system, $tagSingleSyncer, $taggingSingleSyncer, TRUE));
+    try {
+      /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic $taggingSingleSyncer */
+      $taggingSingleSyncer = $this->getSingleSyncer();
+      $tagSingleSyncer = $taggingSingleSyncer->getTagSyncer();
+      $system = $taggingSingleSyncer->getRemoteSystem();
 
-    Logger::logDebug("Tagging sync completed; $totalTaggingCount remote taggings processed");
+      $totalTaggingCount = count($this->batchSyncFromRemoteWithOptionalDeletion(
+        $system, $tagSingleSyncer, $taggingSingleSyncer, TRUE));
+
+      Logger::logDebug("Tagging sync completed; $totalTaggingCount remote taggings processed");
+    }
+    finally {
+      Director::releaseLock();
+    }
 
     return $totalTaggingCount;
   }
 
   public function batchTwoWayMirror(): ?int {
-    /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic $taggingSingleSyncer */
-    $taggingSingleSyncer = $this->getSingleSyncer();
-    $tagSingleSyncer = $taggingSingleSyncer->getTagSyncer();
-    $system = $taggingSingleSyncer->getRemoteSystem();
 
-    $processName = 'Batch AN->Civi tagging two-way mirror';
-    if ($this->isBlockedByOtherProcess($processName)) {
+    if (!Director::acquireLock('Batch AN->Civi tagging two-way mirror')) {
       return NULL;
     }
 
-    Logger::logDebug('First mirroring taggings from Action Network into Civi');
-
-    $entityTagIdsSyncedFromRemote = $this->batchSyncFromRemoteWithOptionalDeletion(
-      $system, $tagSingleSyncer, $taggingSingleSyncer, FALSE);
-    $remoteCount = array_sum(array_map('count', $entityTagIdsSyncedFromRemote));
-
-    Logger::logDebug('Now mirroring taggings from Civi into Action Network');
-
-    $successCountFromLocal = $newFromLocalCount = $errorFromLocalCount = 0;
-
-    foreach ($entityTagIdsSyncedFromRemote as $tagId => $syncedEntityTagIds) {
-      $tagName = Tag::get(FALSE)->addWhere('id', '=', $tagId)
-        ->execute()->first()['name'];
-
-      $entityTagArrays = EntityTag::get(FALSE)
-        ->addWhere('entity_table', '=', 'civicrm_contact')
-        ->addWhere('tag_id', '=', $tagId)
-        ->execute();
-
-      $currentTagTotal = $entityTagArrays->count();
-      $currentTagDone = 0;
-      $lastLogTime = time();
-      Logger::logDebug("Processing $currentTagTotal local taggings for tag: $tagName");
-
-      foreach ($entityTagArrays as $entityTagArray) {
-        if (time() - $lastLogTime > 14) {
-          Logger::logDebug("still syncing taggings for current local tag: of "
-            . "$currentTagTotal, $currentTagDone done");
-          $lastLogTime = time();
-        }
-        $currentTagDone++;
-
-        if (in_array($entityTagArray['id'], $syncedEntityTagIds)) {
-          continue;
-        }
-
-        try {
-          $localTagging = \Civi\OsdiClient::container()
-            ->make('LocalObject', 'Tagging');
-          $localTagging->loadFromArray($entityTagArray);
-          $taggingPair = $this->singleSyncer->toLocalRemotePair($localTagging);
-          $taggingPair->setOrigin($taggingPair::ORIGIN_LOCAL);
-          $result = $this->singleSyncer->oneWayMapAndWrite($taggingPair);
-          $newFromLocalCount++;
-          $result->isError() ? $errorFromLocalCount++ : $successCountFromLocal++;
-        }
-        catch (\Throwable $e) {
-          \Civi::log()->error('OSDI client: Error during batch Tagging sync from Civi',
-            [
-              'Message' => $e->getMessage(),
-              'File' => $e->getFile(),
-              'Line' => $e->getLine(),
-            ]);
-          $errorFromLocalCount++;
-        }
-      }
+    try {
+      $remoteCount = $this->batchTwoWayMirrorRaw();
     }
-
-    Logger::logDebug("Tagging sync completed; $remoteCount remote taggings "
-      . "synced into Civi of which some may have already existed; $newFromLocalCount "
-      . "local taggings synced into Action Network ($successCountFromLocal "
-      . "successfully, $errorFromLocalCount errors)");
-
+    finally {
+      Director::releaseLock();
+    }
     return $remoteCount;
   }
 
@@ -265,7 +207,8 @@ class TaggingBasic implements BatchSyncerInterface {
           $processedCount++;
         }
         catch (\Throwable $e) {
-          \Civi::log()->error('OSDI client: Error during batch Tagging sync from Action Network');
+          \Civi::log()->error('OSDI client: Error during batch Tagging '
+          . 'sync from Action Network: ' . $e->getMessage());
           $errorCount++;
         }
       }
@@ -278,6 +221,78 @@ class TaggingBasic implements BatchSyncerInterface {
     }
 
     return $syncedLocalTaggings;
+  }
+
+  private function batchTwoWayMirrorRaw(): int {
+    /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic $taggingSingleSyncer */
+    $taggingSingleSyncer = $this->getSingleSyncer();
+    $tagSingleSyncer = $taggingSingleSyncer->getTagSyncer();
+    $system = $taggingSingleSyncer->getRemoteSystem();
+
+    Logger::logDebug('First mirroring taggings from Action Network into Civi');
+
+    $entityTagIdsSyncedFromRemote = $this->batchSyncFromRemoteWithOptionalDeletion(
+      $system, $tagSingleSyncer, $taggingSingleSyncer, FALSE);
+    $remoteCount = array_sum(array_map('count', $entityTagIdsSyncedFromRemote));
+
+    Logger::logDebug('Now mirroring taggings from Civi into Action Network');
+
+    $successCountFromLocal = $newFromLocalCount = $errorFromLocalCount = 0;
+
+    foreach ($entityTagIdsSyncedFromRemote as $tagId => $syncedEntityTagIds) {
+      $tagName = Tag::get(FALSE)->addWhere('id', '=', $tagId)
+        ->execute()->first()['name'];
+
+      $entityTagArrays = EntityTag::get(FALSE)
+        ->addWhere('entity_table', '=', 'civicrm_contact')
+        ->addWhere('tag_id', '=', $tagId)
+        ->execute();
+
+      $currentTagTotal = $entityTagArrays->count();
+      $currentTagDone = 0;
+      $lastLogTime = time();
+      Logger::logDebug("Processing $currentTagTotal local taggings for tag: $tagName");
+
+      foreach ($entityTagArrays as $entityTagArray) {
+        if (time() - $lastLogTime > 14) {
+          Logger::logDebug("still syncing taggings for current local tag: of "
+            . "$currentTagTotal, $currentTagDone done");
+          $lastLogTime = time();
+        }
+        $currentTagDone++;
+
+        if (in_array($entityTagArray['id'], $syncedEntityTagIds)) {
+          continue;
+        }
+
+        try {
+          $localTagging = \Civi\OsdiClient::container()
+            ->make('LocalObject', 'Tagging');
+          $localTagging->loadFromArray($entityTagArray);
+          $taggingPair = $this->singleSyncer->toLocalRemotePair($localTagging);
+          $taggingPair->setOrigin($taggingPair::ORIGIN_LOCAL);
+          $result = $this->singleSyncer->oneWayMapAndWrite($taggingPair);
+          $newFromLocalCount++;
+          $result->isError() ? $errorFromLocalCount++ : $successCountFromLocal++;
+        }
+        catch (\Throwable $e) {
+          \Civi::log()->error('OSDI client: Error during batch Tagging sync from Civi',
+            [
+              'Message' => $e->getMessage(),
+              'File' => $e->getFile(),
+              'Line' => $e->getLine(),
+            ]);
+          $errorFromLocalCount++;
+        }
+      }
+    }
+
+    Logger::logDebug("Tagging sync completed; $remoteCount remote taggings "
+      . "synced into Civi of which some may have already existed; $newFromLocalCount "
+      . "local taggings synced into Action Network ($successCountFromLocal "
+      . "successfully, $errorFromLocalCount errors)");
+
+    return $remoteCount;
   }
 
   private function deleteNonMatchingLocalTaggings($localTagId, array $syncedLocalTaggings): void {
@@ -308,40 +323,6 @@ class TaggingBasic implements BatchSyncerInterface {
       }
     }
     Logger::logDebug("Deleted $deletedCount non-matching taggings from Civi");
-  }
-
-  /**
-   * Check whether an exclusive sync process is running.
-   *
-   * TODO move this to a different class
-   *
-   * @param string $processName the unique name of a process that needs
-   *   exclusive access to Civi & Action Network for syncing
-   *
-   * @return bool whether another exclusive process is already running
-   */
-  private function isBlockedByOtherProcess(string $processName): bool {
-    Logger::logDebug("$processName requested");
-
-    if ($lastJobPid = $this->isLastProcessStillRunning()) {
-      Logger::logDebug("Sync process ID $lastJobPid is still running; quitting new process");
-      return TRUE;
-    }
-    Logger::logDebug("$processName process ID is " . getmypid());
-
-    if (is_null(\Civi::settings()->get('osdiClient.syncJobEndTime'))) {
-      Logger::logDebug('Last sync job did not finish successfully');
-    }
-
-    return FALSE;
-  }
-
-  private function isLastProcessStillRunning(): int {
-    $lastJobPid = \Civi::settings()->get('osdiClient.syncJobProcessId');
-    if ($lastJobPid && posix_getsid($lastJobPid) !== FALSE) {
-      return $lastJobPid;
-    }
-    return FALSE;
   }
 
 }

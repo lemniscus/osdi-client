@@ -4,10 +4,8 @@ namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 
 use Civi\Osdi\ActionNetwork\DonationHelperTrait;
 use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
-use Civi\Osdi\ActionNetwork\Matcher\Donation\Basic as DonationBasicMatcher;
-use Civi\Osdi\ActionNetwork\Mapper\DonationBasic as DonationBasicMapper;
-
 use Civi\OsdiClient;
+use OsdiClient\ActionNetwork\TestUtils;
 use PHPUnit;
 
 /**
@@ -17,20 +15,43 @@ use PHPUnit;
  *
  */
 class DonationBasicTest extends PHPUnit\Framework\TestCase implements
-  \Civi\Test\HeadlessInterface,
-  \Civi\Test\TransactionalInterface {
+    \Civi\Test\HeadlessInterface,
+    \Civi\Test\TransactionalInterface {
 
   use DonationHelperTrait;
-
-  /**
-   * @var \Civi\Osdi\ActionNetwork\Mapper\Reconciliation2022May001
-   */
-  public static $mapper;
 
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()
       ->installMe(__DIR__)
       ->apply();
+  }
+
+  protected function setUp(): void {
+    TestUtils::createRemoteSystem();
+    parent::setUp();
+  }
+
+  public function testBatchSyncFromANDoesNotRunConcurrently() {
+    \Civi::settings()->add([
+      'osdiClient.syncJobProcessId' => getmypid(),
+      'osdiClient.syncJobEndTime' => NULL,
+    ]);
+
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
+    $result = civicrm_api3('Job', 'osdiclientbatchsyncdonations',
+      ['debug' => 1, 'origin' => 'remote', 'sync_profile_id' => $syncProfileId]);
+
+    self::assertEquals('AN->Civi: ', $result['values']);
+    self::assertNull(\Civi::settings()->get('osdiClient.syncJobEndTime'));
+
+    self::assertFalse(posix_getsid(9999999999999));
+    \Civi::settings()->set('osdiClient.syncJobProcessId', 9999999999999);
+
+    $result = civicrm_api3('Job', 'osdiclientbatchsyncdonations',
+      ['debug' => 1, 'origin' => 'remote', 'sync_profile_id' => $syncProfileId]);
+
+    self::assertGreaterThan(strlen('AN->Civi: '), strlen($result['values']));
+    self::assertNotNull(\Civi::settings()->get('osdiClient.syncJobEndTime'));
   }
 
   /**
@@ -139,7 +160,7 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
       = $this->setUpCiviToAnSyncFixture();
 
     // Call system under test
-    $syncProfileId = \OsdiClient\ActionNetwork\TestUtils::createSyncProfile()['id'];
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
     $result = civicrm_api3('Job', 'osdiclientbatchsyncdonations',
       ['debug' => 1, 'origin' => 'local', 'sync_profile_id' => $syncProfileId]);
 
@@ -277,4 +298,3 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
   }
 
 }
-

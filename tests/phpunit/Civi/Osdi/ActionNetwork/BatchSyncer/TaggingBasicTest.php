@@ -4,7 +4,6 @@ namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 
 use Civi;
 use Civi\Api4\EntityTag;
-use Civi\Osdi\Container;
 use Civi\OsdiClient;
 use OsdiClient\ActionNetwork\TestUtils;
 use PHPUnit;
@@ -171,6 +170,13 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
     $taggingCount = $batchSyncer->batchSyncFromRemote();
     self::assertNull($taggingCount);
     self::assertNull(Civi::settings()->get('osdiClient.syncJobEndTime'));
+
+    self::assertFalse(posix_getsid(9999999999999));
+    \Civi::settings()->set('osdiClient.syncJobProcessId', 9999999999999);
+
+    $taggingCount = $batchSyncer->batchSyncFromRemote();
+    self::assertNotNull($taggingCount);
+    self::assertNotNull(Civi::settings()->get('osdiClient.syncJobEndTime'));
   }
 
   public function testBatchSyncFromRemote() {

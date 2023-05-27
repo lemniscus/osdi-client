@@ -5,6 +5,7 @@ namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 use Civi\Api4\Contribution;
 use Civi\Osdi\ActionNetwork\RemoteFindResult;
 use Civi\Osdi\BatchSyncerInterface;
+use Civi\Osdi\Director;
 use Civi\Osdi\LocalObject\Donation as LocalDonation;
 use Civi\Osdi\Logger;
 use Civi\Osdi\Result\Sync;
@@ -37,13 +38,22 @@ class DonationBasic implements BatchSyncerInterface {
    * @return int|null how many remote donations were processed
    */
   public function batchSyncFromRemote(): ?int {
-    $syncStartTime = time();
-    $cutoff = $this->getCutOff('remote');
-    $searchResults = $this->findAndSyncNewRemoteDonations($cutoff);
+    if (!Director::acquireLock('Batch AN->Civi donation sync')) {
+      return NULL;
+    }
 
-    Logger::logDebug('Finished batch AN->Civi sync; count: ' .
-      $searchResults->rawCurrentCount() . '; time: ' . (time() - $syncStartTime)
-      . ' seconds');
+    try {
+      $syncStartTime = time();
+      $cutoff = $this->getCutOff('remote');
+      $searchResults = $this->findAndSyncNewRemoteDonations($cutoff);
+
+      Logger::logDebug('Finished batch AN->Civi sync; count: ' .
+        $searchResults->rawCurrentCount() . '; time: ' . (time() - $syncStartTime)
+        . ' seconds');
+    }
+    finally {
+      Director::releaseLock();
+    }
 
     return $searchResults->rawCurrentCount();
   }
@@ -81,8 +91,18 @@ class DonationBasic implements BatchSyncerInterface {
   }
 
   public function batchSyncFromLocal(): ?int {
-    $cutoff = $this->getCutOff('local');
-    $count = $this->findAndSyncNewLocalDonations($cutoff);
+    if (!Director::acquireLock('Batch Civi->AN donation sync')) {
+      return NULL;
+    }
+
+    try {
+      $cutoff = $this->getCutOff('local');
+      $count = $this->findAndSyncNewLocalDonations($cutoff);
+    }
+    finally {
+      Director::releaseLock();
+    }
+
     return $count;
   }
 
