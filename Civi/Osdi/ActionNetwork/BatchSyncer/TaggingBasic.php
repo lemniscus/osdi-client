@@ -11,6 +11,7 @@ use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Logger;
 use Civi\Osdi\SingleSyncerInterface;
+use Civi\OsdiClient;
 
 class TaggingBasic implements BatchSyncerInterface {
 
@@ -18,6 +19,10 @@ class TaggingBasic implements BatchSyncerInterface {
 
   public function __construct(SingleSyncerInterface $singleSyncer = NULL) {
     $this->singleSyncer = $singleSyncer;
+  }
+
+  public function batchSyncFromLocal(): ?int {
+    throw new InvalidOperationException('Not implemented');
   }
 
   /**
@@ -29,7 +34,7 @@ class TaggingBasic implements BatchSyncerInterface {
    */
   public function batchSyncFromRemote(): ?int {
     /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic $taggingSingleSyncer */
-    $taggingSingleSyncer = $this->singleSyncer;
+    $taggingSingleSyncer = $this->getSingleSyncer();
     $tagSingleSyncer = $taggingSingleSyncer->getTagSyncer();
     $system = $taggingSingleSyncer->getRemoteSystem();
 
@@ -46,13 +51,9 @@ class TaggingBasic implements BatchSyncerInterface {
     return $totalTaggingCount;
   }
 
-  public function batchSyncFromLocal(): ?int {
-    throw new InvalidOperationException('Not implemented');
-  }
-
   public function batchTwoWayMirror(): ?int {
     /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic $taggingSingleSyncer */
-    $taggingSingleSyncer = $this->singleSyncer;
+    $taggingSingleSyncer = $this->getSingleSyncer();
     $tagSingleSyncer = $taggingSingleSyncer->getTagSyncer();
     $system = $taggingSingleSyncer->getRemoteSystem();
 
@@ -125,6 +126,14 @@ class TaggingBasic implements BatchSyncerInterface {
       . "successfully, $errorFromLocalCount errors)");
 
     return $remoteCount;
+  }
+
+  public function getSingleSyncer(): ?SingleSyncerInterface {
+    if (!$this->singleSyncer) {
+      $this->singleSyncer = OsdiClient::container()->getSingle(
+        'SingleSyncer', 'Tagging');
+    }
+    return $this->singleSyncer;
   }
 
   public function syncTaggingsFromLocalPerson(LocalObjectInterface $localPerson): bool {

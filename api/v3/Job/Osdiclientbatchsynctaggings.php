@@ -1,17 +1,31 @@
 <?php
-use \Civi\Osdi\Container;
+use \Civi\OsdiClient;
 use CRM_OSDI_ExtensionUtil as E;
 
 /**
  * Job.Osdiclientbatchsynctaggings API specification (optional)
  * This is used for documentation and validation.
  *
- * @param array $spec description of fields supported by this API call
+ * @param array $spec description of fields supported by this API call, in the
+ *   format returned by the api v3 getFields action
  *
- * @see https://docs.civicrm.org/dev/en/latest/framework/api-architecture/
  */
-function _civicrm_api3_job_Osdiclientbatchsynctaggings_spec(&$spec) {
-  //$spec['api_token']['api.required'] = 1;
+function _civicrm_api3_job_Osdiclientbatchtaggings_spec(&$spec) {
+  $spec['sync_profile_id'] = [
+    'title' => E::ts('Sync Profile ID'),
+    'type' => CRM_Utils_Type::T_INT,
+    'api.required' => TRUE,
+  ];
+  $spec['origin'] = [
+    'title' => E::ts('Origin'),
+    'description' => E::ts('Which system(s) to sync from, in which order. '
+      . 'Acceptable values: '
+      . '"remote". Default: "remote".'),
+      //. '"local", "remote", "local,remote" or "remote,local". '
+      //. 'Default: "remote,local".'),
+    'type' => CRM_Utils_Type::T_STRING,
+    'api.required' => FALSE,
+  ];
 }
 
 /**
@@ -27,14 +41,15 @@ function _civicrm_api3_job_Osdiclientbatchsynctaggings_spec(&$spec) {
  * @throws API_Exception
  */
 function civicrm_api3_job_Osdiclientbatchsynctaggings($params) {
-  $container = \Civi\OsdiClient::containerWithDefaultSyncProfile();
-  $system = $container->getSingle('RemoteSystem', 'ActionNetwork');
+  $origins = \Civi\Osdi\Util::validateAndNormalizeApiOriginParam(
+    $params, ['remote'], ['remote']);
 
-  $singleSyncer = $container->getSingle('SingleSyncer', 'Tagging', $system);
-  $batchSyncer = $container->getSingle('BatchSyncer', 'Tagging', $singleSyncer);
-
+  $container = OsdiClient::container($params['sync_profile_id']);
+  $batchSyncer = $container->getSingle('BatchSyncer', 'Tagging');
+  $message = [];
   try {
     $countFromRemote = $batchSyncer->batchSyncFromRemote();
+    $message[] = "AN->Civi: $countFromRemote";
   }
   catch (Throwable $e) {
     return civicrm_api3_create_error(
@@ -44,7 +59,7 @@ function civicrm_api3_job_Osdiclientbatchsynctaggings($params) {
   }
 
   return civicrm_api3_create_success(
-    "AN->Civi: $countFromRemote",
+    implode(', ', $message),
     $params,
     'Job',
     'Osdiclientbatchsynctaggings');

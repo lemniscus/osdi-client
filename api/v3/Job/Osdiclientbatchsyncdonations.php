@@ -41,10 +41,13 @@ function _civicrm_api3_job_Osdiclientbatchsyncdonations_spec(&$spec) {
  * @throws API_Exception
  */
 function civicrm_api3_job_Osdiclientbatchsyncdonations($params) {
-  $origins = \Civi\Osdi\Util::validateAndNormalizeApiOriginParam($params);
+  $origins = \Civi\Osdi\Util::validateAndNormalizeApiOriginParam(
+    $params, ['remote', 'local'], ['remote', 'local']);
+
   $container = OsdiClient::container($params['sync_profile_id']);
   $batchSyncer = $container->getSingle('BatchSyncer', 'Donation');
   $message = [];
+
   try {
     foreach ($origins as $origin) {
       if ('remote' === $origin) {
