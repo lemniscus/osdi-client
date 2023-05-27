@@ -17,20 +17,7 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     \Civi\Test\HeadlessInterface,
     \Civi\Test\TransactionalInterface {
 
-  /**
-   * @var array{Contact: array, OptionGroup: array, OptionValue: array, CustomGroup: array, CustomField: array}
-   */
-  private static $createdEntities = [];
-
-  /**
-   * @var \Civi\Osdi\ActionNetwork\RemoteSystem
-   */
-  public static $system;
-
-  /**
-   * @var \Civi\Osdi\ActionNetwork\Mapper\Reconciliation2022May001
-   */
-  public static $mapper;
+  public static \Civi\Osdi\ActionNetwork\RemoteSystem $system;
 
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()
@@ -45,19 +32,6 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
 
   public function tearDown(): void {
     parent::tearDown();
-  }
-
-  public static function tearDownAfterClass(): void {
-    foreach (self::$createdEntities as $type => $ids) {
-      foreach ($ids as $id) {
-        civicrm_api4($type, 'delete', [
-          'where' => [['id', '=', $id]],
-          'checkPermissions' => FALSE,
-        ]);
-      }
-    }
-
-    parent::tearDownAfterClass();
   }
 
   public function testBatchSyncFromANDoesNotRunConcurrently() {
@@ -133,8 +107,9 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     $syncStartTime = time();
     sleep(1);
 
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
     $result = civicrm_api3('Job', 'osdiclientbatchsynccontacts',
-      ['debug' => 1, 'api_token' => ACTION_NETWORK_TEST_API_TOKEN]);
+      ['debug' => 1, 'origin' => 'remote,local', 'sync_profile_id' => $syncProfileId]);
 
     sleep(1);
 
@@ -174,6 +149,9 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
       /** @var \Civi\Osdi\ActionNetwork\Object\Person[] $remotePeople */
       $remotePeople[$i] = $remotePerson->save();
       $remoteModTime = strtotime($remotePerson->modifiedDate->get());
+      Civi\Osdi\Logger::logDebug('[test]' . __FUNCTION__ . ' created AN id '
+        . $remotePerson->getId() . ', mod ' . $remotePerson->modifiedDate->get()
+        . ", $email");
 
       $localPerson = new LocalPerson();
       $localPerson->emailEmail->set($email);
@@ -200,6 +178,7 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
       $syncState->save();
       /** @var \Civi\Osdi\PersonSyncState[] $syncStates */
       $syncStates[$i] = $syncState;
+      Civi\Osdi\Logger::logDebug('[test] created PersonSyncState ' . print_r($syncState->toArray(), TRUE));
 
       // With .4 seconds between creations, person 4 will have a mod date at least
       // 1 second after person 1

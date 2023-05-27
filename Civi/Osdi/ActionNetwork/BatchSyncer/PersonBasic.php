@@ -15,6 +15,10 @@ class PersonBasic implements BatchSyncerInterface {
   private ?SingleSyncerInterface $singleSyncer;
 
   public function getSingleSyncer(): ?SingleSyncerInterface {
+    if (!$this->singleSyncer) {
+      $this->singleSyncer = OsdiClient::container()->getSingle(
+        'SingleSyncer', 'Person');
+    }
     return $this->singleSyncer;
   }
 
@@ -103,7 +107,7 @@ class PersonBasic implements BatchSyncerInterface {
   }
 
   private function findAndSyncRemoteUpdatesAsNeeded($cutoff): \Civi\Osdi\ActionNetwork\RemoteFindResult {
-    $searchResults = $this->singleSyncer->getRemoteSystem()->find('osdi:people', [
+    $searchResults = $this->getSingleSyncer()->getRemoteSystem()->find('osdi:people', [
       [
         'modified_date',
         'gt',

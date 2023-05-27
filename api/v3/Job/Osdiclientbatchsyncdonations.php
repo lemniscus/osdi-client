@@ -41,29 +41,9 @@ function _civicrm_api3_job_Osdiclientbatchsyncdonations_spec(&$spec) {
  * @throws API_Exception
  */
 function civicrm_api3_job_Osdiclientbatchsyncdonations($params) {
-  $origins = array_map('trim', explode(',', $params['origin'] ?? ''));
-  if (count($origins) === 0) {
-    $origins = ['remote', 'local'];
-  }
-  elseif (count($origins) > 2) {
-    throw new \Civi\Osdi\Exception\InvalidArgumentException(
-      'Too many origins passed to Job.Osdiclientbatchsyncdonations.'
-      . ' There should be no more than two.');
-  }
-  else {
-    foreach ($origins as $origin) {
-      if (!in_array($origin, ['local', 'remote'])) {
-        throw new \Civi\Osdi\Exception\InvalidArgumentException(
-          'Invalid origin passed to Job.Osdiclientbatchsyncdonations: %s',
-          $origin
-        );
-      }
-    }
-  }
-
+  $origins = \Civi\Osdi\Util::validateAndNormalizeApiOriginParam($params);
   $container = OsdiClient::container($params['sync_profile_id']);
   $batchSyncer = $container->getSingle('BatchSyncer', 'Donation');
-
   $message = [];
   try {
     foreach ($origins as $origin) {
@@ -76,7 +56,6 @@ function civicrm_api3_job_Osdiclientbatchsyncdonations($params) {
         $message[] = "Civi->AN: $countFromLocal";
       }
     }
-
   }
   catch (Throwable $e) {
     return civicrm_api3_create_error(

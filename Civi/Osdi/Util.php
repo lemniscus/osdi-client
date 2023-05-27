@@ -16,4 +16,28 @@ class Util {
     }
   }
 
+  public static function validateAndNormalizeApiOriginParam(array $params): array {
+    $origins = explode(',', $params['origin'] ?? '');
+    $origins = array_map('trim', $origins);
+    if (count($origins) === 0) {
+      $origins = ['remote', 'local'];
+    }
+    elseif (count($origins) > 2) {
+      throw new InvalidArgumentException(
+        'Too many origins passed to API action.'
+        . ' There should be no more than two.');
+    }
+    else {
+      foreach ($origins as $origin) {
+        if (!in_array($origin, ['local', 'remote'])) {
+          throw new InvalidArgumentException(
+            'Invalid origin passed to API action: %s',
+            $origin
+          );
+        }
+      }
+    }
+    return $origins;
+  }
+
 }
