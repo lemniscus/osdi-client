@@ -127,7 +127,7 @@ class DonationBasic extends AbstractLocalObject implements LocalObjectInterface 
     return $this;
   }
 
-  protected function getFieldMetadata() {
+  protected function getFieldMetadata(): array {
     return [
       'id' => ['select' => 'id'],
       'amount' => ['select' => 'total_amount'],
