@@ -48,7 +48,7 @@ class Basic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
     if ($syncState) {
       $localClass = $pair->getLocalClass();
-      /** @var \Civi\Osdi\LocalObject\Donation */
+      /** @var \Civi\Osdi\LocalObject\DonationBasic */
       $localObject = $localClass::fromId($syncState['contribution_id']);
       $result->setLocalObject($localObject);
       $result->setStatusCode($result::FOUND_MATCH);

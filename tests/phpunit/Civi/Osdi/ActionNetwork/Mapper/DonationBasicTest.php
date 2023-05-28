@@ -6,7 +6,7 @@ use Civi\Core\HookInterface;
 use Civi\Osdi\ActionNetwork\DonationHelperTrait;
 use Civi\Osdi\ActionNetwork\Mapper\DonationBasic as DonationBasicMapper;
 use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
-use Civi\Osdi\LocalObject\Donation as LocalDonation;
+use Civi\Osdi\LocalObject\DonationBasic as LocalDonation;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\TransactionalInterface;
 use OsdiClient\FixtureHttpClient;

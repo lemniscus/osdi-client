@@ -15,7 +15,7 @@ class Container {
       'ActionNetwork' => \Civi\Osdi\ActionNetwork\RemoteSystem::class,
     ],
     'LocalObject' => [
-      'Donation' => LocalObject\Donation::class,
+      'Donation' => LocalObject\DonationBasic::class,
       'Person' => LocalObject\PersonBasic::class,
       'Tag' => LocalObject\TagBasic::class,
       'Tagging' => LocalObject\TaggingBasic::class,

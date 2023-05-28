@@ -6,7 +6,7 @@ use Civi\Api4\Contribution;
 use Civi\Osdi\ActionNetwork\RemoteFindResult;
 use Civi\Osdi\BatchSyncerInterface;
 use Civi\Osdi\Director;
-use Civi\Osdi\LocalObject\Donation as LocalDonation;
+use Civi\Osdi\LocalObject\DonationBasic as LocalDonation;
 use Civi\Osdi\Logger;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\SingleSyncerInterface;

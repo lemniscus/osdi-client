@@ -3,7 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\SingleSyncer\Donation;
 
 use Civi\Api4\OsdiDonationSyncState;
-use Civi\Osdi\LocalObject\Donation as LocalDonation;
+use Civi\Osdi\LocalObject\DonationBasic as LocalDonation;
 use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
 use Civi\Osdi\ActionNetwork\SingleSyncer\AbstractSingleSyncer;
 use Civi\Osdi\LocalRemotePair;

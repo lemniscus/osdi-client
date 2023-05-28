@@ -2,8 +2,6 @@
 namespace Civi\Osdi\ActionNetwork\Mapper;
 
 use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
-use Civi\Osdi\LocalObject\Donation;
-use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\MapperInterface;
@@ -70,7 +68,7 @@ class DonationBasic implements MapperInterface {
   ): RemoteObjectInterface {
     $container = OsdiClient::container();
 
-    /** @var \Civi\Osdi\LocalObject\Donation $localDonation */
+    /** @var \Civi\Osdi\LocalObject\DonationBasic $localDonation */
     $localDonation->loadOnce();
     /** @var \Civi\Osdi\ActionNetwork\Object\Donation $remoteDonation */
     $remoteDonation = $remoteDonation ?? $container->make('OsdiObject',
@@ -153,7 +151,7 @@ class DonationBasic implements MapperInterface {
   ): LocalObjectInterface {
     $container = OsdiClient::container();
 
-    /** @var \Civi\Osdi\LocalObject\Donation $localDonation */
+    /** @var \Civi\Osdi\LocalObject\DonationBasic $localDonation */
     $localDonation = $localDonation ?? $container->make('LocalObject', 'Donation');
 
     // Load the person that the donation belongs to.
