@@ -10,7 +10,7 @@ use Jsor\HalClient\HttpClient\Guzzle6HttpClient;
 
 class Container {
 
-  public array $registry = [
+  protected array $registry = [
     'RemoteSystem' => [
       'ActionNetwork' => \Civi\Osdi\ActionNetwork\RemoteSystem::class,
     ],
@@ -99,8 +99,24 @@ class Container {
     return new $class(...$constructorParams);
   }
 
-  public function register(string $category, string $key, string $class) {
-    $this->registry[$category][$key] = $class;
+  public function register(string $category, string $key, ?string $class) {
+    if ('*' === $category) {
+      if (!('*' === $key && is_null($class))) {
+        throw new InvalidArgumentException('Invalid argument(s) passed to '
+          . __CLASS__ . '::' . __FUNCTION__);
+      }
+      $this->registry = [];
+    }
+    elseif ('*' === $key) {
+      if (!is_null($class)) {
+        throw new InvalidArgumentException('Invalid argument(s) passed to '
+          . __CLASS__ . '::' . __FUNCTION__);
+      }
+      $this->registry[$category] = [];
+    }
+    else {
+      $this->registry[$category][$key] = $class;
+    }
   }
 
   public function getSingle(string $category, string $key, ...$constructorParams) {

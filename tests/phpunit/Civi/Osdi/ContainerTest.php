@@ -64,7 +64,7 @@ class ContainerTest extends PHPUnit\Framework\TestCase implements
     self::assertEquals(\CRM_Core_BAO_Tag::class, get_class($tag));
   }
 
-  public function testMakeDefault() {
+  public function testMakeWithDefaultRegistry() {
     $remotePerson = OsdiClient::container()->make('OsdiObject', 'osdi:people', self::$system);
     self::assertEquals(ActionNetwork\Object\Person::class, get_class($remotePerson));
 
@@ -73,13 +73,73 @@ class ContainerTest extends PHPUnit\Framework\TestCase implements
     self::assertEquals(99, $localPerson->getId());
   }
 
+  public function testSyncProfileModifiesDefaultRegistry() {
+    // set up container with default registry, and make some things with it
+    $defaultRegistryContainer = new Container();
+    $defaultTag = $defaultRegistryContainer->make('LocalObject', 'Tag');
+    $defaultPerson = $defaultRegistryContainer->make('LocalObject', 'Person');
+
+    $replacementClass = \CRM_Utils_Array::class;
+
+    // assertions regarding the default registry
+    self::assertNotEquals($replacementClass, get_class($defaultTag));
+    self::assertTrue($defaultRegistryContainer->canMake(
+      'CrmEventResponder', 'Contact'));
+
+    // set up a container with a modified registry; make some things with it
+    $syncProfileId = OsdiSyncProfile::create(FALSE)
+      ->addValue('is_default', TRUE)
+      ->addValue('entry_point', 'https://osdi.system')
+      ->addValue('api_token', 'magic word')
+      ->addValue('classes', [
+        'LocalObject' => [
+          'Tag' => $replacementClass,
+        ],
+        'CrmEventResponder' => ['*' => NULL],
+      ])
+      ->execute()->single()['id'];
+
+    $container = OsdiClient::container($syncProfileId);
+    $tag = $container->make('LocalObject', 'Tag');
+    $person = $container->make('LocalObject', 'Person');
+
+    // assert that the modifications are in effect where explicitly changed,
+    // and defaults are in effect otherwise
+    self::assertEquals($replacementClass, get_class($tag));
+    self::assertEquals(get_class($defaultPerson), get_class($person));
+    self::assertFalse($container->canMake('CrmEventResponder', 'Contact'));
+
+    // set up a container with all defaults erased
+    OsdiSyncProfile::update(FALSE)
+      ->addWhere('id', '=', $syncProfileId)
+      ->addValue('classes', [
+        '*' => ['*' => NULL],
+        'LocalObject' => [
+          'Tag' => $replacementClass,
+        ],
+      ])
+      ->execute()->single()['id'];
+
+    $container = OsdiClient::container($syncProfileId);
+    $tag = $container->make('LocalObject', 'Tag');
+
+    // assert that defaults have been cleared and modified registry is in effect
+    self::assertEquals($replacementClass, get_class($tag));
+    self::assertFalse($container->canMake('LocalObject', 'Person'));
+  }
+
   public function testRegister() {
-    $obj = OsdiClient::container()->make('SingleSyncer', 'Tag', self::$system);
+    $container = \Civi\OsdiClient::container();
+
+    $obj = $container->make('SingleSyncer', 'Tag', self::$system);
     self::assertEquals(ActionNetwork\SingleSyncer\TagBasic::class, get_class($obj));
 
-    \Civi\OsdiClient::container()->register('SingleSyncer', 'Tag', TestUtils::class);
+    $container->register('SingleSyncer', 'Tag', TestUtils::class);
     $obj = OsdiClient::container()->make('SingleSyncer', 'Tag');
     self::assertEquals(TestUtils::class, get_class($obj));
+
+    $container->register('SingleSyncer', '*', NULL);
+    self::assertFalse($container->canMake('SingleSyncer', 'Tag'));
   }
 
   public function testCanMake() {
