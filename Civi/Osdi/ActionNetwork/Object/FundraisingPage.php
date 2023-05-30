@@ -2,16 +2,6 @@
 
 namespace Civi\Osdi\ActionNetwork\Object;
 
-use Civi\Osdi\ActionNetwork\Object\Field;
-
-/**
- * @property-read Field $identifiers
- * @property-read Field $createdDate
- * @property-read Field $modifiedDate
- * @property-read Field $origin_system
- * @property-read Field $name
- * @property-read Field $title
- */
 class FundraisingPage extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInterface {
 
   public Field $identifiers;
