@@ -56,6 +56,10 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
    * Matcher to try to find a new match. If one is found, add the target object
    * to $pair.
    *
+   * If $pair already includes both members, nothing will be replaced. However,
+   * we still try to retrieve a PersonSyncState, and if there is a problem with
+   * this, the result will be 'error'.
+   *
    * @throws \Civi\Osdi\Exception\InvalidArgumentException
    */
   public function fetchOldOrFindNewMatch(LocalRemotePair $pair): OldOrNewMatchResult {
