@@ -3,16 +3,9 @@
 
 namespace Civi\Osdi\ActionNetwork;
 
-use Civi\Osdi\ActionNetwork\Object\FundraisingPage;
-use Civi\Osdi\ActionNetwork\Object\Person;
-use Civi\Osdi\ActionNetwork\Object\Tag;
-use Civi\Osdi\ActionNetwork\Object\Tagging;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\Container;
 use Civi\Osdi\RemoteObjectInterface;
-use Civi\Osdi\Result\Save;
-use CRM_OSDI_ExtensionUtil as E;
 use GuzzleHttp\Client;
 use Jsor\HalClient\Exception\BadResponseException;
 use Jsor\HalClient\HalClient;
