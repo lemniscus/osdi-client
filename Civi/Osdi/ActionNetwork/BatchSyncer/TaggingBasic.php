@@ -154,6 +154,8 @@ class TaggingBasic implements BatchSyncerInterface {
     bool $deleteNonMatching
   ): array {
     $remoteTagCollection = $system->findAll('osdi:tags');
+    $syncableTags = [];
+
     foreach ($remoteTagCollection as $remoteTag) {
       $tagPair = $tagSingleSyncer->toLocalRemotePair(NULL, $remoteTag);
       $tagPair->setOrigin(LocalRemotePair::ORIGIN_REMOTE);
