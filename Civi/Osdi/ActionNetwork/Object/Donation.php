@@ -6,11 +6,7 @@ use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\RemoteObjectInterface;
-// use Jsor\HalClient\HalResource;
 
-/**
- *
- */
 class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInterface {
 
   public Field $identifiers;
@@ -41,7 +37,8 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
       'recurrence'           => ['path' => ['action_network:recurrence']],
       // 'donor'             => ['path' => ['action_network:person_id']],
       // 'fundraisingPageId' => ['path' => ['action_network:fundraising_page_id']],
-      'donorHref'            => ['path' => ['_links', 'osdi:person'], 'createOnly' => TRUE], // @Todo find out what createOnly does.
+      'donorHref'            => ['path' => ['_links', 'osdi:person'], 'createOnly' => TRUE],
+      // @Todo find out what createOnly does.
       'fundraisingPageHref'  => ['path' => ['_links', 'osdi:fundraising_page'], 'createOnly' => TRUE],
       'referrerData'         => ['path' => ['action_network:referrer_data']],
       // 'referrerData'         => ['path' => ['referrer_data']],
@@ -76,7 +73,6 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
     // hash with ['href' => ...]
     $data['_links']['osdi:person'] = ['href' => $this->donorHref->get()];
     $data['_links']['osdi:fundraising_page'] = ['href' => $this->fundraisingPageHref->get()];
-    // print "\ngetArrayForCreate()\n" . json_encode($data, JSON_PRETTY_PRINT) . "\n";
     return $data;
   }
 
