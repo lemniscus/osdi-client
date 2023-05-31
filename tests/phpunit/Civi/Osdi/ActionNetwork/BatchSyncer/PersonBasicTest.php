@@ -148,7 +148,9 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
 
       /** @var \Civi\Osdi\ActionNetwork\Object\Person[] $remotePeople */
       $remotePeople[$i] = $remotePerson->save();
-      $remoteModTime = strtotime($remotePerson->modifiedDate->get());
+      $remoteModTime = $remotePerson->modifiedDate->get();
+      $beforeRemoteModTime =
+        date('Y-m-d H:i:s', strtotime($remoteModTime) - 10);
       Civi\Osdi\Logger::logDebug('[test]' . __FUNCTION__ . ' created AN id '
         . $remotePerson->getId() . ', mod ' . $remotePerson->modifiedDate->get()
         . ", $email");
@@ -158,7 +160,7 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
       $localPerson->firstName->set("ANtoCiviTest Local person $i name");
       $localPerson->lastName->set($lastName);
       $localPeople[$i] = $localPerson->save();
-      $localModTime = strtotime($localPerson->modifiedDate->get());
+      $localModTime = $localPerson->modifiedDate->get();
 
       // Create a PersonSyncState that links the RemotePerson to the LocalPerson
 
@@ -171,9 +173,9 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
       // Set it up to look like the RemotePerson was modified by the last sync
       // and has not been modified since then; likewise with the LocalPerson
 
-      $syncState->setRemotePreSyncModifiedTime($remoteModTime - 10);
+      $syncState->setRemotePreSyncModifiedTime($beforeRemoteModTime);
       $syncState->setRemotePostSyncModifiedTime($remoteModTime);
-      $syncState->setLocalPreSyncModifiedTime($localModTime - 10);
+      $syncState->setLocalPreSyncModifiedTime($beforeRemoteModTime);
       $syncState->setLocalPostSyncModifiedTime($localModTime);
       $syncState->save();
       /** @var \Civi\Osdi\PersonSyncState[] $syncStates */
@@ -193,8 +195,10 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     $remotePeople[3]->save();
 
     self::assertGreaterThan(
-      $syncStates[3]->getRemotePostSyncModifiedTime(),
-      strtotime($remotePeople[3]->modifiedDate->get())
+      strtotime($syncStates[3]->getRemotePostSyncModifiedTime()),
+      strtotime($remotePeople[3]->modifiedDate->get()),
+      $syncStates[3]->getRemotePostSyncModifiedTime()
+      . ' vs ' . $remotePeople[3]->modifiedDate->get(),
     );
 
     // "find" results can lag. we wait for them to catch up
@@ -261,14 +265,18 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
       $localPerson->firstName->set("CiviToANTest Local person $i name");
       $localPerson->lastName->set($lastName);
       $localPeople[$i] = $localPerson->save();
-      $localModTime = strtotime($localPerson->modifiedDate->get());
+      $localModTime = $localPerson->modifiedDate->get();
+      $beforeLocalModTime = date('Y-m-d H:i:s',
+        strtotime($localPerson->modifiedDate->get()) - 10);
 
       $remotePerson = new \Civi\Osdi\ActionNetwork\Object\Person(self::$system);
       $remotePerson->emailAddress->set($email);
       $remotePerson->givenName->set("CiviToANTest Remote person $i name");
       $remotePerson->familyName->set($lastName);
       $remotePeople[$i] = $remotePerson->save();
-      $remoteModTime = strtotime($remotePerson->modifiedDate->get());
+      $remoteModTime = $remotePerson->modifiedDate->get();
+      $beforeRemoteModTime = date('Y-m-d H:i:s',
+        strtotime($remotePerson->modifiedDate->get()) - 10);
 
       self::assertGreaterThanOrEqual($modTimeOfPreviousPerson, $remoteModTime);
       $modTimeOfPreviousPerson = $remoteModTime;
@@ -284,9 +292,9 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
       // Set it up to look like the RemotePerson was modified by the last sync
       // and has not been modified since then; likewise with the LocalPerson
 
-      $syncState->setLocalPreSyncModifiedTime($localModTime - 10);
+      $syncState->setLocalPreSyncModifiedTime($beforeLocalModTime);
       $syncState->setLocalPostSyncModifiedTime($localModTime);
-      $syncState->setRemotePreSyncModifiedTime($remoteModTime - 10);
+      $syncState->setRemotePreSyncModifiedTime($beforeRemoteModTime);
       $syncState->setRemotePostSyncModifiedTime($remoteModTime);
       $syncState->save();
 
@@ -305,7 +313,7 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     return array($remotePeople, strtotime($remotePeople[4]->modifiedDate->get()));
   }
 
-  private function assertBatchSyncFromCivi($remotePeople, int $syncStartTime, $maxRemoteModTimeBeforeSync): void {
+  private function assertBatchSyncFromCivi($remotePeople, int $syncStartTime, int $maxRemoteModTimeBeforeSync): void {
     foreach ($remotePeople as $i => $remotePerson) {
       /** @var \Civi\Osdi\ActionNetwork\Object\Person $remotePerson */
       $remotePerson->load();

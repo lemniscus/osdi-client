@@ -129,8 +129,9 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
       $syncState->getLocalPostSyncModifiedTime() :
       $syncState->getRemotePostSyncModifiedTime();
     $noPreviousSync = empty($modTimeAfterLastSync);
-    $currentModTime = $this->modTimeAsUnixTimestamp($pair->getOriginObject());
-    $isModifiedSinceLastSync = $currentModTime > $modTimeAfterLastSync;
+    $currentModTime = $this->modTimeAsTimestamp($pair->getOriginObject());
+    $isModifiedSinceLastSync =
+      strtotime($currentModTime ?? '') > strtotime($modTimeAfterLastSync ?? '');
 
     if ($noPreviousSync || $isModifiedSinceLastSync) {
       $result->setMessage(trim(($noPreviousSync ? 'no previous sync history. ' : '') .
@@ -189,7 +190,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     $syncState = new PersonSyncState();
     $syncProfileId = OsdiClient::container()->getSyncProfileId();
     $syncState->setSyncProfileId($syncProfileId);
-    $syncState->setSyncTime(time());
+    $syncState->setSyncTime(date('Y-m-d H:i:s'));
     $syncState->setContactId(
       $localPersonAfter ? $localPersonAfter->getId() : NULL);
     $syncState->setRemotePersonId(
@@ -201,22 +202,22 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
 
     if (isset($remotePersonBefore)) {
       $syncState->setRemotePreSyncModifiedTime(
-        $this->modTimeAsUnixTimestamp($remotePersonBefore));
+        $this->modTimeAsTimestamp($remotePersonBefore));
     }
 
     if (isset($remotePersonAfter)) {
       $syncState->setRemotePostSyncModifiedTime(
-        $this->modTimeAsUnixTimestamp($remotePersonAfter));
+        $this->modTimeAsTimestamp($remotePersonAfter));
     }
 
     if (isset($localPersonBefore)) {
       $syncState->setLocalPreSyncModifiedTime(
-        $this->modTimeAsUnixTimestamp($localPersonBefore));
+        $this->modTimeAsTimestamp($localPersonBefore));
     }
 
     if (isset($localPersonAfter)) {
       $syncState->setLocalPostSyncModifiedTime(
-        $this->modTimeAsUnixTimestamp($localPersonAfter));
+        $this->modTimeAsTimestamp($localPersonAfter));
     }
 
     $lastResult = $pairAfter->getLastResult();
@@ -329,9 +330,9 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
   /**
    * @param \Civi\Osdi\CrudObjectInterface $person
    */
-  protected function modTimeAsUnixTimestamp($person): ?int {
+  protected function modTimeAsTimestamp($person): ?string {
     if ($m = $person->modifiedDate->get()) {
-      return strtotime($m);
+      return $m;
     }
     return NULL;
   }

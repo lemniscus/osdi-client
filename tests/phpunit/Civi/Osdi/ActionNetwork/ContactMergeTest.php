@@ -133,11 +133,11 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
     // unlikely to encounter any other situation.
 
     $mainSyncState->setLocalPostSyncModifiedTime(
-      $mainSyncState->getLocalPostSyncModifiedTime() - 1);
+      $this->oneSecondBefore($mainSyncState->getLocalPostSyncModifiedTime()));
     $mainSyncState->save();
 
     $dupeSyncState->setLocalPostSyncModifiedTime(
-      $dupeSyncState->getLocalPostSyncModifiedTime() - 1);
+      $this->oneSecondBefore($dupeSyncState->getLocalPostSyncModifiedTime()));
     $dupeSyncState->save();
 
     // MERGE CONTACTS, AND RUN SYNC QUEUE
@@ -188,9 +188,10 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
     $dupePss = $this->assertAndGetSuccessSyncState($dupeLocalPerson);
 
     // simulate the sync histories being in the past
-    $mainPss->setLocalPostSyncModifiedTime(time() - 1);
+    $now = date('Y-m-d H:i:s');
+    $mainPss->setLocalPostSyncModifiedTime($this->oneSecondBefore($now));
     $mainPss->save();
-    $dupePss->setLocalPostSyncModifiedTime(time() - 1);
+    $dupePss->setLocalPostSyncModifiedTime($this->oneSecondBefore($now));
     $dupePss->save();
 
     // MERGE
@@ -402,6 +403,10 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
       ['debug' => 1, 'sync_profile_id' => $syncProfileId]);
 
     self::assertEquals(0, $queueJobResult['is_error']);
+  }
+
+  private function oneSecondBefore($timeString): string {
+    return date('Y-m-d H:i:s', strtotime($timeString) - 1);
   }
 
 }

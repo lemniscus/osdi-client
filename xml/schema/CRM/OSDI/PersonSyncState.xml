@@ -77,9 +77,9 @@
   <field>
     <name>remote_pre_sync_modified_time</name>
     <title>Remote Pre-Sync Mod Time</title>
-    <type>int unsigned</type>
+    <type>timestamp</type>
     <default>NULL</default>
-    <comment>Modification date and time of the remote person record as of the beginning of the last sync, in unix timestamp format</comment>
+    <comment>Modification date and time of the remote person record as of the beginning of the last sync</comment>
     <import>true</import>
     <export>true</export>
   </field>
@@ -91,9 +91,9 @@
   <field>
     <name>remote_post_sync_modified_time</name>
     <title>Remote Post-Sync Mod Time</title>
-    <type>int unsigned</type>
+    <type>timestamp</type>
     <default>NULL</default>
-    <comment>Modification date and time of the remote person record at the end of the last sync, in unix timestamp format</comment>
+    <comment>Modification date and time of the remote person record at the end of the last sync</comment>
     <import>true</import>
     <export>true</export>
   </field>
@@ -105,7 +105,7 @@
   <field>
     <name>local_pre_sync_modified_time</name>
     <title>Local Pre-Sync Mod Time</title>
-    <type>int unsigned</type>
+    <type>timestamp</type>
     <default>NULL</default>
     <comment>Modification date and time of the local contact record as of the beginning of the last sync, in unix timestamp format</comment>
     <import>true</import>
@@ -119,9 +119,9 @@
   <field>
     <name>local_post_sync_modified_time</name>
     <title>Local Post-Sync Mod Time</title>
-    <type>int unsigned</type>
+    <type>timestamp</type>
     <default>NULL</default>
-    <comment>Modification date and time of the local contact record at the end of the last sync, in unix timestamp format</comment>
+    <comment>Modification date and time of the local contact record at the end of the last sync</comment>
     <import>true</import>
     <export>true</export>
   </field>
@@ -133,9 +133,9 @@
   <field>
     <name>sync_time</name>
     <title>Sync Time</title>
-    <type>int unsigned</type>
+    <type>timestamp</type>
     <default>NULL</default>
-    <comment>Date and time of the last sync, in unix timestamp format</comment>
+    <comment>Date and time of the last sync</comment>
     <import>true</import>
     <export>true</export>
   </field>

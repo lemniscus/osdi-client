@@ -89,7 +89,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     // THIRD SYNC
     // Spoof a situation in which the remote person has been modified since the last sync
     $savedMatch->setLocalPostSyncModifiedTime(
-      $savedMatch->getLocalPostSyncModifiedTime() - 1);
+      $this->oneSecondBefore($savedMatch->getLocalPostSyncModifiedTime()));
     $savedMatch->save();
 
     $savedMatch->save();
@@ -114,7 +114,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     // FOURTH SYNC
     // Spoof a situation in which the remote person has been modified since the last sync
     $savedMatch->setLocalPostSyncModifiedTime(
-      $savedMatch->getLocalPostSyncModifiedTime() - 1);
+      $this->oneSecondBefore($savedMatch->getLocalPostSyncModifiedTime()));
     $savedMatch->save();
 
     $localPerson->firstName->set('testMatchAndSyncIfEligible_FromLocal (new name)');
@@ -190,7 +190,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     // Spoof a situation in which the remote person has been modified since the last sync
     $savedMatch->setRemotePostSyncModifiedTime(
-      $savedMatch->getRemotePostSyncModifiedTime() - 1);
+      $this->oneSecondBefore($savedMatch->getRemotePostSyncModifiedTime()));
     $savedMatch->save();
 
     $pair = $syncer->matchAndSyncIfEligible($remotePerson);
@@ -215,7 +215,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     // Spoof a situation in which the remote person has been modified since the last sync
     $savedMatch->setRemotePostSyncModifiedTime(
-      $savedMatch->getRemotePostSyncModifiedTime() - 1);
+      $this->oneSecondBefore($savedMatch->getRemotePostSyncModifiedTime()));
     $savedMatch->save();
 
     $remotePerson->givenName->set('testMatchAndSyncIfEligible_FromRemote (new name)');
@@ -302,7 +302,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     $syncProfileId = OsdiClient::container()->getSyncProfileId();
     $syncState = PersonSyncState::getForLocalPerson($localPerson1, $syncProfileId);
     $syncState->setLocalPostSyncModifiedTime(
-      $syncState->getLocalPostSyncModifiedTime() - 1);
+      $this->oneSecondBefore($syncState->getLocalPostSyncModifiedTime()));
     $syncState->save();
 
     $pair = $syncer->matchAndSyncIfEligible($localPerson1);
@@ -321,7 +321,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
       ->execute();
 
     $syncState->setLocalPostSyncModifiedTime(
-      $syncState->getLocalPostSyncModifiedTime() - 1);
+      $this->oneSecondBefore($syncState->getLocalPostSyncModifiedTime()));
     $syncState->save();
 
     $pair = $syncer->matchAndSyncIfEligible($localPerson1);
@@ -588,7 +588,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     $syncState = $syncResult->getState();
     $syncState->setRemotePostSyncModifiedTime(
-      $syncState->getRemotePostSyncModifiedTime() - 1);
+      $this->oneSecondBefore($syncState->getRemotePostSyncModifiedTime()));
     $syncState->save();
 
     $pair = self::$syncer->matchAndSyncIfEligible($originalRemotePerson);
@@ -598,7 +598,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
       $syncResult->getStatusCode());
 
     $syncState->setRemotePostSyncModifiedTime(
-      $syncState->getRemotePostSyncModifiedTime() - 1);
+      $this->oneSecondBefore($syncState->getRemotePostSyncModifiedTime()));
     $syncState->save();
 
     $changedRemotePerson = clone $originalRemotePerson;
@@ -827,7 +827,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
     $syncState = $syncResult->getState();
     $syncState->setLocalPostSyncModifiedTime(
-      strtotime($localPerson->modifiedDate->get()) - 1);
+      $this->oneSecondBefore($localPerson->modifiedDate->get()));
     $syncState->save();
 
     // SYNC CHANGES
@@ -915,7 +915,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     $localPerson->save();
 
     $syncState->setLocalPostSyncModifiedTime(
-      strtotime($localPerson->modifiedDate->get()) - 1);
+      $this->oneSecondBefore($localPerson->modifiedDate->get()));
     $syncState->save();
 
     // SYNC CHANGES
@@ -956,6 +956,10 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     );
     self::assertEquals('Civi\Osdi\Result\MapAndWrite::error during save',
       $syncState->getSyncStatus());
+  }
+
+  private function oneSecondBefore($timeString): string {
+    return date('Y-m-d H:i:s', strtotime($timeString) - 1);
   }
 
 }

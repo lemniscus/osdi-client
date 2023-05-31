@@ -162,19 +162,19 @@ class PersonSyncState {
     return $this->data['remote_person_id'];
   }
 
-  public function getRemotePreSyncModifiedTime(): ?int {
+  public function getRemotePreSyncModifiedTime(): ?string {
     return $this->data['remote_pre_sync_modified_time'];
   }
 
-  public function getRemotePostSyncModifiedTime(): ?int {
+  public function getRemotePostSyncModifiedTime(): ?string {
     return $this->data['remote_post_sync_modified_time'];
   }
 
-  public function getLocalPreSyncModifiedTime(): ?int {
+  public function getLocalPreSyncModifiedTime(): ?string {
     return $this->data['local_pre_sync_modified_time'];
   }
 
-  public function getLocalPostSyncModifiedTime(): ?int {
+  public function getLocalPostSyncModifiedTime(): ?string {
     return $this->data['local_post_sync_modified_time'];
   }
 
@@ -206,23 +206,23 @@ class PersonSyncState {
     $this->data['remote_person_id'] = $remotePersonId;
   }
 
-  public function setRemotePreSyncModifiedTime(?int $remotePreSyncModifiedTime): void {
+  public function setRemotePreSyncModifiedTime(?string $remotePreSyncModifiedTime): void {
     $this->data['remote_pre_sync_modified_time'] = $remotePreSyncModifiedTime;
   }
 
-  public function setRemotePostSyncModifiedTime(?int $remotePostSyncModifiedTime): void {
+  public function setRemotePostSyncModifiedTime(?string $remotePostSyncModifiedTime): void {
     $this->data['remote_post_sync_modified_time'] = $remotePostSyncModifiedTime;
   }
 
-  public function setLocalPreSyncModifiedTime(?int $localPreSyncModifiedTime): void {
+  public function setLocalPreSyncModifiedTime(?string $localPreSyncModifiedTime): void {
     $this->data['local_pre_sync_modified_time'] = $localPreSyncModifiedTime;
   }
 
-  public function setLocalPostSyncModifiedTime(?int $localPostSyncModifiedTime): void {
+  public function setLocalPostSyncModifiedTime(?string $localPostSyncModifiedTime): void {
     $this->data['local_post_sync_modified_time'] = $localPostSyncModifiedTime;
   }
 
-  public function setSyncTime(?int $syncTime) {
+  public function setSyncTime(?string $syncTime) {
     $this->data['sync_time'] = $syncTime;
   }
 
