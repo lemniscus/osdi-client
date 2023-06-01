@@ -147,9 +147,9 @@ class Tagging extends AbstractRemoteObject implements RemoteObjectInterface {
   }
 
   protected function updateReferencedObjectsFromFields() {
-    $newPersonUrl = $this->personHref->get();
+    $newPersonUrl = $this->personHref->get() ?? '';
     $newPersonId = substr($newPersonUrl, strrpos($newPersonUrl, '/') + 1);
-    $newTagUrl = $this->tagHref->get();
+    $newTagUrl = $this->tagHref->get() ?? '';
     $newTagId = substr($newTagUrl, strrpos($newTagUrl, '/') + 1);
 
     if (is_null($this->person) || ($newPersonId !== $this->person->getId())) {
