@@ -121,9 +121,13 @@ CREATE TABLE `civicrm_osdi_donation_sync_state` (
   `sync_profile_id` int unsigned COMMENT 'FK to OSDI Sync Profile',
   `remote_donation_id` varchar(255) DEFAULT NULL COMMENT 'FK to identifier field on remote system',
   `source` varchar(12) COMMENT 'Whether the donation source was local (CiviCRM) or remote',
+  `sync_time` timestamp DEFAULT NULL COMMENT 'Date and time of the last sync',
+  `sync_status` varchar(1023) DEFAULT NULL COMMENT 'Status of the last sync',
   PRIMARY KEY (`id`),
   INDEX `index_sync_profile_id`(sync_profile_id),
   INDEX `index_remote_donation_id`(remote_donation_id),
+  INDEX `index_sync_time`(sync_time),
+  INDEX `index_sync_status`(sync_status),
   CONSTRAINT FK_civicrm_osdi_donation_sync_state_contribution_id FOREIGN KEY (`contribution_id`) REFERENCES `civicrm_contribution`(`id`) ON DELETE CASCADE,
   CONSTRAINT FK_civicrm_osdi_donation_sync_state_sync_profile_id FOREIGN KEY (`sync_profile_id`) REFERENCES `civicrm_osdi_sync_profile`(`id`) ON DELETE CASCADE
 )

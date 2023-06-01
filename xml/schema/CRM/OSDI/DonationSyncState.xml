@@ -82,4 +82,33 @@
     <export>true</export>
   </field>
 
+  <field>
+    <name>sync_time</name>
+    <title>Sync Time</title>
+    <type>timestamp</type>
+    <default>NULL</default>
+    <comment>Date and time of the last sync</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+  <index>
+    <name>index_sync_time</name>
+    <fieldName>sync_time</fieldName>
+  </index>
+
+  <field>
+    <name>sync_status</name>
+    <title>Status of Last Sync</title>
+    <type>varchar</type>
+    <length>1023</length>
+    <default>NULL</default>
+    <comment>Status of the last sync</comment>
+    <import>true</import>
+    <export>true</export>
+  </field>
+  <index>
+    <name>index_sync_status</name>
+    <fieldName>sync_status</fieldName>
+  </index>
+
 </table>
