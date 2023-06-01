@@ -131,8 +131,8 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     Civi::settings()->add([
       'osdiClient.syncJobProcessId' => 99999999999999,
       'osdiClient.syncJobActNetModTimeCutoff' => $twoSecondsAgo,
-      'osdiClient.syncJobStartTime' => strtotime("2000-11-11 00:00:00"),
-      'osdiClient.syncJobEndTime' => strtotime("2000-11-11 00:00:11"),
+      'osdiClient.syncJobStartTime' => '2000-11-11 00:00:00',
+      'osdiClient.syncJobEndTime' => '2000-11-11 00:00:11',
     ]);
 
     $testTime = time();
@@ -248,8 +248,8 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
     Civi::settings()->add([
       'osdiClient.syncJobProcessId' => 99999999999999,
       'osdiClient.syncJobCiviModTimeCutoff' => $twoSecondsAgo,
-      'osdiClient.syncJobStartTime' => strtotime("2000-11-11 00:00:00"),
-      'osdiClient.syncJobEndTime' => strtotime("2000-11-11 00:00:11"),
+      'osdiClient.syncJobStartTime' => '2000-11-11 00:00:00',
+      'osdiClient.syncJobEndTime' => '2000-11-11 00:00:11',
     ]);
 
     $testTime = time();

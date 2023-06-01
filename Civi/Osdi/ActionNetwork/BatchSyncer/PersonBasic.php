@@ -42,11 +42,12 @@ class PersonBasic implements BatchSyncerInterface {
 
       $syncStartTime = time();
       $searchResults = $this->findAndSyncRemoteUpdatesAsNeeded($cutoff);
+      $elapsedSeconds = time() - strtotime($syncStartTime);
       Logger::logDebug('Finished batch AN->Civi person sync; count: ' .
-        $searchResults->rawCurrentCount() . '; time: ' . (time() - $syncStartTime)
+        $searchResults->rawCurrentCount() . '; time: ' . ($elapsedSeconds)
         . ' seconds');
 
-      $newCutoff = RemoteSystem::formatDateTime($syncStartTime - 30);
+      $newCutoff = RemoteSystem::formatDateTime(strtotime($syncStartTime) - 30);
       \Civi::settings()
         ->set('osdiClient.syncJobActNetModTimeCutoff', $newCutoff);
       Logger::logDebug("Setting horizon for next AN->Civi person sync to $newCutoff");

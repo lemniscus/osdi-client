@@ -11,7 +11,7 @@ class Director {
     \Civi::settings()->add([
       'osdiClient.syncJobProcessId' => getmypid(),
       'osdiClient.syncJobName' => $processName,
-      'osdiClient.syncJobStartTime' => time(),
+      'osdiClient.syncJobStartTime' => date('Y-m-d H:i:s'),
       'osdiClient.syncJobEndTime' => NULL,
     ]);
     return TRUE;
@@ -52,7 +52,7 @@ class Director {
   public static function releaseLock(): void {
     \Civi::settings()->add([
       'osdiClient.syncJobProcessId' => NULL,
-      'osdiClient.syncJobEndTime' => time(),
+      'osdiClient.syncJobEndTime' => date('Y-m-d H:i:s'),
     ]);
   }
 

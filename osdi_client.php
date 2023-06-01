@@ -68,12 +68,12 @@ function osdi_client_civicrm_check(&$messages, $statusNames, $includeDisabled) {
     return;
   }
 
-  if (time() - $jobStartTime > 3600) {
+  if (time() - strtotime($jobStartTime) > 3600) {
     $messages[] = new CRM_Utils_Check_Message(
       'osdiClientZombieJob',
       ts('An Action Network sync job has been running for over an hour. '
         . 'This prevents new sync jobs from running. Process ID %1 began %2.',
-        [1 => $jobProcessId, 2 => date(DATE_COOKIE, $jobStartTime)]),
+        [1 => $jobProcessId, 2 => $jobStartTime]),
       ts('Long-Running Action Network Sync'),
       \Psr\Log\LogLevel::WARNING,
       'fa-hourglass'
