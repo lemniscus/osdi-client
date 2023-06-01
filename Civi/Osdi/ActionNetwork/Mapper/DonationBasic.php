@@ -50,7 +50,8 @@ class DonationBasic implements MapperInterface {
     }
     catch (\Throwable $e) {
       $result->setStatusCode($result::ERROR);
-      // Note: here we do nothing with any error message?
+      $result->setMessage($e->getMessage());
+      $result->setContext($e);
     }
 
     $pair->getResultStack()->push($result);
@@ -289,13 +290,6 @@ class DonationBasic implements MapperInterface {
     RemoteObjectInterface $remoteDonation,
     LocalObjectInterface $localDonation
   ): void {
-
-    if (!($remoteDonation instanceof RemoteDonation)) {
-      throw new CannotMapException('%s requires the remote donation to be '
-        . 'an ActionNetwork remote donation, received %s',
-        __CLASS__, get_class($remoteDonation));
-    }
-
     /** @var \Civi\Osdi\ActionNetwork\Object\Donation $remoteDonation */
     $localDonation->source->set($remoteDonation->getFundraisingPage()->title->get());
   }
