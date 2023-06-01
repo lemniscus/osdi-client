@@ -38,7 +38,7 @@ class PersonBasic implements BatchSyncerInterface {
 
     try {
       $cutoff = $this->getOrCreateActNetModTimeHorizon();
-      \Civi::settings()->set('osdiClient.syncJobActNetModTimeCutoff', $cutoff);
+      \Civi::settings()->set('osdiClient.personBatchSyncActNetModTimeCutoff', $cutoff);
 
       $syncStartTime = time();
       $searchResults = $this->findAndSyncRemoteUpdatesAsNeeded($cutoff);
@@ -49,7 +49,7 @@ class PersonBasic implements BatchSyncerInterface {
 
       $newCutoff = RemoteSystem::formatDateTime(strtotime($syncStartTime) - 30);
       \Civi::settings()
-        ->set('osdiClient.syncJobActNetModTimeCutoff', $newCutoff);
+        ->set('osdiClient.personBatchSyncActNetModTimeCutoff', $newCutoff);
       Logger::logDebug("Setting horizon for next AN->Civi person sync to $newCutoff");
     }
     finally {
@@ -196,7 +196,7 @@ class PersonBasic implements BatchSyncerInterface {
 
   private function getOrCreateActNetModTimeHorizon() {
     $cutoff = \Civi::settings()
-      ->get('osdiClient.syncJobActNetModTimeCutoff');
+      ->get('osdiClient.personBatchSyncActNetModTimeCutoff');
     $cutoffWasRetrievedFromPreviousSync = !empty($cutoff);
     Logger::logDebug('Horizon time was ' .
       ($cutoffWasRetrievedFromPreviousSync ? '' : 'not') .

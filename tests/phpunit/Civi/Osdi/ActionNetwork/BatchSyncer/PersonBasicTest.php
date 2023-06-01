@@ -45,7 +45,7 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
 
     Civi::settings()->add([
       'osdiClient.syncJobProcessId' => getmypid(),
-      'osdiClient.syncJobActNetModTimeCutoff' => $justBeforePersonWasModified,
+      'osdiClient.personBatchSyncActNetModTimeCutoff' => $justBeforePersonWasModified,
       'osdiClient.syncJobEndTime' => NULL,
     ]);
 
@@ -130,7 +130,7 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
 
     Civi::settings()->add([
       'osdiClient.syncJobProcessId' => 99999999999999,
-      'osdiClient.syncJobActNetModTimeCutoff' => $twoSecondsAgo,
+      'osdiClient.personBatchSyncActNetModTimeCutoff' => $twoSecondsAgo,
       'osdiClient.syncJobStartTime' => '2000-11-11 00:00:00',
       'osdiClient.syncJobEndTime' => '2000-11-11 00:00:11',
     ]);

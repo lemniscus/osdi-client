@@ -8,8 +8,8 @@ return [
     'is_domain'   => 1,
     'is_contact'  => 0,
   ],
-  'osdiClient.syncJobActNetModTimeCutoff' => [
-    'name'        => 'osdiClient.syncJobActNetModTimeCutoff',
+  'osdiClient.personBatchSyncActNetModTimeCutoff' => [
+    'name'        => 'osdiClient.personBatchSyncActNetModTimeCutoff',
     'title'       => ts('Action Network sync AN mod time cutoff'),
     'description' => 'Lower limit for Action Network modification datetimes in '
     . 'the last sync job, formatted like 2021-03-03T18:15:57Z',
