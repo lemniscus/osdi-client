@@ -162,7 +162,7 @@
     <name>sync_status</name>
     <title>Status of Last Sync</title>
     <type>varchar</type>
-    <length>255</length>
+    <length>1023</length>
     <default>NULL</default>
     <comment>Status of the last sync</comment>
     <import>true</import>

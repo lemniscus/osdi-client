@@ -92,7 +92,7 @@ CREATE TABLE `civicrm_osdi_person_sync_state` (
   `local_post_sync_modified_time` timestamp DEFAULT NULL COMMENT 'Modification date and time of the local contact record at the end of the last sync',
   `sync_time` timestamp DEFAULT NULL COMMENT 'Date and time of the last sync',
   `sync_origin` tinyint DEFAULT NULL COMMENT '0 if local CiviCRM was the origin of the last sync, 1 if remote system was the origin',
-  `sync_status` varchar(255) DEFAULT NULL COMMENT 'Status of the last sync',
+  `sync_status` varchar(1023) DEFAULT NULL COMMENT 'Status of the last sync',
   PRIMARY KEY (`id`),
   INDEX `index_contact_id`(contact_id),
   INDEX `index_sync_profile_id`(sync_profile_id),
