@@ -112,7 +112,7 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
    */
   public function testMerge_BothContactsHaveSamePrimaryEmail() {
     $mainLocalPerson = $this->makeLocalPerson(1);
-    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic(self::$system);
+    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\PersonBasic(self::$system);
     $mainPair = $syncer->matchAndSyncIfEligible($mainLocalPerson);
     self::assertFalse($mainPair->isError(),
       "Previous test contacts/emails may not have been deleted properly.\n"
@@ -168,7 +168,7 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
    * both contacts have the same primary email.
    */
   public function testMerge_OneContactHasNoPrimaryEmail() {
-    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic(self::$system);
+    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\PersonBasic(self::$system);
 
     $mainLocalPerson = new LocalPerson();
     $mainLocalPerson->emailEmail->set(NULL);
@@ -227,7 +227,7 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
    * contact, it may have assets that we can't move to the survivor record.
    */
   public function testMerge_ContactsHadDifferentEmails_SurvivorEmailKept_BothHadSyncHistory() {
-    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic(self::$system);
+    $syncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\PersonBasic(self::$system);
 
     $mainLocalPerson = $this->makeLocalPerson(1);
     $mainPair = $syncer->matchAndSyncIfEligible($mainLocalPerson);

@@ -1,16 +1,13 @@
 <?php
 
-namespace Civi\Osdi\ActionNetwork\SingleSyncer\Person;
+namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
 use Civi\Api4\OsdiDeletion;
 use Civi\Api4\OsdiFlag;
-use Civi\Osdi\ActionNetwork\SingleSyncer\AbstractSingleSyncer;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\Container;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
-use Civi\Osdi\Logger;
 use Civi\Osdi\MapperInterface;
 use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\PersonSyncState;
@@ -20,22 +17,15 @@ use Civi\Osdi\Result\DeletionSync as DeletionSyncResult;
 use Civi\Osdi\Result\FetchOldOrFindNewMatch as OldOrNewMatchResult;
 use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
 use Civi\Osdi\Result\MatchResult as MatchResult;
-use Civi\Osdi\Result\Sync;
 use Civi\Osdi\Result\SyncEligibility;
 use Civi\Osdi\SingleSyncerInterface;
-use Civi\Osdi\Util;
 use Civi\OsdiClient;
 
 class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
 
-  use PersonLocalRemotePairTrait;
-
   protected ?MapperInterface $mapper = NULL;
-
   protected ?MatcherInterface $matcher = NULL;
-
   protected RemoteSystemInterface $remoteSystem;
-
   protected array $syncProfile = [];
 
   /**

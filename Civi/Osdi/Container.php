@@ -3,7 +3,6 @@
 namespace Civi\Osdi;
 
 use Civi\Osdi\Exception\InvalidArgumentException;
-use Civi\Osdi\LocalObject\TagBasic;
 use CRM_OSDI_BAO_SyncProfile;
 use GuzzleHttp\Client;
 use Jsor\HalClient\HttpClient\Guzzle6HttpClient;
@@ -41,7 +40,7 @@ class Container {
     ],
     'SingleSyncer' => [
       'Donation' => ActionNetwork\SingleSyncer\Donation\DonationBasic::class,
-      'Person' => ActionNetwork\SingleSyncer\Person\PersonBasic::class,
+      'Person' => Civi\Osdi\ActionNetwork\SingleSyncer\PersonBasic::class,
       'Tag' => ActionNetwork\SingleSyncer\TagBasic::class,
       'Tagging' => ActionNetwork\SingleSyncer\TaggingBasic::class,
     ],

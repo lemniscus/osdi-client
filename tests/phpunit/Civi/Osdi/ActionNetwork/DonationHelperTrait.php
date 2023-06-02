@@ -2,13 +2,12 @@
 namespace Civi\Osdi\ActionNetwork;
 
 use Civi\Api4\FinancialType;
+use Civi\Osdi\ActionNetwork\Mapper\DonationBasic as DonationBasicMapper;
+use Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail;
+use Civi\Osdi\ActionNetwork\Object\FundraisingPage;
 use Civi\Osdi\ActionNetwork\Object\Person;
 use Civi\Osdi\LocalRemotePair;
-use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\Logger;
-use Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail;
-use Civi\Osdi\ActionNetwork\Mapper\DonationBasic as DonationBasicMapper;
-use Civi\Osdi\ActionNetwork\Object\FundraisingPage;
 use Civi\OsdiClient;
 
 
@@ -130,7 +129,7 @@ trait DonationHelperTrait {
     Logger::logDebug("New test person: " . $remotePerson->getId());
 
     // ... use sync to create local person
-    /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic $personSyncer */
+    /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\PersonBasic $personSyncer */
     $personSyncer = OsdiClient::container()->getSingle('SingleSyncer', 'Person');
     $pair = $personSyncer->matchAndSyncIfEligible($remotePerson);
     self::assertFalse($pair->isError());

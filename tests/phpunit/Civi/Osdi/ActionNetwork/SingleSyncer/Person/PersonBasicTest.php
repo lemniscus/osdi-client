@@ -1,11 +1,10 @@
 <?php
 
-namespace Civi\Osdi\ActionNetwork\SingleSyncer\Person;
+namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
 use Civi\Osdi\ActionNetwork\Object\Person as ANPerson;
-use Civi\Osdi\ActionNetwork\SingleSyncer\PersonTestAbstract;
-use OsdiClient\ActionNetwork\TestUtils;
 use OsdiClient\ActionNetwork\PersonMatchingFixture as PersonMatchFixture;
+use OsdiClient\ActionNetwork\TestUtils;
 
 /**
  * @group headless

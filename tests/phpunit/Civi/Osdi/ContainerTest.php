@@ -151,7 +151,7 @@ class ContainerTest extends PHPUnit\Framework\TestCase implements
   public function testSingleton() {
     $system = self::$system;
 
-    /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic $s1 */
+    /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\PersonBasic $s1 */
     $s1 = OsdiClient::container()->make('SingleSyncer', 'Person', $system);
     $s2 = OsdiClient::container()->make('SingleSyncer', 'Person', $system);
 

@@ -2,11 +2,9 @@
 
 namespace Civi\Osdi\ActionNetwork\Matcher;
 
-use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
-use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\RemoteObjectInterface;
-use OsdiClient\ActionNetwork\TestUtils;
 use OsdiClient\ActionNetwork\PersonMatchingFixture as PersonMatchFixture;
+use OsdiClient\ActionNetwork\TestUtils;
 use PHPUnit;
 
 /**
@@ -51,7 +49,7 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
   private static function makeNewSyncer(): \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic {
     $remoteSystem = self::$remoteSystem;
 
-    $personSyncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\Person\PersonBasic($remoteSystem);
+    $personSyncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\PersonBasic($remoteSystem);
     $personSyncer->setMapper(new \Civi\Osdi\ActionNetwork\Mapper\PersonBasic($remoteSystem))
       ->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail($remoteSystem));
 
