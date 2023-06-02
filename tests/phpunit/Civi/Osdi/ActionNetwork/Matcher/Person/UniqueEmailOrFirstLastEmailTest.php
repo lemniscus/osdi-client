@@ -124,7 +124,7 @@ class UniqueEmailOrFirstLastEmailTest extends \PHPUnit\Framework\TestCase implem
     $matchingContact = F::civiApi4GetSingleContactById($idOfMatchingContact);
 
     $matchResult1 = $this->matcher->tryToFindMatchForLocalObject(self::makePair($idOfMatchingContact));
-    $this->assertNotNull($matchResult1->getMatch());
+    $this->assertNotNull($matchResult1->getMatch(), print_r($matchResult1->toArray(), TRUE));
     $this->assertEquals($matchingContact['email.email'],
       $matchResult1->getMatch()->emailAddress->get());
     $this->assertEquals($matchingContact['first_name'],
@@ -133,9 +133,10 @@ class UniqueEmailOrFirstLastEmailTest extends \PHPUnit\Framework\TestCase implem
       $matchResult1->getMatch()->familyName->get());
 
     $matchResult2 = $this->matcher->tryToFindMatchForLocalObject(self::makePair($idOf_Non_MatchingContact));
-    self::assertTrue($matchResult2->isError());
+    $matchResult2AsArray = print_r($matchResult2->toArray(), TRUE);
+    self::assertTrue($matchResult2->isError(), $matchResult2AsArray);
     self::assertEquals($matchResult2::ERROR_INDETERMINATE, $matchResult2->getStatusCode());
-    self::assertNull($matchResult2->getMatch());
+    self::assertNull($matchResult2->getMatch(), $matchResult2AsArray);
   }
 
   public function testRemoteMatch_EmailIndeterminate_NoMatchingFirstLast() {
