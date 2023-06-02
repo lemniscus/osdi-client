@@ -1,17 +1,16 @@
 <?php
 
-namespace Civi\Osdi\ActionNetwork\SingleSyncer\Donation;
+namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
 use Civi\Api4\OsdiDonationSyncState;
-use Civi\Osdi\LocalObject\DonationBasic as LocalDonation;
 use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
-use Civi\Osdi\ActionNetwork\SingleSyncer\AbstractSingleSyncer;
-use Civi\Osdi\LocalRemotePair;
+use Civi\Osdi\LocalObject\DonationBasic as LocalDonation;
 use Civi\Osdi\LocalObjectInterface;
+use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
-use Civi\Osdi\SingleSyncerInterface;
 use Civi\Osdi\Result\SyncEligibility;
+use Civi\Osdi\SingleSyncerInterface;
 use Civi\OsdiClient;
 
 class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterface {

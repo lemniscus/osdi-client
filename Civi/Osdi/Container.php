@@ -39,8 +39,8 @@ class Container {
       'Tagging' => ActionNetwork\Matcher\TaggingBasic::class,
     ],
     'SingleSyncer' => [
-      'Donation' => ActionNetwork\SingleSyncer\Donation\DonationBasic::class,
-      'Person' => Civi\Osdi\ActionNetwork\SingleSyncer\PersonBasic::class,
+      'Donation' => ActionNetwork\SingleSyncer\DonationBasic::class,
+      'Person' => ActionNetwork\SingleSyncer\PersonBasic::class,
       'Tag' => ActionNetwork\SingleSyncer\TagBasic::class,
       'Tagging' => ActionNetwork\SingleSyncer\TaggingBasic::class,
     ],
