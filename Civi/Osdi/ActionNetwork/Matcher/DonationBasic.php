@@ -1,20 +1,10 @@
 <?php
-namespace Civi\Osdi\ActionNetwork\Matcher\Donation;
+namespace Civi\Osdi\ActionNetwork\Matcher;
 
-use Civi\Osdi\ActionNetwork\Matcher\AbstractMatcher;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Result\MatchResult as MatchResult;
-// use Civi\Osdi\ActionNetwork\RemoteFindResult;
-// use Civi\Osdi\ActionNetwork\RemoteSystem;
-// use Civi\Osdi\Exception\AmbiguousResultException;
-// use Civi\Osdi\Exception\EmptyResultException;
-// use Civi\Osdi\Exception\InvalidArgumentException;
-// use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
-// use Civi\Osdi\LocalObjectInterface;
-// use Civi\Osdi\MatcherInterface;
-// use Civi\Osdi\RemoteObjectInterface;
 
-class Basic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
+class DonationBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
   protected function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult {
     $result = new MatchResult($pair->getOrigin());

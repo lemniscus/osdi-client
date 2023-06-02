@@ -33,7 +33,7 @@ class Container {
       'Tagging' => ActionNetwork\Mapper\TaggingBasic::class,
     ],
     'Matcher' => [
-      'Donation' => ActionNetwork\Matcher\Donation\Basic::class,
+      'Donation' => ActionNetwork\Matcher\DonationBasic::class,
       'Person' => ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail::class,
       'Tag' => ActionNetwork\Matcher\TagBasic::class,
       'Tagging' => ActionNetwork\Matcher\TaggingBasic::class,
