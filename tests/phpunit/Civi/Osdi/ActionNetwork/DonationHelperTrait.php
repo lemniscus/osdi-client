@@ -85,57 +85,25 @@ trait DonationHelperTrait {
     static::$financialTypeId = $financialTypeApiResult->single()['id'];
   }
 
-  public function tearDown(): void {
-
-    foreach ($this->createdRemoteEntities as $entity) {
-      $entity->delete();
-    }
-
-    // Civi seems to be refusing to delete contacts, probably because they have contributions.
-    // However they should be removed by the db rollback.
-    //
-    // foreach ($this->createdLocalEntities as $type => $ids) {
-    //   // filter these for ones that still exist (actually shouldn't be any?)
-    //   $exists = civicrm_api4($type, 'get', [
-    //       'select' => ['id'],
-    //       'where' => [['id', 'IN', $ids]],
-    //       'checkPermissions' => FALSE,
-    //     ])->column('id');
-    //
-    //   foreach ($ids as $id) {
-    //     if (in_array($id, $exists)) {
-    //       civicrm_api4($type, 'delete', [
-    //         'where' => [['id', '=', $id]],
-    //         'checkPermissions' => FALSE,
-    //         'useTrash' => FALSE,
-    //       ]);
-    //     }
-    //   }
-    // }
-
-  }
-
-
   public function createInSyncPerson(): LocalRemotePair {
+    static $count = 0;
+    $count++;
 
     // We need a remote person that matches a local person.
-    Logger::logDebug("Creating new test person as did not find one.");
     $remotePerson = new Person(static::$system);
     $remotePerson->givenName->set('Wilma');
     $remotePerson->familyName->set('FlintstoneTest');
     // Use an email the system won't have seen before, so we are sure we have a new contact.
-    $remotePerson->emailAddress->set('wilma.' . (new \DateTime())->format('Ymd.Hisv') . '@example.org');
+    $email = "wilma$count." . (new \DateTime())->format('Ymd.Hisv') . '@example.org';
+    $remotePerson->emailAddress->set($email);
     $remotePerson->save();
-    Logger::logDebug("New test person: " . $remotePerson->getId());
+    Logger::logDebug("New test person: {$remotePerson->getId()}, $email");
 
     // ... use sync to create local person
     /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\PersonBasic $personSyncer */
     $personSyncer = OsdiClient::container()->getSingle('SingleSyncer', 'Person');
     $pair = $personSyncer->matchAndSyncIfEligible($remotePerson);
     self::assertFalse($pair->isError());
-
-    $this->createdLocalEntities['Contact'] = [$pair->getLocalObject()->getId()];
-    $this->createdRemoteEntities[] = $remotePerson;
 
     return $pair;
   }
