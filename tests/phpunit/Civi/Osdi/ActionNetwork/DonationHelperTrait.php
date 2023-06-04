@@ -53,7 +53,7 @@ trait DonationHelperTrait {
       // even though there should not be a public page for API-created
       // fundraising pages.
       $fundraisingPage->title->set(DonationBasicMapper::FUNDRAISING_PAGE_NAME);
-      $fundraisingPage->origin_system->set('CiviCRM');
+      $fundraisingPage->originSystem->set('CiviCRM');
       $fundraisingPage->save();
     }
     static::$testFundraisingPage = $fundraisingPage;

@@ -57,7 +57,7 @@ class FundraisingPageTest extends \PHPUnit\Framework\TestCase implements
     // even though there should not be a public page for API-created
     // fundraising pages.
     $fundraisingPage->title->set($newPageTitle);
-    $fundraisingPage->origin_system->set('CiviCRM');
+    $fundraisingPage->originSystem->set('CiviCRM');
     $fundraisingPage->save();
 
     // Fetch it.
@@ -67,7 +67,7 @@ class FundraisingPageTest extends \PHPUnit\Framework\TestCase implements
     $this->assertEquals($fundraisingPageId, $fundraisingPage->getId());
     $this->assertEquals($newPageTitle, $fundraisingPage->name->get());
     $this->assertEquals($newPageTitle, $fundraisingPage->title->get());
-    $this->assertEquals('CiviCRM', $fundraisingPage->origin_system->get());
+    $this->assertEquals('CiviCRM', $fundraisingPage->originSystem->get());
   }
 
 }

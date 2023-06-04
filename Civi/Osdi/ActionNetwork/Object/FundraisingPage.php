@@ -8,6 +8,8 @@ class FundraisingPage extends AbstractRemoteObject implements \Civi\Osdi\RemoteO
   public Field $createdDate;
   public Field $modifiedDate;
   public Field $name;
+  public Field $title;
+  public Field $originSystem;
 
   protected function getFieldMetadata() {
     return [
@@ -15,7 +17,7 @@ class FundraisingPage extends AbstractRemoteObject implements \Civi\Osdi\RemoteO
       'createdDate' => ['path' => ['created_date'], 'readOnly' => TRUE],
       'modifiedDate' => ['path' => ['modified_date'], 'readOnly' => TRUE],
       'name' => ['path' => ['name'], 'createOnly' => TRUE],
-      'origin_system' => ['path' => ['origin_system'], 'createOnly' => TRUE],
+      'originSystem' => ['path' => ['origin_system'], 'createOnly' => TRUE],
       'title' => ['path' => ['title']],
     ];
   }
