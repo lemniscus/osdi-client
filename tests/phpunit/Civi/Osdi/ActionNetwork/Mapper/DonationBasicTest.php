@@ -17,9 +17,9 @@ use OsdiClient\FixtureHttpClient;
  * @group headless
  */
 class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
-  HeadlessInterface,
-  HookInterface,
-  TransactionalInterface {
+    HeadlessInterface,
+    HookInterface,
+    TransactionalInterface {
 
   use DonationHelperTrait;
 
@@ -29,7 +29,6 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
 
   public function setUp(): void {
     $this->mapper = new DonationBasicMapper(static::$system);
-    FixtureHttpClient::resetHistory();
     parent::setUp();
   }
 

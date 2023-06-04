@@ -3,7 +3,6 @@
 namespace OsdiClient\ActionNetwork;
 
 use Civi;
-use CRM_OSDI_BAO_SyncProfile;
 use GuzzleHttp\Client;
 use Jsor;
 use Jsor\HalClient\HttpClient\Guzzle6HttpClient;
@@ -11,7 +10,7 @@ use Jsor\HalClient\HttpClient\Guzzle6HttpClient;
 class TestUtils {
 
   public static function createRemoteSystem(): \Civi\Osdi\ActionNetwork\RemoteSystem {
-    $syncProfile = new CRM_OSDI_BAO_SyncProfile();
+    $syncProfile = new \CRM_OSDI_BAO_SyncProfile();
     $syncProfile->entry_point = 'https://actionnetwork.org/api/v2/';
     self::defineActionNetworkApiToken();
     $syncProfile->api_token = ACTION_NETWORK_TEST_API_TOKEN;

@@ -13,14 +13,6 @@ use Civi\OsdiClient;
 
 trait DonationHelperTrait {
 
-  /**
-   * @var array{Contact: array, OptionGroup: array, OptionValue: array,
-   *   CustomGroup: array, CustomField: array}
-   */
-  protected $createdLocalEntities = [];
-
-  protected $createdRemoteEntities = [];
-
   private static RemoteSystem $system;
 
   private static UniqueEmailOrFirstLastEmail $personMatcher;
@@ -28,7 +20,6 @@ trait DonationHelperTrait {
   private static FundraisingPage $testFundraisingPage;
 
   private static int $financialTypeId;
-
 
   /**
    * Create a remote person, held in static::$testRemotePerson

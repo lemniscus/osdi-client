@@ -68,9 +68,9 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
     // Create fixture: 2 donations.
     // Don't run the test twice in one second, or this won't work ;-)
     $sets = [
-      ['amount' => '1.23', 'when' => date('Y-m-d\TH:i:s\Z') ],
-      ['amount' => '3.45', 'when' => date('Y-m-d\TH:i:s\Z', strtotime('now - 1 day')) ],
-      ['amount' => '7.89', 'when' => date('Y-m-d\TH:i:s\Z', strtotime('now - 1 month')) ],
+      ['amount' => '1.23', 'when' => date('Y-m-d\TH:i:s\Z')],
+      ['amount' => '3.45', 'when' => date('Y-m-d\TH:i:s\Z', strtotime('now - 1 day'))],
+      ['amount' => '7.89', 'when' => date('Y-m-d\TH:i:s\Z', strtotime('now - 1 month'))],
     ];
     $createdRemoteDonationIds = [
       $this->createRemoteDonationAndGetId($sets[0], $personPair->getRemoteObject()),
@@ -86,16 +86,19 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
     // We should now have the donation we created above. (We may have a load of others,
     // too, if you have run this test a few times within a week).
     $syncState = \Civi\Api4\OsdiDonationSyncState::get(FALSE)
-    ->addSelect('remote_donation_id', 'contribution_id', 'contribution.total_amount', 'contribution.receive_date')
-    ->addJoin('Contribution AS contribution', 'INNER', ['contribution_id', '=', 'contribution.id'])
-    ->addWhere('remote_donation_id', 'IN', $createdRemoteDonationIds)
-    ->execute()
-    ->indexBy('remote_donation_id')
-    ->getArrayCopy();
+      ->addSelect('remote_donation_id', 'contribution_id', 'contribution.total_amount', 'contribution.receive_date')
+      ->addJoin('Contribution AS contribution', 'INNER', ['contribution_id', '=', 'contribution.id'])
+      ->addWhere('remote_donation_id', 'IN', $createdRemoteDonationIds)
+      ->execute()
+      ->indexBy('remote_donation_id')
+      ->getArrayCopy();
     foreach ($createdRemoteDonationIds as $i => $remoteId) {
       $this->assertArrayHasKey($remoteId, $syncState, "Missing remote id in dataset $i: $remoteId");
       $this->assertEquals($sets[$i]['amount'], $syncState[$remoteId]['contribution.total_amount'], "Mismatch of amount on dataset $i");
-      $this->assertEquals(strtr($sets[$i]['when'], ['Z' => '', 'T'=> ' ']), $syncState[$remoteId]['contribution.receive_date'], "Mismatch of receive date on dataset $i");
+      $this->assertEquals(
+        strtr($sets[$i]['when'], ['Z' => '', 'T' => ' ']),
+        $syncState[$remoteId]['contribution.receive_date'],
+        "Mismatch of receive date on dataset $i");
     }
     $countOfDonations = \Civi\Api4\Contribution::get(FALSE)->selectRowCount()->addWhere('contact_id', '=', $contactId)->addWhere('is_test', 'IN', [0, 1])->execute()->count();
     $this->assertEquals(2, $countOfDonations, "Expected 2 contributions, but got $countOfDonations");
