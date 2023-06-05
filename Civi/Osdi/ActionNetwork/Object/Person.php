@@ -194,6 +194,12 @@ class Person extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInte
     return parent::trySave();
   }
 
+  public function getDonations(): RemoteFindResult {
+    $personUrl = $this->getUrlForRead();
+    $donationsLink = $this->_system->linkify("$personUrl/donations");
+    return new RemoteFindResult($this->_system, 'osdi:donations', $donationsLink);
+  }
+
   public function getTaggings(): RemoteFindResult {
     $personUrl = $this->getUrlForRead();
     $taggingsLink = $this->_system->linkify("$personUrl/taggings");
