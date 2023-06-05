@@ -15,6 +15,8 @@ class Sync extends AbstractResult implements \Civi\Osdi\ResultInterface {
 
   const NO_SYNC_NEEDED = 'no sync needed';
 
+  const OTHER = 'other';
+
   protected ?RemoteObjectInterface $remoteObject;
 
   protected ?LocalObjectInterface $localObject;

@@ -2,11 +2,13 @@
 
 namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
+use Civi\Api4\OsdiLog;
 use Civi\Osdi\CrudObjectInterface;
 use Civi\Osdi\Exception\CannotMapException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
+use Civi\Osdi\Logger;
 use Civi\Osdi\MapperInterface;
 use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\RemoteObjectInterface;
@@ -117,6 +119,7 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     $result->setStatusCode($statusCode);
     $result->setState($this->saveSyncStateIfNeeded($pair));
     $pair->getResultStack()->push($result);
+    $this->logSyncResult($pair, $result);
     return $pair;
   }
 
@@ -279,5 +282,28 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
   abstract protected function getLocalObjectClass(): string;
 
   abstract protected function getRemoteObjectClass(): string;
+
+  protected function logSyncResult(LocalRemotePair $pair, SyncResult $syncResult): void {
+    try {
+      $syncState = $syncResult->getState();
+      if (is_object($syncState)
+        && method_exists($syncState, 'getDbTable')
+        && method_exists($syncState, 'getId')
+      ) {
+        $syncStateDbTable = $syncState->getDbTable();
+        $syncStateId = $syncState->getId();
+      }
+      OsdiLog::create(FALSE)
+        ->addValue('creator', static::class)
+        ->addValue('entity_table', $syncStateDbTable ?? NULL)
+        ->addValue('entity_id', $syncStateId ?? NULL)
+        ->addValue('details', $pair->getResultStack()->toArray())
+        ->execute();
+    }
+    catch (\Throwable $e) {
+      $context = ['exception' => $e, 'LocalRemotePair' => $pair];
+      Logger::logError('Error writing to OsdiLog table', $context);
+    }
+  }
 
 }

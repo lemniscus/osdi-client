@@ -17,6 +17,7 @@ use Civi\Osdi\Result\DeletionSync as DeletionSyncResult;
 use Civi\Osdi\Result\FetchOldOrFindNewMatch as OldOrNewMatchResult;
 use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
 use Civi\Osdi\Result\MatchResult as MatchResult;
+use Civi\Osdi\Result\Sync as SyncResult;
 use Civi\Osdi\Result\SyncEligibility;
 use Civi\Osdi\SingleSyncerInterface;
 use Civi\OsdiClient;
@@ -212,8 +213,13 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
 
     $lastResult = $pairAfter->getLastResult();
     if ($lastResult) {
-      $syncState->setSyncStatus(
-        get_class($lastResult) . '::' . $lastResult->getStatusCode());
+      if (is_a($lastResult, SyncResult::class)) {
+        $code = $lastResult->getStatusCode();
+      }
+      else {
+        $code = $lastResult->isError() ? SyncResult::ERROR : SyncResult::OTHER;
+      }
+      $syncState->setSyncStatus($code);
     }
 
     $syncState->save();

@@ -954,8 +954,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
       $localPerson,
       OsdiClient::container()->getSyncProfileId()
     );
-    self::assertEquals('Civi\Osdi\Result\MapAndWrite::error during save',
-      $syncState->getSyncStatus());
+    self::assertEquals(Sync::ERROR, $syncState->getSyncStatus());
   }
 
   private function oneSecondBefore($timeString): string {

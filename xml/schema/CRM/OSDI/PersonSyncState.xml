@@ -4,6 +4,7 @@
   <base>CRM/OSDI</base>
   <class>PersonSyncState</class>
   <name>civicrm_osdi_person_sync_state</name>
+  <title>OSDI Person Sync State</title>
   <comment>Linkages between CiviCRM contacts and their counterparts on remote OSDI systems</comment>
   <log>true</log>
 

@@ -4,6 +4,7 @@
   <base>CRM/OSDI</base>
   <class>DonationSyncState</class>
   <name>civicrm_osdi_donation_sync_state</name>
+  <title>OSDI Donation Sync State</title>
   <comment>Linkages between CiviCRM Contributions and their counterparts on remote OSDI systems</comment>
   <log>true</log>
 

@@ -119,8 +119,8 @@ class MatchResult extends AbstractResult implements \Civi\Osdi\ResultInterface {
       'type' => $this->getType(),
       'status' => $this->getStatusCode(),
       'message' => $this->getMessage(),
-      'localObject' => $localObject ? $localObject->getAll() : NULL,
-      'remoteObject' => $remoteObject ? $remoteObject->getAll() : NULL,
+      'localObject id' => $localObject ? $localObject->getId() : NULL,
+      'remoteObject id' => $remoteObject ? $remoteObject->getId() : NULL,
       'context' => $this->getContextAsArray(),
     ];
   }

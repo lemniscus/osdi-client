@@ -66,11 +66,13 @@ ENGINE=InnoDB;
 -- *******************************************************/
 CREATE TABLE `civicrm_osdi_log` (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiLog ID',
-  `entity_table` varchar(127) NOT NULL,
-  `entity_id` int unsigned NOT NULL COMMENT 'FK to PersonSyncState, DonationSyncState, etc',
+  `creator` varchar(127) NOT NULL COMMENT 'Class that created this log entry',
+  `entity_table` varchar(127),
+  `entity_id` int unsigned COMMENT 'FK to PersonSyncState, DonationSyncState, etc',
   `created_date` timestamp DEFAULT CURRENT_TIMESTAMP COMMENT 'When the log entry was created',
   `details` longtext COMMENT 'Log context',
   PRIMARY KEY (`id`),
+  INDEX `index_creator`(creator),
   INDEX `index_entity_table`(entity_table),
   INDEX `index_entity_id`(entity_id),
   INDEX `index_created_date`(created_date)

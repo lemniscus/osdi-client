@@ -54,7 +54,7 @@ abstract class AbstractResult implements \Civi\Osdi\ResultInterface {
   }
 
   public function getContextAsArray(): array {
-    return [$this->getContext()];
+    return $this->getContext() ? [$this->getContext()] : [];
   }
 
   public function isStatus(string $statusCode): bool {

@@ -2,8 +2,9 @@
 
 <table>
   <base>CRM/OSDI</base>
-  <class>OsdiLog</class>
+  <class>Log</class>
   <name>civicrm_osdi_log</name>
+  <title>OSDI Log Entry</title>
   <comment>Details about actions taken by the OSDI Client extension</comment>
   <log>false</log>
 
@@ -22,11 +23,24 @@
   </primaryKey>
 
   <field>
+    <name>creator</name>
+    <title>Creator</title>
+    <type>varchar</type>
+    <length>127</length>
+    <required>true</required>
+    <comment>Class that created this log entry</comment>
+  </field>
+  <index>
+    <name>index_creator</name>
+    <fieldName>creator</fieldName>
+  </index>
+
+
+  <field>
     <name>entity_table</name>
     <title>Entity Table</title>
     <type>varchar</type>
     <length>127</length>
-    <required>true</required>
   </field>
   <index>
     <name>index_entity_table</name>
@@ -37,7 +51,6 @@
     <name>entity_id</name>
     <title>Entity</title>
     <type>int unsigned</type>
-    <required>true</required>
     <comment>FK to PersonSyncState, DonationSyncState, etc</comment>
   </field>
   <index>
@@ -61,7 +74,7 @@
     <name>details</name>
     <title>Details</title>
     <type>longtext</type>
-    <serialize>PHP</serialize>
+    <serialize>JSON</serialize>
     <comment>Log context</comment>
   </field>
 

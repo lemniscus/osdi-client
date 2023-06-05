@@ -4,6 +4,7 @@
   <base>CRM/OSDI</base>
   <class>Flag</class>
   <name>civicrm_osdi_flag</name>
+  <title>OSDI Flag</title>
   <comment>Information about OSDI sync problems</comment>
   <log>true</log>
 

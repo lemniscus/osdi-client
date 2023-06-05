@@ -5,6 +5,7 @@ namespace Civi\Osdi;
 use Civi\Api4\Generic\DAOGetAction;
 use Civi\Api4\OsdiPersonSyncState;
 use Civi\Osdi\Exception\InvalidArgumentException;
+use Civi\Osdi\Result\Sync;
 
 class PersonSyncState {
 
@@ -25,24 +26,14 @@ class PersonSyncState {
   const ORIGIN_LOCAL = 0;
   const ORIGIN_REMOTE = 1;
 
+  public static function getDbTable() {
+    static $table_name = NULL;
+    $table_name = $table_name ?? OsdiPersonSyncState::getInfo()['table_name'];
+    return $table_name;
+  }
+
   public function isError(): bool {
-    $status = $this->getSyncStatus();
-
-    if (empty($status)) {
-      return FALSE;
-    }
-
-    $explodedStatus = explode('::', $status);
-
-    if (2 !== count($explodedStatus)) {
-      throw new \CRM_Core_Exception('Sync state code in invalid format');
-    }
-
-    [$resultClass, $statusConstant] = $explodedStatus;
-    /** @var \Civi\Osdi\ResultInterface $resultObject */
-    $resultObject = new $resultClass();
-    $resultObject->setStatusCode($statusConstant);
-    return $resultObject->isError();
+    return (Sync::ERROR === $this->getSyncStatus());
   }
 
   public static function syncOriginPseudoConstant(): array {

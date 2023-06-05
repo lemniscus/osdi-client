@@ -4,7 +4,7 @@
 return [
   [
     'name' => 'OsdiLog',
-    'class' => 'CRM_OSDI_DAO_OsdiLog',
+    'class' => 'CRM_OSDI_DAO_Log',
     'table' => 'civicrm_osdi_log',
   ],
 ];

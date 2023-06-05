@@ -4,6 +4,7 @@
   <base>CRM/OSDI</base>
   <class>Deletion</class>
   <name>civicrm_osdi_deletion</name>
+  <title>OSDI Deletion</title>
   <comment>Data about deletions synced from Civi to an OSDI remote system</comment>
   <log>true</log>
 
