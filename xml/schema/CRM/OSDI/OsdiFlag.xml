@@ -137,7 +137,7 @@
     <name>modified_date</name>
     <title>Modified Date</title>
     <type>timestamp</type>
-    <comment>When the client was created or modified.</comment>
+    <comment>When the flag was created or modified.</comment>
     <default>CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</default>
   </field>
 

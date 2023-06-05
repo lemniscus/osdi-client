@@ -147,8 +147,14 @@
   <field>
     <name>sync_origin</name>
     <title>Origin of Last Sync</title>
-    <type>boolean</type>
+    <type>tinyint</type>
+    <length>1</length>
+    <crmType>CRM_Utils_Type::T_INT</crmType>
     <default>NULL</default>
+    <html>
+      <type>Radio</type>
+
+    </html>
     <pseudoconstant>
       <callback>\Civi\Osdi\PersonSyncState::syncOriginPseudoConstant</callback>
       <prefetch>true</prefetch>
@@ -162,9 +168,9 @@
     <name>sync_status</name>
     <title>Status of Last Sync</title>
     <type>varchar</type>
-    <length>1023</length>
+    <length>32</length>
     <default>NULL</default>
-    <comment>Status of the last sync</comment>
+    <comment>Status code of the last sync, from \Civi\Osdi\Result\Sync</comment>
     <import>true</import>
     <export>true</export>
   </field>

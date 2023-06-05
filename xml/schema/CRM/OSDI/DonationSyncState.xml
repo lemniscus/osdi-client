@@ -26,9 +26,13 @@
     <name>contribution_id</name>
     <title>Local Contribution ID</title>
     <type>int unsigned</type>
-    <comment>FK to Contact</comment>
+    <comment>FK to Contribution</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <label>Contribution</label>
+      <type>EntityRef</type>
+    </html>
   </field>
   <foreignKey>
     <name>contribution_id</name>
@@ -100,9 +104,9 @@
     <name>sync_status</name>
     <title>Status of Last Sync</title>
     <type>varchar</type>
-    <length>1023</length>
+    <length>32</length>
     <default>NULL</default>
-    <comment>Status of the last sync</comment>
+    <comment>Status code of the last sync, from \Civi\Osdi\Result\Sync</comment>
     <import>true</import>
     <export>true</export>
   </field>

@@ -21,6 +21,7 @@ DROP TABLE IF EXISTS `civicrm_osdi_deletion`;
 DROP TABLE IF EXISTS `civicrm_osdi_donation_sync_state`;
 DROP TABLE IF EXISTS `civicrm_osdi_person_sync_state`;
 DROP TABLE IF EXISTS `civicrm_osdi_sync_profile`;
+DROP TABLE IF EXISTS `civicrm_osdi_log`;
 DROP TABLE IF EXISTS `civicrm_osdi_flag`;
 
 SET FOREIGN_KEY_CHECKS=1;
@@ -46,13 +47,33 @@ CREATE TABLE `civicrm_osdi_flag` (
   `message` varchar(511) DEFAULT NULL COMMENT 'Description of the issue',
   `context` text DEFAULT NULL COMMENT 'Structured data to help understand the issue',
   `created_date` timestamp DEFAULT CURRENT_TIMESTAMP COMMENT 'When the flag was created',
-  `modified_date` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the client was created or modified.',
+  `modified_date` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the flag was created or modified.',
   PRIMARY KEY (`id`),
   INDEX `index_contact_id`(contact_id),
   INDEX `index_remote_object_id`(remote_object_id),
   INDEX `index_flag_type`(flag_type),
   INDEX `index_status`(status),
   CONSTRAINT FK_civicrm_osdi_flag_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL
+)
+ENGINE=InnoDB;
+
+-- /*******************************************************
+-- *
+-- * civicrm_osdi_log
+-- *
+-- * Details about actions taken by the OSDI Client extension
+-- *
+-- *******************************************************/
+CREATE TABLE `civicrm_osdi_log` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique OsdiLog ID',
+  `entity_table` varchar(127) NOT NULL,
+  `entity_id` int unsigned NOT NULL COMMENT 'FK to PersonSyncState, DonationSyncState, etc',
+  `created_date` timestamp DEFAULT CURRENT_TIMESTAMP COMMENT 'When the log entry was created',
+  `details` longtext COMMENT 'Log context',
+  PRIMARY KEY (`id`),
+  INDEX `index_entity_table`(entity_table),
+  INDEX `index_entity_id`(entity_id),
+  INDEX `index_created_date`(created_date)
 )
 ENGINE=InnoDB;
 
@@ -92,7 +113,7 @@ CREATE TABLE `civicrm_osdi_person_sync_state` (
   `local_post_sync_modified_time` timestamp DEFAULT NULL COMMENT 'Modification date and time of the local contact record at the end of the last sync',
   `sync_time` timestamp DEFAULT NULL COMMENT 'Date and time of the last sync',
   `sync_origin` tinyint DEFAULT NULL COMMENT '0 if local CiviCRM was the origin of the last sync, 1 if remote system was the origin',
-  `sync_status` varchar(1023) DEFAULT NULL COMMENT 'Status of the last sync',
+  `sync_status` varchar(32) DEFAULT NULL COMMENT 'Status code of the last sync, from \\Civi\\Osdi\\Result\\Sync',
   PRIMARY KEY (`id`),
   INDEX `index_contact_id`(contact_id),
   INDEX `index_sync_profile_id`(sync_profile_id),
@@ -117,12 +138,12 @@ ENGINE=InnoDB;
 -- *******************************************************/
 CREATE TABLE `civicrm_osdi_donation_sync_state` (
   `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique DonationSyncState ID',
-  `contribution_id` int unsigned COMMENT 'FK to Contact',
+  `contribution_id` int unsigned COMMENT 'FK to Contribution',
   `sync_profile_id` int unsigned COMMENT 'FK to OSDI Sync Profile',
   `remote_donation_id` varchar(255) DEFAULT NULL COMMENT 'FK to identifier field on remote system',
   `source` varchar(12) COMMENT 'Whether the donation source was local (CiviCRM) or remote',
   `sync_time` timestamp DEFAULT NULL COMMENT 'Date and time of the last sync',
-  `sync_status` varchar(1023) DEFAULT NULL COMMENT 'Status of the last sync',
+  `sync_status` varchar(32) DEFAULT NULL COMMENT 'Status code of the last sync, from \\Civi\\Osdi\\Result\\Sync',
   PRIMARY KEY (`id`),
   INDEX `index_sync_profile_id`(sync_profile_id),
   INDEX `index_remote_donation_id`(remote_donation_id),

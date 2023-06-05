@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+
+<table>
+  <base>CRM/OSDI</base>
+  <class>OsdiLog</class>
+  <name>civicrm_osdi_log</name>
+  <comment>Details about actions taken by the OSDI Client extension</comment>
+  <log>false</log>
+
+  <field>
+    <name>id</name>
+    <type>int unsigned</type>
+    <required>true</required>
+    <comment>Unique OsdiLog ID</comment>
+    <html>
+      <type>Number</type>
+    </html>
+  </field>
+  <primaryKey>
+    <name>id</name>
+    <autoincrement>true</autoincrement>
+  </primaryKey>
+
+  <field>
+    <name>entity_table</name>
+    <title>Entity Table</title>
+    <type>varchar</type>
+    <length>127</length>
+    <required>true</required>
+  </field>
+  <index>
+    <name>index_entity_table</name>
+    <fieldName>entity_table</fieldName>
+  </index>
+
+  <field>
+    <name>entity_id</name>
+    <title>Entity</title>
+    <type>int unsigned</type>
+    <required>true</required>
+    <comment>FK to PersonSyncState, DonationSyncState, etc</comment>
+  </field>
+  <index>
+    <name>index_entity_id</name>
+    <fieldName>entity_id</fieldName>
+  </index>
+
+  <field>
+    <name>created_date</name>
+    <title>Created Date</title>
+    <type>timestamp</type>
+    <comment>When the log entry was created</comment>
+    <default>CURRENT_TIMESTAMP</default>
+  </field>
+  <index>
+    <name>index_created_date</name>
+    <fieldName>created_date</fieldName>
+  </index>
+
+  <field>
+    <name>details</name>
+    <title>Details</title>
+    <type>longtext</type>
+    <serialize>PHP</serialize>
+    <comment>Log context</comment>
+  </field>
+
+  <dynamicForeignKey>
+    <idColumn>entity_id</idColumn>
+    <typeColumn>entity_table</typeColumn>
+  </dynamicForeignKey>
+
+</table>
