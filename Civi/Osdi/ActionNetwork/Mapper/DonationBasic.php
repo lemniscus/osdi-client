@@ -150,7 +150,7 @@ class DonationBasic implements MapperInterface {
     }
     else {
       throw new CannotMapException('Cannot map local donation: Failed '
-        . 'to find remote fundraising page called %s', json_encode(self::FUNDRAISING_PAGE_NAME));
+        . 'to find remote fundraising page called %s', json_encode(static::FUNDRAISING_PAGE_NAME));
     }
 
     // @todo $remoteDonation->referrerData

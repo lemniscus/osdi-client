@@ -83,7 +83,7 @@ class DonationSyncState implements SyncStateInterface {
     return $this->data;
   }
 
-  public function setData(array $data): static {
+  public function setData(array $data): self {
     $this->data = $data;
     return $this;
   }
