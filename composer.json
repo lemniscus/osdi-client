@@ -1,0 +1,6 @@
+{
+    "require": {
+        "jsor/hal-client": "^3.6",
+        "guzzlehttp/guzzle": "^5.0||^6.0||^7.0"
+    }
+}
