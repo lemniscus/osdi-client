@@ -5,7 +5,7 @@
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'reference' => 'aeae7630ed61d65fc566be957c987a3e8b3bfc41',
+        'reference' => '577bf48a4197d0f9f569a7dce675e8ed945d453c',
         'name' => '__root__',
         'dev' => true,
     ),
@@ -16,7 +16,7 @@
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
-            'reference' => 'aeae7630ed61d65fc566be957c987a3e8b3bfc41',
+            'reference' => '577bf48a4197d0f9f569a7dce675e8ed945d453c',
             'dev_requirement' => false,
         ),
         'guzzlehttp/guzzle' => array(
@@ -104,12 +104,12 @@
             'dev_requirement' => false,
         ),
         'symfony/deprecation-contracts' => array(
-            'pretty_version' => 'v3.3.0',
-            'version' => '3.3.0.0',
+            'pretty_version' => 'v2.5.2',
+            'version' => '2.5.2.0',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/deprecation-contracts',
             'aliases' => array(),
-            'reference' => '7c3aff79d10325257a001fcf92d991f24fc967cf',
+            'reference' => 'e8b495ea28c1d97b5e0c121748d6f9b53d075c66',
             'dev_requirement' => false,
         ),
         'symfony/polyfill-php80' => array(
