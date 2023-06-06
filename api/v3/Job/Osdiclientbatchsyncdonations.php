@@ -46,7 +46,19 @@ function civicrm_api3_job_Osdiclientbatchsyncdonations($params) {
 
   $container = OsdiClient::container($params['sync_profile_id']);
   $batchSyncer = $container->getSingle('BatchSyncer', 'Donation');
-  $message = [];
+
+  $contactsResult = civicrm_api3('Job', 'osdiclientbatchsynccontacts', [
+    'sync_profile_id' => $params['sync_profile_id'],
+    'origin' => $params['origin'],
+  ]);
+
+  if ($contactsResult['is_error'] ?? NULL) {
+    return civicrm_api3_create_error(
+      'Prerequisite contacts sync failed', $contactsResult
+    );
+  }
+
+  $message = ['Contacts', $contactsResult['values'], 'Donations'];
 
   try {
     foreach ($origins as $origin) {
