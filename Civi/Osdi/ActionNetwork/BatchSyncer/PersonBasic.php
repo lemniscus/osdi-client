@@ -108,7 +108,7 @@ class PersonBasic implements BatchSyncerInterface {
       }
 
       try {
-        $pair = $this->singleSyncer->matchAndSyncIfEligible($remotePerson);
+        $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($remotePerson);
         $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
       }
       catch (\Throwable $e) {
@@ -170,7 +170,7 @@ class PersonBasic implements BatchSyncerInterface {
         ', mod ' . $localPerson->modifiedDate->get() .
         ', ' . $localPerson->emailEmail->get());
 
-      $pair = $this->singleSyncer->matchAndSyncIfEligible($localPerson);
+      $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($localPerson);
       $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
       Logger::logDebug('Result for  Civi id ' . $localPerson->getId() .
         ': ' . $syncResult->getStatusCode() . ' - ' . $syncResult->getMessage()

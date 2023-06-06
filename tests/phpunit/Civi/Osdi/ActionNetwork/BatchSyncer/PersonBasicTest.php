@@ -49,10 +49,8 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
       'osdiClient.syncJobEndTime' => NULL,
     ]);
 
-    $singleSyncer = OsdiClient::container()
-      ->getSingle('SingleSyncer', 'Person', self::$system);
     $batchSyncer = OsdiClient::container()
-      ->getSingle('BatchSyncer', 'Person', $singleSyncer);
+      ->getSingle('BatchSyncer', 'Person');
 
     $batchSyncer->batchSyncFromRemote();
     $syncedContactCount = \Civi\Api4\Email::get(FALSE)
@@ -77,10 +75,8 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
 
     $syncStartTime = time();
 
-    $singleSyncer = OsdiClient::container()
-      ->getSingle('SingleSyncer', 'Person', self::$system);
     $batchSyncer = OsdiClient::container()
-      ->getSingle('BatchSyncer', 'Person', $singleSyncer);
+      ->getSingle('BatchSyncer', 'Person');
 
     $batchSyncer->batchSyncFromRemote();
 
@@ -92,8 +88,7 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
 
     $syncStartTime = time();
 
-    $singleSyncer = OsdiClient::container()->getSingle('SingleSyncer', 'Person', self::$system);
-    $batchSyncer = OsdiClient::container()->getSingle('BatchSyncer', 'Person', $singleSyncer);
+    $batchSyncer = OsdiClient::container()->getSingle('BatchSyncer', 'Person');
 
     $batchSyncer->batchSyncFromLocal();
 
