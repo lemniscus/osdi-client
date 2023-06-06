@@ -103,7 +103,9 @@ class DonationBasic implements MapperInterface {
     $remoteDonation->donorHref->set($remotePerson->getUrlForRead());
 
     // Simple mappings
-    $remoteDonation->createdDate->set($localDonation->receiveDate->get());
+    $unixTimeStamp = strtotime($localDonation->receiveDate->get());
+    $formattedTime = $this->remoteSystem::formatDateTime($unixTimeStamp);
+    $remoteDonation->createdDate->set($formattedTime);
     $remoteDonation->currency->set($localDonation->currency->get());
     $recipient['display_name'] = $localDonation->financialTypeLabel->get();
     $recipient['amount'] = $localDonation->amount->get();
