@@ -12,6 +12,7 @@ use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\FetchOldOrFindNewMatch as OldOrNewMatchResult;
+use Civi\Osdi\Result\Sync;
 use Civi\Osdi\Result\SyncEligibility;
 use Civi\Osdi\SingleSyncerInterface;
 use Civi\OsdiClient;
@@ -76,12 +77,17 @@ class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterfac
     $dssId = $getAction->execute()->first()['id'] ?? NULL;
 
     if (!$dssId) {
+      $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
+      $status = $syncResult ? $syncResult->getStatusCode() : NULL;
+
       $dssId = OsdiDonationSyncState::create(FALSE)
         ->setValues([
           'remote_donation_id' => $remoteID,
           'contribution_id'    => $localID,
           'sync_profile_id'    => $syncProfileId,
           'source'             => $pair->getOrigin(),
+          'sync_time'          => date('Y-m-d H:i:s'),
+          'sync_status'        => $status,
         ])
         ->execute()->first()['id'] ?? NULL;
     }
