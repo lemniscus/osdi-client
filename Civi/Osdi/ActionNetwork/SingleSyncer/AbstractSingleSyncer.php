@@ -168,6 +168,11 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     return $result;
   }
 
+  /**
+   * @param \Civi\Osdi\LocalRemotePair $pair
+   *
+   * @return null|\Civi\Osdi\LocalRemotePair|\Civi\Osdi\SyncStateInterface
+   */
   protected function getSavedMatch(LocalRemotePair $pair) {
     return NULL;
   }
@@ -224,13 +229,13 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
       else {
         $pair->setLocalObject($savedMatch->getLocalObject());
       }
+      $currentResult->setSavedMatch($savedMatch);
       $currentResult->setStatusCode($currentResult::FETCHED_SAVED_MATCH);
       $resultStack->push($currentResult);
       return $currentResult;
     }
 
     $matchFindResult = $this->getMatcher()->tryToFindMatchFor($pair);
-    $resultStack->push($matchFindResult);
 
     if ($matchFindResult->isError()) {
       $currentResult->setStatusCode($currentResult::ERROR);

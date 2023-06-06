@@ -6,10 +6,11 @@ use Civi\Api4\Generic\DAOGetAction;
 use Civi\Api4\OsdiPersonSyncState;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Result\Sync;
+use Civi\OsdiClient;
 
-class PersonSyncState {
+class PersonSyncState implements SyncStateInterface {
 
-  protected $data = [
+  protected array $data = [
     'id' => NULL,
     'contact_id' => NULL,
     'sync_profile_id' => NULL,
@@ -26,10 +27,36 @@ class PersonSyncState {
   const ORIGIN_LOCAL = 0;
   const ORIGIN_REMOTE = 1;
 
+  private ?LocalObjectInterface $localPerson;
+  private ?RemoteObjectInterface $remotePerson;
+
   public static function getDbTable() {
     static $table_name = NULL;
     $table_name = $table_name ?? OsdiPersonSyncState::getInfo()['table_name'];
     return $table_name;
+  }
+
+  public function getLocalObject(): ?LocalObjectInterface {
+    if (empty($this->localPerson)) {
+      $contactId = $this->getContactId();
+      if (!empty($contactId)) {
+        $this->localPerson = OsdiClient::container()
+          ->make('LocalObject', 'Person', $contactId);
+      }
+    }
+    return $this->localPerson;
+  }
+
+  public function getRemoteObject(): ?RemoteObjectInterface {
+    if (empty($this->remotePerson)) {
+      $remotePersonId = $this->getRemotePersonId();
+      if (!empty($remotePersonId)) {
+        $this->remotePerson = OsdiClient::container()
+          ->make('OsdiObject', 'osdi:people');
+        $this->remotePerson->setId($remotePersonId);
+      }
+    }
+    return $this->remotePerson;
   }
 
   public function isError(): bool {

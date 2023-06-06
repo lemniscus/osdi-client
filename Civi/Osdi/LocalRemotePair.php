@@ -140,11 +140,6 @@ class LocalRemotePair {
     return $this->setRemoteObject($object);
   }
 
-  /**
-   * @param \Civi\Osdi\LocalObjectInterface|\Civi\Osdi\RemoteObjectInterface $object
-   *
-   * @return $this
-   */
   public function setTargetObject(CrudObjectInterface $object): self {
     if ($this->isOriginLocal()) {
       return $this->setRemoteObject($object);
