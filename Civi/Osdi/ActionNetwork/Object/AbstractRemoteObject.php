@@ -202,7 +202,7 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
     try {
       $this->save();
       $statusCode = SaveResult::SUCCESS;
-      $context = ['diff' => $changesBeingSaved];
+      $context = ['changes' => $changesBeingSaved];
     }
 
     catch (\Throwable $e) {
@@ -215,10 +215,7 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
       return new SaveResult(NULL, $statusCode, $statusMessage, $context);
     }
 
-    if (!$this->isSupersetOf(
-      $objectBeforeSaving,
-      ['identifiers', 'createdDate', 'modifiedDate']
-    )) {
+    if ($this->saveWasImperfect($objectBeforeSaving)) {
       $statusCode = SaveResult::ERROR;
       $statusMessage = E::ts(
         'Some or all of the %1 object could not be saved.',
@@ -386,6 +383,13 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
 
   protected function getFieldValueForCompare(string $fieldName) {
     return $this->$fieldName->get();
+  }
+
+  protected function saveWasImperfect(AbstractRemoteObject $objectBeforeSaving): bool {
+    return !$this->isSupersetOf(
+      $objectBeforeSaving,
+      ['identifiers', 'createdDate', 'modifiedDate']
+    );
   }
 
 }

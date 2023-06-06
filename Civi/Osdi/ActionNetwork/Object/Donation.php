@@ -150,4 +150,31 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
     }
   }
 
+  protected function getFieldValueForCompare(string $fieldName) {
+    switch ($fieldName) {
+      case 'createdDate':
+        $date = $this->createdDate->get();
+        return $date ? date('Y-m-d H:i:s', strtotime($date)) : NULL;
+
+      case 'currency':
+        return strtoupper($this->currency->get() ?? '');
+
+      case 'recipients':
+        $recipients = $this->recipients->get();
+        $amount = $recipients[0]['amount'] ?? NULL;
+        if ($amount) {
+          $recipients[0]['amount'] = (float) $amount;
+        }
+        return $recipients;
+    }
+    return $this->$fieldName->get();
+  }
+
+  protected function saveWasImperfect(AbstractRemoteObject $objectBeforeSaving): bool {
+    return !$this->isSupersetOf(
+      $objectBeforeSaving,
+      ['identifiers', 'modifiedDate', 'payment', 'referrerData']
+    );
+  }
+
 }
