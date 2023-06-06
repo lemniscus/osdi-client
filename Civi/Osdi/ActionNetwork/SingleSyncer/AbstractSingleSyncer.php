@@ -107,7 +107,7 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
         try {
           $mapAndWriteResult = $this->oneWayMapAndWrite($pair);
           $statusCode = $mapAndWriteResult->isError() ? $result::ERROR : $result::SUCCESS;
-          $result->setMessage($mapAndWriteResult->getMessage());
+          $result->setMessage($mapAndWriteResult->getStatusCode());
         }
         catch (CannotMapException $e) {
           $statusCode = $result::INELIGIBLE;
