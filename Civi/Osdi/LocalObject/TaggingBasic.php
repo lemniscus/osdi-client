@@ -16,7 +16,7 @@ class TaggingBasic extends AbstractLocalObject implements LocalObjectInterface {
 
   protected ?LocalObjectInterface $tag = NULL;
 
-  protected function getFieldMetadata() {
+  protected static function getFieldMetadata() {
     return [
       'id' => ['select' => 'id'],
       'contactId' => ['select' => 'entity_id'],

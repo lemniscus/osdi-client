@@ -87,8 +87,7 @@ class DonationBasic implements MapperInterface {
 
     // Load the contact that the donation belongs to.
     /** @var \Civi\Osdi\LocalObject\PersonBasic $localPerson */
-    $localPerson = $container->make(
-      'LocalObject', 'Person', $localDonation->contactId->get());
+    $localPerson = $localDonation->getPerson();
 
     $personPair = new LocalRemotePair($localPerson);
     $personPair->setOrigin(LocalRemotePair::ORIGIN_LOCAL);
@@ -193,7 +192,7 @@ class DonationBasic implements MapperInterface {
         . ' (%s) has no LocalPerson match.', $remotePerson->getId());
     }
     $localPerson = $personPair->getLocalObject();
-    $localDonation->contactId->set($localPerson->getId());
+    $localDonation->setPerson($localPerson);
 
     // Simple mappings
     $localDonation->amount->set($remoteDonation->amount->get());

@@ -66,20 +66,15 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $localDonation->save();
 
     // Check expectations
-    $this->assertEquals($contactId, $localDonation->contactId->get());
-    $this->assertEquals('2020-03-04T05:06:07Z', $localDonation->receiveDate->get());
+    $this->assertEquals($contactId, $localDonation->getPerson()->getId());
+    $this->assertEquals('2020-03-04 05:06:07', $localDonation->receiveDate->get());
     $this->assertEquals('USD', $localDonation->currency->get());
     $this->assertEquals(static::$financialTypeId, $localDonation->financialTypeId->get());
     $this->assertNull($localDonation->contributionRecurId->get());
     $this->assertEquals(self::$testFundraisingPage->title->get(), $localDonation->source->get());
     $expectedPaymentInstrumentID = \CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'payment_instrument_id', 'Credit Card');
     $this->assertEquals($expectedPaymentInstrumentID, $localDonation->paymentInstrumentId->get());
-
-    // We expect payment instrument label to be null as it is only populated when loaded from db.
-    $this->assertNull($localDonation->paymentInstrumentLabel->get());
-    $localDonation->load();
     $this->assertEquals('Credit Card', $localDonation->paymentInstrumentLabel->get());
-
   }
 
   /**

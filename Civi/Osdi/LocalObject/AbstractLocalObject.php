@@ -75,6 +75,15 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     }
   }
 
+  public static function getSelects(): array {
+    foreach (static::getFieldMetadata() as $camelName => $fieldMetaData) {
+      if (array_key_exists('select', $fieldMetaData)) {
+        $selects[$fieldMetaData['select']] = $camelName;
+      }
+    }
+    return $selects ?? [];
+  }
+
   private function initializeFields($idValue = NULL): void {
     foreach ($this->getFieldMetadata() as $name => $metadata) {
       $options = array_merge($metadata, ['bundle' => $this]);
@@ -148,11 +157,7 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     $this->initializeFields($id);
     $this->isTouched = FALSE;
 
-    foreach ($this->getFieldMetadata() as $camelName => $fieldMetaData) {
-      if (array_key_exists('select', $fieldMetaData)) {
-        $selects[$fieldMetaData['select']] = $camelName;
-      }
-    }
+    $selects = static::getSelects();
 
     /** @var \Civi\Api4\Generic\AbstractGetAction $getAction */
     $getAction = $this->makeApi4Action('get');
@@ -183,11 +188,7 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
   public function loadFromArray(array $array): self {
     $this->initializeFields();
 
-    foreach ($this->getFieldMetadata() as $camelName => $fieldMetaData) {
-      if (array_key_exists('select', $fieldMetaData)) {
-        $selects[$fieldMetaData['select']] = $camelName;
-      }
-    }
+    $selects = static::getSelects();
 
     foreach ($array as $key => $val) {
       if (array_key_exists($key, $this->getFieldMetadata())) {

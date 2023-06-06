@@ -2,16 +2,10 @@
 
 namespace Civi\Osdi\LocalObject;
 
-use Civi\Osdi\Exception\EmptyResultException;
+use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\LocalObjectInterface;
+use Civi\OsdiClient;
 
-/**
- * not implemented:
- * public Field $createdDate;
- * public Field $modifiedDate;
- * public Field $fr_page_?;
- * public Field $referrer?;
- */
 class DonationBasic extends AbstractLocalObject implements LocalObjectInterface {
 
   public Field $id;
@@ -21,24 +15,122 @@ class DonationBasic extends AbstractLocalObject implements LocalObjectInterface 
   public Field $financialTypeId;
   public Field $paymentInstrumentId;
   public Field $contributionRecurId;
-  public Field $contactId;
   public Field $financialTypeLabel;
   public Field $paymentInstrumentLabel;
   public Field $contributionRecurFrequency;
   public Field $trxnId;
   public Field $source;
 
+  protected Field $contactId;
+  protected ?LocalObjectInterface $person = NULL;
+
+  protected static function getFieldMetadata(): array {
+    return [
+      'id' => ['select' => 'id'],
+      'amount' => ['select' => 'total_amount'],
+      'receiveDate' => ['select' => 'receive_date'],
+      'currency' => ['select' => 'currency'],
+      'financialTypeId' => ['select' => 'financial_type_id'],
+      'paymentInstrumentId' => ['select' => 'payment_instrument_id'],
+      'contributionRecurId' => ['select' => 'contribution_recur_id'],
+      'contactId' => ['select' => 'contact_id'],
+      'trxnId' => ['select' => 'trxn_id'],
+      'source' => ['select' => 'source'],
+      'financialTypeLabel' => [
+        'select' => 'financial_type_id:label',
+        'readOnly' => TRUE,
+      ],
+      'paymentInstrumentLabel' => [
+        'select' => 'payment_instrument_id:label',
+        'readOnly' => TRUE,
+      ],
+      'contributionRecurFrequency' => [
+        'select' => 'contribution_recur_id.frequency_unit:name',
+        'readOnly' => TRUE,
+      ],
+    ];
+  }
+
   public static function getCiviEntityName(): string {
     return 'Contribution';
   }
 
-  /**
-   * Fetch the remote fundraising page ID for this donation's financial type.
-   *
-   * We can't do this here without a local sync state table.
-   */
-  public function getFundraisingPageHref() {
-    throw new \RuntimeException(__CLASS__ . '::' . __FUNCTION__ . ' not implemented');
+  public function getPerson(): ?LocalObjectInterface {
+    return $this->person;
+  }
+
+  public function isAltered(): bool {
+    if (!$this->isTouched()) {
+      return FALSE;
+    }
+    $this->updateIdFieldsFromReferencedObjects();
+    return parent::isAltered();
+  }
+
+  public function load(): self {
+    parent::load();
+    $this->updateReferencedObjectsFromIdFields();
+    return $this;
+  }
+
+  public function loadFromArray(array $array): self {
+    parent::loadFromArray($array);
+    $this->updateReferencedObjectsFromIdFields();
+    return $this;
+  }
+
+  public function persist(): self {
+    if (is_null($p = $this->person)) {
+      throw new InvalidArgumentException(
+        'Unable to save %s: missing Person', __CLASS__);
+    }
+    if (empty($contactId = $p->getId())) {
+      throw new InvalidArgumentException(
+        'Person must be saved before saving %s', __CLASS__);
+    }
+
+    $orderCreateParams = $this->getOrderCreateParamsForSave();
+    $orderCreateParams['contact_id'] = $contactId;
+    $contributionId = (int) civicrm_api3(
+      'Order', 'create', $orderCreateParams)['id'];
+
+    // Add the payment.
+    civicrm_api3('Payment', 'create', [
+      'contribution_id' => $contributionId,
+      'total_amount' => $this->amount->get(),
+      'trxn_date' => $this->receiveDate->get(),
+      'payment_instrument_id' => $this->paymentInstrumentId->get(),
+      'is_send_contribution_notification' => 0,
+    ]);
+
+    $this->id->load($contributionId);
+    $this->load();
+
+    return $this;
+  }
+
+  public function setPerson(LocalObjectInterface $localPerson): self {
+    if ('Contact' !== $localPerson->getCiviEntityName()) {
+      throw new InvalidArgumentException();
+    }
+    $this->person = $localPerson;
+    $this->touch();
+    return $this;
+  }
+
+  protected function updateIdFieldsFromReferencedObjects() {
+    $contactId = is_null($this->person) ? NULL : $this->person->getId();
+    $this->contactId->set($contactId);
+  }
+
+  protected function updateReferencedObjectsFromIdFields() {
+    $newContactId = $this->contactId->get();
+
+    if (is_null($this->person) || ($newContactId !== $this->person->getId())) {
+      $newPerson = OsdiClient::container()
+        ->make('LocalObject', 'Person', $newContactId);
+      $this->setPerson($newPerson);
+    }
   }
 
   /**
@@ -51,9 +143,7 @@ class DonationBasic extends AbstractLocalObject implements LocalObjectInterface 
       'financial_type_id' => $this->financialTypeId->get(),
       'payment_instrument_id' => $this->paymentInstrumentId->get(),
       'contribution_recur_id' => $this->contributionRecurId->get(),
-      'contact_id' => $this->contactId->get(),
       'source' => $this->source->get(),
-      // 'total_amount'       => $this->amount->get(),
       'line_items' => [
         [
           'line_item' => [
@@ -67,98 +157,8 @@ class DonationBasic extends AbstractLocalObject implements LocalObjectInterface 
           ],
         ],
       ],
-      // @todo referrer?
     ];
   }
 
-  /**
-   * Fetch the remote person ID for this donation.
-   *
-   * I'm not sure this function should be here, but I'm not sure where else to
-   * put it.
-   *
-   * @todo remove this if it remains unused
-   */
-  public function getPersonHref(int $syncProfileID): string {
-    $contactId = $this->contactId->get();
-    if (!$contactId) {
-      throw new EmptyResultException('Cannot lookup a remote person '
-        . 'match for a donation without a contact ID');
-    }
-    $remoteId = \Civi\Api4\OsdiPersonSyncState::get(FALSE)
-      ->addSelect('remote_person_id')
-      ->addWhere('contact_id', '=', $contactId)
-      ->addWhere('sync_profile_id', '=', $syncProfileID)
-      ->execute()->single()['id'] ?? NULL;
-    if (!$remoteId) {
-      throw new EmptyResultException("Contact $contactId is not in sync'
-      . ' with the remote service, so cannot post a donation belonging to that contact.");
-    }
-
-    return $remoteId;
-  }
-
-  public function persist(): \Civi\Osdi\CrudObjectInterface {
-    throw new \RuntimeException("persist called, but not programmed");
-    return $this;
-  }
-
-  /**
-   * Create Contribution
-   */
-  public function save(): self {
-
-    // Create the Contribution
-    $orderCreateParams = $this->getOrderCreateParamsForSave();
-    $contributionId = (int) civicrm_api3('Order', 'create', $orderCreateParams)['id'];
-
-    // Add the payment.
-    civicrm_api3('Payment', 'create', [
-      'contribution_id' => $contributionId,
-      'total_amount' => $this->amount->get(),
-      'trxn_date' => $this->receiveDate->get(),
-      'payment_instrument_id' => $this->paymentInstrumentId->get(),
-      'is_send_contribution_notification' => 0,
-    ]);
-
-    $this->id->load($contributionId);
-    $this->isLoaded = TRUE;
-
-    return $this;
-  }
-
-  protected function getFieldMetadata(): array {
-    return [
-      'id' => ['select' => 'id'],
-      'amount' => ['select' => 'total_amount'],
-      'receiveDate' => ['select' => 'receive_date'],
-      'currency' => ['select' => 'currency'],
-      'financialTypeId' => ['select' => 'financial_type_id'],
-      // maps to 1st (only) 'recipients'
-      'paymentInstrumentId' => ['select' => 'payment_instrument_id'],
-      // ? from 'payment' hash?
-      'contributionRecurId' => ['select' => 'contribution_recur_id'],
-      'contactId' => ['select' => 'contact_id'],
-      'trxnId' => ['select' => 'trxn_id'],
-      'source' => ['select' => 'source'],
-      // 'id' => ['select' => 'id'],
-      // 'fr_page_?'             => '@todo', // xxx
-      // 'referrer?'             => '@todo', // xxx
-      // These fields are read only
-      'financialTypeLabel' => [
-        'select' => 'financial_type_id:label',
-        'readOnly' => TRUE,
-      ],
-      'paymentInstrumentLabel' => [
-        'select' => 'payment_instrument_id:label',
-        'readOnly' => TRUE,
-      ],
-      'contributionRecurFrequency' => [
-        'select' => 'contribution_recur_id.frequency_unit:name',
-        'readOnly' => TRUE,
-      ],
-      'tceFundraisingPage' => ['select' => ''],
-    ];
-  }
 
 }

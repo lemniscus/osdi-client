@@ -51,7 +51,8 @@ class PersonBasic implements MapperInterface {
 
     $remotePerson->givenName->set($l->firstName->get());
     $remotePerson->familyName->set($l->lastName->get());
-    $remotePerson->languageSpoken->set(substr($l->preferredLanguage->get(), 0, 2));
+    $remotePerson->languageSpoken->set(
+      substr($l->preferredLanguage->get() ?? '', 0, 2));
 
     $noEmails = $l->isOptOut->get() || $l->doNotEmail->get();
     $remotePerson->emailAddress->set($l->emailEmail->get());

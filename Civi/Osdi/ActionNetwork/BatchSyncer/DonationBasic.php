@@ -137,25 +137,12 @@ class DonationBasic implements BatchSyncerInterface {
     return $searchResults;
   }
 
-  private function findAndSyncNewLocalDonations(string $cutoff): int {
-
-    // @todo
-    // select contributions.* from contribs where date_received > $cutoff and not exists (select DonationSyncState where contribs.id = contribution_id)
-    $contributions = Contribution::get(FALSE)
-    ->addWhere('receive_date', '>=', $cutoff)
-    ->addWhere('contribution_status_id:name', '=', 'Completed')
-    ->addJoin(
-      'OsdiDonationSyncState AS Contribution_OsdiDonationSyncState_contribution_id_01',
-      'EXCLUDE',
-      [ 'id', '=', 'Contribution_OsdiDonationSyncState_contribution_id_01.contribution_id' ]
-    )
-    ->execute();
-
+  protected function findAndSyncNewLocalDonations(string $cutoff): int {
+    $contributions = $this->findNewLocalDonations($cutoff);
     foreach ($contributions as $contribution) {
       Logger::logDebug("Considering Contribution id {$contribution['id']}, created {$contribution['receive_date']}");
 
       try {
-        // artfulrobot: @todo all cases are eligible unless I were to implement getSyncEligibility
         // todo avoid reloading from db? we already pulled the data
         $localDonation = LocalDonation::fromId($contribution['id']);
         $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($localDonation);
@@ -164,13 +151,24 @@ class DonationBasic implements BatchSyncerInterface {
         Logger::logDebug("Result for Contribution {$contribution['id']}: $codeAndMessage");
       }
       catch (\Throwable $e) {
-        $syncResult = new Sync(NULL, NULL, NULL, $e->getMessage());
         Logger::logError($e->getMessage(), ['exception' => $e]);
       }
 
     }
 
     return 0;
+  }
+
+  protected function findNewLocalDonations(string $cutoff): \Civi\Api4\Generic\Result {
+    return Contribution::get(FALSE)
+      ->addWhere('receive_date', '>=', $cutoff)
+      ->addWhere('contribution_status_id:name', '=', 'Completed')
+      ->addJoin(
+        'OsdiDonationSyncState AS donation_sync_state',
+        'EXCLUDE',
+        ['id', '=', 'donation_sync_state.contribution_id']
+      )
+      ->execute();
   }
 
 }

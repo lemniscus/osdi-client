@@ -6,6 +6,7 @@ use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\RemoteObjectInterface;
+use Civi\OsdiClient;
 
 class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInterface {
 
@@ -79,7 +80,8 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
   public function getDonor(): ?RemoteObjectInterface {
     if (empty($this->donor)) {
       $personResource = $this->_resource->getFirstLink('osdi:person')->get();
-      $this->donor = new Person($this->_system, $personResource);
+      $this->donor = OsdiClient::container()->make(
+        'OsdiObject', 'osdi:people', $this->_system, $personResource);
     }
     return $this->donor;
   }

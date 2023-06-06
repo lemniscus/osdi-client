@@ -28,7 +28,7 @@ class ActivityBasic extends AbstractLocalObject implements LocalObjectInterface 
    */
   protected array $targetPeople = [];
 
-  protected function getFieldMetadata(): array {
+  protected static function getFieldMetadata(): array {
     if (is_null(static::$fieldMetadata)) {
       static::$fieldMetadata = array_merge(
         static::getActivityFieldMetadata(),
