@@ -87,7 +87,7 @@ class PersonBasic implements BatchSyncerInterface {
     return $count;
   }
 
-  private function findAndSyncRemoteUpdatesAsNeeded($cutoff): \Civi\Osdi\ActionNetwork\RemoteFindResult {
+  protected function findAndSyncRemoteUpdatesAsNeeded($cutoff): \Civi\Osdi\ActionNetwork\RemoteFindResult {
     $searchResults = $this->getSingleSyncer()->getRemoteSystem()->find('osdi:people', [
       [
         'modified_date',
@@ -126,34 +126,16 @@ class PersonBasic implements BatchSyncerInterface {
     return $searchResults;
   }
 
-  private function findAndSyncLocalUpdatesAsNeeded($cutoff): array {
-    $civiEmails = \Civi\Api4\Email::get(FALSE)
-      ->addSelect(
-        'contact_id',
-        'contact.modified_date',
-        'sync_state.local_pre_sync_modified_time',
-        'sync_state.local_post_sync_modified_time')
-      ->addJoin('Contact AS contact', 'INNER')
-      ->addJoin(
-        'OsdiPersonSyncState AS sync_state',
-        'LEFT',
-        ['contact_id', '=', 'sync_state.contact_id'])
-      ->addGroupBy('email')
-      ->addOrderBy('contact.modified_date')
-      ->addWhere('contact.modified_date', '>=', $cutoff)
-      ->addWhere('is_primary', '=', TRUE)
-      ->addWhere('contact.is_deleted', '=', FALSE)
-      ->addWhere('contact.is_opt_out', '=', FALSE)
-      ->addWhere('contact.contact_type', '=', 'Individual')
-      ->execute();
+  protected function findAndSyncLocalUpdatesAsNeeded($cutoff): array {
+    $civiContacts = $this->getCandidateLocalContacts($cutoff);
 
-    Logger::logDebug('Civi->AN sync: ' . $civiEmails->count() . ' to consider');
+    Logger::logDebug('Civi->AN sync: ' . $civiContacts->count() . ' to consider');
 
-    foreach ($civiEmails as $i => $emailRecord) {
-      if (strtotime($emailRecord['contact.modified_date']) ===
-        $emailRecord['sync_state.local_post_sync_modified_time']
+    foreach ($civiContacts as $i => $contact) {
+      if (strtotime($contact['contact.modified_date']) ===
+        $contact['sync_state.local_post_sync_modified_time']
       ) {
-        $upToDate[] = $emailRecord['contact_id'];
+        $upToDate[] = $contact['contact_id'];
         continue;
       }
 
@@ -163,7 +145,7 @@ class PersonBasic implements BatchSyncerInterface {
       }
 
       $localPerson = OsdiClient::container()
-        ->make('LocalObject', 'Person', $emailRecord['contact_id'])
+        ->make('LocalObject', 'Person', $contact['contact_id'])
         ->loadOnce();
 
       Logger::logDebug('Considering Civi id ' . $localPerson->getId() .
@@ -182,19 +164,10 @@ class PersonBasic implements BatchSyncerInterface {
     }
 
     $count = ($i ?? -1) + 1;
-    return [$emailRecord['contact.modified_date'] ?? NULL, $count];
+    return [$contact['contact.modified_date'] ?? NULL, $count];
   }
 
-  private function isLastProcessStillRunning(): bool {
-    $lastJobPid = \Civi::settings()->get('osdiClient.syncJobProcessId');
-    if ($lastJobPid && posix_getsid($lastJobPid) !== FALSE) {
-      Logger::logDebug("Sync process ID $lastJobPid is still running; quitting new process");
-      return TRUE;
-    }
-    return FALSE;
-  }
-
-  private function getOrCreateActNetModTimeHorizon() {
+  protected function getOrCreateActNetModTimeHorizon() {
     $cutoff = \Civi::settings()
       ->get('osdiClient.personBatchSyncActNetModTimeCutoff');
     $cutoffWasRetrievedFromPreviousSync = !empty($cutoff);
@@ -224,7 +197,7 @@ class PersonBasic implements BatchSyncerInterface {
     return $cutoff;
   }
 
-  private function getOrCreateLocalModTimeHorizon() {
+  protected function getOrCreateLocalModTimeHorizon() {
     $cutoff = \Civi::settings()
       ->get('osdiClient.syncJobCiviModTimeCutoff');
     $cutoffWasRetrievedFromPreviousSync = !empty($cutoff);
@@ -249,6 +222,29 @@ class PersonBasic implements BatchSyncerInterface {
       $cutoff = date('Y-m-d H:i:s', $cutoffUnixTime);
     }
     return $cutoff;
+  }
+
+  protected function getCandidateLocalContacts($cutoff): \Civi\Api4\Generic\Result {
+    $civiContacts = \Civi\Api4\Email::get(FALSE)
+      ->addSelect(
+        'contact_id',
+        'contact.modified_date',
+        'sync_state.local_pre_sync_modified_time',
+        'sync_state.local_post_sync_modified_time')
+      ->addJoin('Contact AS contact', 'INNER')
+      ->addJoin(
+        'OsdiPersonSyncState AS sync_state',
+        'LEFT',
+        ['contact_id', '=', 'sync_state.contact_id'])
+      ->addGroupBy('email')
+      ->addOrderBy('contact.modified_date')
+      ->addWhere('contact.modified_date', '>=', $cutoff)
+      ->addWhere('is_primary', '=', TRUE)
+      ->addWhere('contact.is_deleted', '=', FALSE)
+      ->addWhere('contact.is_opt_out', '=', FALSE)
+      ->addWhere('contact.contact_type', '=', 'Individual')
+      ->execute();
+    return $civiContacts;
   }
 
 }
