@@ -31,7 +31,8 @@ class OsdiClient {
     }
 
     $paramIsInteger = is_int($mixedSyncProfileParam)
-      || ((string) (int) $mixedSyncProfileParam === $mixedSyncProfileParam);
+      || (is_string($mixedSyncProfileParam)
+         && ((string) (int) $mixedSyncProfileParam === $mixedSyncProfileParam));
 
     if ($paramIsInteger) {
       $syncProfileBAO = new \CRM_OSDI_BAO_SyncProfile();
