@@ -24,6 +24,8 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
 
   protected RemoteSystemInterface $_system;
 
+  protected bool $_isInitialized = FALSE;
+
   public function __construct(RemoteSystemInterface $system,
                               ?HalResource $resource = NULL) {
     $this->_system = $system;
@@ -38,6 +40,13 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
       $this->$name = clone $this->$name;
       $this->$name->setBundle($this);
     }
+  }
+
+  public function __debugInfo(): array {
+    if (!$this->_isInitialized) {
+      return [];
+    }
+    return $this->getArrayForCreate();
   }
 
   public function isAltered(): bool {
@@ -372,6 +381,7 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
       $this->$name = new Field($name, $this, $metadata);
     }
     $this->_isTouched = FALSE;
+    $this->_isInitialized = TRUE;
   }
 
   protected function getFieldValueForCompare(string $fieldName) {

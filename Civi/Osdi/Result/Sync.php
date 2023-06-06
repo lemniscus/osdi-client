@@ -41,6 +41,7 @@ class Sync extends AbstractResult implements \Civi\Osdi\ResultInterface {
     $this->message = $statusMessage;
     $this->state = $state;
     $this->context = $context;
+    parent::__construct();
   }
 
   public function isError(): bool {
@@ -89,14 +90,10 @@ class Sync extends AbstractResult implements \Civi\Osdi\ResultInterface {
     $stateArray = $state && method_exists($state, 'toArray')
       ? $state->toArray()
       : $state;
-    ;return [
-      'type' => $this->getType(),
-      'status' => $this->getStatusCode(),
-      'message' => $this->getMessage(),
+    return parent::toArray() + [
       'localObject' => $localObject ? $localObject->getAll() : NULL,
       'remoteObject' => $remoteObject ? $remoteObject->getAll() : NULL,
       'sync state' => $stateArray,
-      'context' => $this->getContextAsArray(),
     ];
   }
 

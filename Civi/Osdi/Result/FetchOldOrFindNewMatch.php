@@ -29,4 +29,8 @@ class FetchOldOrFindNewMatch extends AbstractResult {
     return in_array($this->statusCode, [self::FETCHED_SAVED_MATCH, self::FOUND_NEW_MATCH]);
   }
 
+  public function toArray(): array {
+    return parent::toArray() + ['saved match' => $this->savedMatch];
+  }
+
 }

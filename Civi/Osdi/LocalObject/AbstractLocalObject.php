@@ -15,6 +15,8 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
 
   protected bool $isLoaded = FALSE;
 
+  protected bool $_isInitialized = FALSE;
+
   public function __construct(int $idValue = NULL) {
     $this->initializeFields($idValue);
   }
@@ -24,6 +26,13 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
       $this->$name = clone $this->$name;
       $this->$name->setBundle($this);
     }
+  }
+
+  public function __debugInfo(): array {
+    if (!$this->_isInitialized) {
+      return [];
+    }
+    return $this->getAllWithoutLoading();
   }
 
   public static function getJoins(): array {
@@ -75,6 +84,8 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     if ($idValue) {
       $this->id->load($idValue);
     }
+
+    $this->_isInitialized = TRUE;
   }
 
   public function isLoaded(): bool {

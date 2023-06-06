@@ -38,6 +38,7 @@ class Save extends AbstractResult implements \Civi\Osdi\ResultInterface {
     $this->statusCode = $statusCode;
     $this->message = $statusMessage;
     $this->context = $context;
+    parent::__construct();
   }
 
   public function toArray(): array {
@@ -49,10 +50,6 @@ class Save extends AbstractResult implements \Civi\Osdi\ResultInterface {
       'returned object' => $returnedObject ? $returnedObject->getAll() : NULL,
       'context' => $this->getContextAsArray(),
     ];
-  }
-
-  public function getContextAsArray(): array {
-    return parent::getContextAsArray();
   }
 
   /**

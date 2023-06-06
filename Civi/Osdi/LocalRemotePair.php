@@ -55,6 +55,10 @@ class LocalRemotePair {
     }
   }
 
+  public function __debugInfo(): ?array {
+    return $this->__serialize();
+  }
+
   public function getLocalObject(): ?LocalObjectInterface {
     return $this->localObject;
   }
@@ -202,6 +206,17 @@ class LocalRemotePair {
   public function setRemoteClass(?string $className) {
     $this->remoteClass = $className;
     return $this;
+  }
+
+  public function __serialize(): array {
+    return [
+      'origin' => $this->origin,
+      'localObject' => $this->localObject ?
+        $this->localObject->getAllWithoutLoading() : NULL,
+      'remoteObject' => $this->remoteObject ?
+        $this->remoteObject->getArrayForCreate() : NULL,
+      'resultStack' => $this->resultStack->toArray(),
+    ];
   }
 
 }

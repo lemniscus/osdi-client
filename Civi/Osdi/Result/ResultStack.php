@@ -25,6 +25,10 @@ class ResultStack extends \ArrayIterator implements \Iterator {
     parent::__construct($this->stack);
   }
 
+  public function __debugInfo(): array {
+    return $this->toArray();
+  }
+
   public function getLastOfType(string $type) {
     return $this->lastByType[$type] ?? NULL;
   }

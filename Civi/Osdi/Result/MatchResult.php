@@ -46,6 +46,7 @@ class MatchResult extends AbstractResult implements \Civi\Osdi\ResultInterface {
     $this->statusCode = $statusCode;
     $this->message = $message;
     $this->context = $context;
+    parent::__construct();
   }
 
   /**

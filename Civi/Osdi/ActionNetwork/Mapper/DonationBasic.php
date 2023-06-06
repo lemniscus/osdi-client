@@ -47,7 +47,7 @@ class DonationBasic implements MapperInterface {
     catch (\Throwable $e) {
       $result->setStatusCode($result::ERROR);
       $result->setMessage($e->getMessage());
-      $result->setContext($e);
+      $result->setContext(['exception' => $e]);
     }
 
     $pair->getResultStack()->push($result);

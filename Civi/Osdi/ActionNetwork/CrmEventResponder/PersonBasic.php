@@ -199,6 +199,8 @@ class PersonBasic {
         ->setRecords([$deletionRecord])
         ->execute();
     }
+
+    return TRUE;
   }
 
   public static function syncDeletionFromQueue(
@@ -224,6 +226,7 @@ class PersonBasic {
     $localPerson = OsdiClient::container()->make('LocalObject', 'Person', $contactId);
     $syncer = self::getTaggingBatchSyncer();
     $syncer->syncTaggingsFromLocalPerson($localPerson);
+    return TRUE;
   }
 
   /**
