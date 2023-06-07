@@ -6,8 +6,8 @@ The extension is licensed under [AGPL-3.0](LICENSE.txt).
 
 ## Requirements
 
-* PHP 7.0 or higher
-* CiviCRM 5.51 (may work with older or newer versions, but has not been tested)
+* PHP 7.4 or higher
+* CiviCRM 5.57.3 (may work with older or newer versions, but has not been tested)
 * Your own custom extension built on the architecture of this extension (see [Architecture](#architecture) below) 
 
 ## Installation (Web UI)
@@ -22,21 +22,17 @@ install it with the command-line tool [cv](https://github.com/civicrm/cv). Depen
 ```bash
 cd <extension-dir>
 cv dl osdi-client@https://github.com/lemniscus/osdi-client/archive/master.zip
-cd osdi-client/vendor/hal-client
-composer update
 cv en osdi-client
 ```
 
 ## Installation (CLI, Git)
 
 Sysadmins and developers may clone the [Git](https://en.wikipedia.org/wiki/Git) repo for this extension and
-install it with the command-line tool [cv](https://github.com/civicrm/cv). Dependencies will need to be installed using `composer`.
+install it with the command-line tool [cv](https://github.com/civicrm/cv).
 
 ```bash
 cd <extension-dir>
 git clone https://github.com/lemniscus/osdi-client.git
-cd osdi-client/hal-client
-composer update
 cv en osdi-client
 ```
 
@@ -45,6 +41,62 @@ cv en osdi-client
 Currently, this extension provides a framework and a set of tools for developers, but cannot be used on its own through the Civi user interface. A skilled developer will need to write additional code which sits on top of this extension and helps meet your specific requirements. See the [Architecture](#architecture) section below for details.
 
 In the future, it will be possible to use this extension for very simple use-cases just by doing some configuration through the user interface. However, most organizations will probably still have some unique requirements that will necessitate at least a small amount of custom code.
+
+### Create a SyncProfile
+
+A SyncProfile is where you configure basic information about how the software connects to Action Network and which components are enabled. You can use the API v4 Explorer to create your SyncProfile, which may look like this:
+
+````json
+[
+  {
+    "is_default": true,
+    "label": "Action Network Test Site",
+    "entry_point": "https://actionnetwork.org/api/v2/",
+    "api_token": "647fde17acb96647fde1c4daad",
+    "classes": {
+      "LocalObject": {
+        "Donation": "\\Civi\\Osdi\\LocalObject\\DonationCustomized"
+      },
+      "Mapper": {
+        "Donation": "\\Civi\\Osdi\\ActionNetwork\\Mapper\\DonationCustomized"
+      },
+      "BatchSyncer": {
+        "Donation": "\\Civi\\Osdi\\ActionNetwork\\BatchSyncer\\DonationLimitedToGroup",
+        "Person": "\\Civi\\Osdi\\ActionNetwork\\BatchSyncer\\PersonLimitedToGroup"
+      },
+      "CrmEventResponder": {
+        "*": null,
+        "Contact": "\\Civi\\Osdi\\ActionNetwork\\CrmEventResponder\\PersonBasic"
+      }
+    }
+  }
+]
+````
+
+Make sure one and only one SyncProfile is marked as default.
+
+The **classes** field tells the software to use certain PHP classes which may override the default behavior, or to ignore certain PHP classes which provide behavior you don't need. The default registry, which you may override via a SyncProfile,  is located within the `Civi\Osdi\Container` class. 
+
+### Configure Scheduled Jobs
+
+The extension provides API v3 actions which can be run as Scheduled Jobs:
+
+- **Job.osdiclientprocessqueue**
+- **Job.osdiclientbatchsynccontacts**
+- **Job.osdiclientbatchsyncdonations**
+- **Job.osdiclientbatchsynctaggings**
+
+A `sync_profile_id` parameter is required for all jobs. The batch sync jobs also take an `origin` parameter.
+
+### Check for errors
+
+Sync history and status is recorded in the following places:
+
+- `PersonSyncState` and `DonationSyncState` database entities store the linkages between Civi records and their "twins" on Action Network.
+- `OsdiFlag`: this entity is created when there has been an issue syncing a person.
+- `OsdiLog` entities contain detailed debugging information about the sync processes.
+- A log file with an `osdi` prefix, alongside your regular Civi error/debug log file, may be created to store further debugging information. If all goes well, you won't see errors in your main log file, but it may be worth looking there too if you're trying to track down a problem.
+
 
 ## How this extension is built
 
@@ -65,6 +117,12 @@ Some organizations may use both CiviCRM and Action Network, and may want to copy
 [Action Network's API](https://actionnetwork.org/docs/v2/), which this extension depends upon, is based on the [Open Supporter Data Interface (OSDI)](https://opensupporter.github.io/osdi-docs/). As of this writing, Action Network is the only group actively implementing OSDI for large-scale organizing. However, if additional OSDI-implementing groups come along, this CiviCRM extension has been written in a way that should allow those new implementations to be built with less effort than creating an entirely new integration from the ground up.
 
 ## Architecture<a name="architecture"></a>
+
+### Container <a name="container"></a>
+
+A single `Container` instance keeps track of which classes should be used, and it acts as both a factory and service locator. If you need a Donation LocalObject, ask the container for it and it will give you the right kind. If you have created custom classes to extend/modify the software's behavior, let the container know so they can be put to use.
+
+The Container is the link between your `SyncProfile` (which provides flexible configuration) and the rest of the application.
 
 ### RemoteObjectInterface<a name="remote-object"></a>
 
@@ -112,11 +170,16 @@ A Single-Syncer may use a [Matcher](#matcher) to find an existing twin, and may 
 
 A Single-Syncer may keep track of twins, and may track their recent history. For example, a `Person` Single-Syncer may use `PersonSyncState` records as a way to remember what it has done previously, and use this information in the future to determine whether and in which direction to sync Action Network People with their Civi twins.
 
-Namespace: `Civi\Osdi\ActionNetwork\Syncer`
+Namespace: `Civi\Osdi\ActionNetwork\SingleSyncer`
 
 ### BatchSyncerInterface<a name="batch-syncer"></a>
 
 todo
+
+
+### CrmEventResponders
+
+As the name says, these classes are concerned with responding to events in the CRM. For example, when two contacts are merged, we respond by examining what changed and queuing sync actions if necessary.  
 
 ### RemoteSystem<a name="remote-system"></a>
 
@@ -130,9 +193,13 @@ todo
 
 Various lightweight classes serve to carry data between the more algorithm-heavy classes...
 
+### Persistant-state classes
+
+`PersonSyncState`, `DonationSyncState`, `OsdiDeletion` and others.
+
 ## Tests
 
-There is a generous collection of PHPUnit tests that can (and should only) be run in a [CiviCRM Buildkit environment](https://docs.civicrm.org/dev/en/latest/tools/buildkit/) and **only against a sandbox*Action Network account*. The reason for this is that some entities in Action Network are immutable after creation; i.e. they cannot be deleted or changed. Running the tests will create junk in your sandbox Action Network account.
+There is a generous collection of PHPUnit tests that can (and should only) be run in a [CiviCRM Buildkit environment](https://docs.civicrm.org/dev/en/latest/tools/buildkit/) and **only against a sandbox Action Network account**. The reason for this is that some entities in Action Network are immutable after creation; i.e. they cannot be deleted or changed. Running the tests will create junk in your sandbox Action Network account.
 
 ## Creating a custom extension for your use-case
 
