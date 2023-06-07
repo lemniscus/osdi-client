@@ -32,7 +32,12 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     if (!$this->_isInitialized) {
       return [];
     }
-    return $this->getAllWithoutLoading();
+    try {
+      return $this->getAllWithoutLoading();
+    }
+    catch (\Throwable $e) {
+      return ['[could not render object for debugging]', __CLASS__, __FUNCTION__];
+    }
   }
 
   public static function getJoins(): array {

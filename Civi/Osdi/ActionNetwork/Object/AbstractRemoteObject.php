@@ -46,7 +46,13 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
     if (!$this->_isInitialized) {
       return [];
     }
-    return $this->getArrayForCreate();
+    try {
+      return $this->getArrayForCreate();
+    }
+    catch (\Throwable $e) {
+      return get_object_vars($this);
+      //return ['[could not render object for debugging]', __CLASS__, __FUNCTION__];
+    }
   }
 
   public function isAltered(): bool {
@@ -138,7 +144,12 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
   public function load(HalResource $resource = NULL): self {
     if (is_null($resource)) {
       if ($this->getUrlForRead()) {
+        /** @var \Jsor\HalClient\HalResource $resource */
         $resource = $this->_system->fetch($this);
+        if (!$resource->getProperties()) {
+          throw new EmptyResultException('Action Network gave us nothing at %s',
+            $this->getUrlForRead());
+        }
       }
       else {
         return $this;

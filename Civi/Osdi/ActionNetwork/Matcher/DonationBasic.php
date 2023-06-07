@@ -69,6 +69,13 @@ class DonationBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterfa
     /** @var \Civi\Osdi\ActionNetwork\Object\Donation $remoteDonation */
     $remoteDonation = $pair->getRemoteObject();
     $remotePerson = $remoteDonation->getDonor();
+
+    if (!$remotePerson) {
+      $result->setStatusCode(MatchResult::ERROR_INVALID_ID);
+      $result->setMessage("Phantom donation: Action Network won't let us access the donor");
+      return $result;
+    }
+
     $personPair = new LocalRemotePair(NULL, $remotePerson);
     $personPair->setOrigin(LocalRemotePair::ORIGIN_REMOTE);
     $personSyncer = $container->getSingle('SingleSyncer', 'Person');

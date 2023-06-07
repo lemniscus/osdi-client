@@ -28,7 +28,7 @@ class Logger {
           return $array;
         },
         LocalObjectInterface::class => function ($object, &$array, $stub, $isNested, $filter) {
-          $array = $object->getAll();
+          $array = $object->getAllWithoutLoading();
           return $array;
         },
         \Jsor\HalClient\Exception\ExceptionInterface::class => function (\Jsor\HalClient\Exception\ExceptionInterface $object, &$array, $stub, $isNested, $filter) {

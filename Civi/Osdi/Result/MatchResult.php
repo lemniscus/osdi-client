@@ -116,13 +116,9 @@ class MatchResult extends AbstractResult implements \Civi\Osdi\ResultInterface {
   public function toArray(): array {
     $localObject = $this->getLocalObject();
     $remoteObject = $this->getRemoteObject();
-    return [
-      'type' => $this->getType(),
-      'status' => $this->getStatusCode(),
-      'message' => $this->getMessage(),
+    return parent::toArray() + [
       'localObject id' => $localObject ? $localObject->getId() : NULL,
       'remoteObject id' => $remoteObject ? $remoteObject->getId() : NULL,
-      'context' => $this->getContextAsArray(),
     ];
   }
 
