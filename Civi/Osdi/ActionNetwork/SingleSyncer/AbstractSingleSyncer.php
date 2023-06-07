@@ -93,6 +93,8 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
 
     if ($fetchOldOrFindNewMatchResult->isError()) {
       $statusCode = $result::ERROR;
+      $result->setMessage($fetchOldOrFindNewMatchResult->getMessage() ??
+        $fetchOldOrFindNewMatchResult->getStatusCode());
     }
     else {
       $syncEligibility = $this->getSyncEligibility($pair);
@@ -107,7 +109,8 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
         try {
           $mapAndWriteResult = $this->oneWayMapAndWrite($pair);
           $statusCode = $mapAndWriteResult->isError() ? $result::ERROR : $result::SUCCESS;
-          $result->setMessage($mapAndWriteResult->getStatusCode());
+          $result->setMessage($mapAndWriteResult->getMessage() ??
+            $mapAndWriteResult->getStatusCode());
         }
         catch (CannotMapException $e) {
           $statusCode = $result::INELIGIBLE;
@@ -239,7 +242,8 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
 
     if ($matchFindResult->isError()) {
       $currentResult->setStatusCode($currentResult::ERROR);
-      $currentResult->setMessage('Error when trying to find new match');
+      $currentResult->setMessage('Error when trying to find new match: ' .
+        $matchFindResult->getMessage() ?? $matchFindResult->getStatusCode());
     }
     elseif ($matchFindResult->gotMatch()) {
       $currentResult->setStatusCode($currentResult::FOUND_NEW_MATCH);

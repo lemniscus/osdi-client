@@ -8,6 +8,8 @@ use Civi\Osdi\BatchSyncerInterface;
 use Civi\Osdi\Director;
 use Civi\Osdi\LocalObject\DonationBasic as LocalDonation;
 use Civi\Osdi\Logger;
+use Civi\Osdi\Result\Map;
+use Civi\Osdi\Result\MatchResult;
 use Civi\Osdi\Result\Sync;
 use Civi\Osdi\SingleSyncerInterface;
 use Civi\OsdiClient;
@@ -45,9 +47,10 @@ class DonationBasic implements BatchSyncerInterface {
     try {
       $syncStartTime = time();
       $cutoff = $this->getCutOff('remote');
+
       $searchResults = $this->findAndSyncNewRemoteDonations($cutoff);
 
-      Logger::logDebug('Finished batch AN->Civi sync; count: ' .
+      Logger::logDebug('Finished batch AN->Civi donation sync; count: ' .
         $searchResults->rawCurrentCount() . '; time: ' . (time() - $syncStartTime)
         . ' seconds');
     }
@@ -86,7 +89,7 @@ class DonationBasic implements BatchSyncerInterface {
     $latest = $result ? $result['last_receive_date'] : date('Y-m-d');
 
     $cutoff = date('Y-m-d', strtotime("$latest - 2 day"));
-    Logger::logDebug("Using $cutoff for $source donation sync");
+    Logger::logDebug("Using horizon $cutoff for $source donation sync");
     return $cutoff;
   }
 
@@ -96,8 +99,13 @@ class DonationBasic implements BatchSyncerInterface {
     }
 
     try {
+      $syncStartTime = time();
       $cutoff = $this->getCutOff('local');
+
       $count = $this->findAndSyncNewLocalDonations($cutoff);
+
+      Logger::logDebug('Finished batch Civi->AN donation sync; count: ' . $count
+        . '; time: ' . (time() - $syncStartTime) . ' seconds');
     }
     finally {
       Director::releaseLock();
@@ -115,8 +123,17 @@ class DonationBasic implements BatchSyncerInterface {
       ],
     ]);
 
+    $currentCount = 0;
+
     foreach ($searchResults as $remoteDonation) {
-      Logger::logDebug('Considering AN id ' . $remoteDonation->getId() .
+      $totalCount = $searchResults->rawCurrentCount();
+      $orMore = ($totalCount > 24) ? '+' : '';
+      $countFormat = '#%' . strlen($totalCount) . "d/$totalCount$orMore: ";
+      $progress = sprintf($countFormat, ++$currentCount);
+
+      Logger::logDebug(
+        $progress .
+        'Considering AN donation id ' . $remoteDonation->getId() .
         ', mod ' . $remoteDonation->modifiedDate->get());
 
       try {
@@ -124,23 +141,59 @@ class DonationBasic implements BatchSyncerInterface {
         $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
       }
       catch (\Throwable $e) {
-        $syncResult = new Sync(NULL, NULL, NULL, $e->getMessage());
+        $syncResult = new Sync(NULL, NULL, Sync::ERROR, $e->getMessage());
         Logger::logError($e->getMessage(), ['exception' => $e]);
       }
 
-      $codeAndMessage = $syncResult->getStatusCode() . ' - ' . $syncResult->getMessage();
-      Logger::logDebug('Result for AN id ' . $remoteDonation->getId() . ": $codeAndMessage");
+      $codeAndMessage = $syncResult->getStatusCode() .
+        ($syncResult->getMessage() ? ' - ' . $syncResult->getMessage() : '');
+
+      Logger::logDebug($progress .
+        'Result for AN id ' . $remoteDonation->getId() . ": $codeAndMessage");
+
       if ($syncResult->isError()) {
-        Logger::logError($codeAndMessage, $syncResult->getContext());
+        $errorIsWorthLogging = TRUE;
+        $resultStack = $pair->getResultStack();
+
+        $mapResult = $resultStack->getLastOfType(Map::class);
+        if ($mapResult &&
+          str_ends_with($mapResult->getMessage() ?? '', 'no LocalPerson match.')
+        ) {
+          $errorIsWorthLogging = FALSE;
+        }
+
+        else {
+          $matchResult = $resultStack->getLastOfType(MatchResult::class);
+          // don't bother doing a special log entry for Phantom Donors
+          if ($matchResult &&
+            $matchResult->isStatus(MatchResult::ERROR_INVALID_ID)
+          ) {
+            $errorIsWorthLogging = FALSE;
+          }
+        }
+
+        if ($errorIsWorthLogging) {
+          Logger::logError($codeAndMessage, $pair);
+        }
       }
     }
+
     return $searchResults;
   }
 
   protected function findAndSyncNewLocalDonations(string $cutoff): int {
     $contributions = $this->findNewLocalDonations($cutoff);
+
+    $totalCount = count($contributions);
+    $countFormat = '%' . strlen($totalCount) . "d/$totalCount: ";
+    $currentCount = 0;
+
+    Logger::logDebug("Civi->AN donation sync: $totalCount to consider");
+
     foreach ($contributions as $contribution) {
-      Logger::logDebug("Considering Contribution id {$contribution['id']}, created {$contribution['receive_date']}");
+      $progress = sprintf($countFormat, ++$currentCount);
+      Logger::logDebug($progress .
+        "Considering Contribution id {$contribution['id']}, created {$contribution['receive_date']}");
 
       try {
         // todo avoid reloading from db? we already pulled the data
@@ -148,7 +201,8 @@ class DonationBasic implements BatchSyncerInterface {
         $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($localDonation);
         $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
         $codeAndMessage = $syncResult->getStatusCode() . ' - ' . $syncResult->getMessage();
-        Logger::logDebug("Result for Contribution {$contribution['id']}: $codeAndMessage");
+        Logger::logDebug($progress .
+          "Result for Contribution {$contribution['id']}: $codeAndMessage");
       }
       catch (\Throwable $e) {
         Logger::logError($e->getMessage(), ['exception' => $e]);
@@ -156,7 +210,7 @@ class DonationBasic implements BatchSyncerInterface {
 
     }
 
-    return 0;
+    return $currentCount;
   }
 
   protected function findNewLocalDonations(string $cutoff): \Civi\Api4\Generic\Result {

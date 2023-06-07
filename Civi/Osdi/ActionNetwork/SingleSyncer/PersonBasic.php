@@ -77,7 +77,9 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     $matchResult = $this->getMatcher()->tryToFindMatchFor($pair);
 
     if ($matchResult->isError()) {
-      $result->setStatusCode($result::ERROR)->setMessage('error finding match');
+      $result->setStatusCode($result::ERROR)->setMessage(
+        'Error when trying to find new match: ' .
+        $matchResult->getMessage() ?? $matchResult->getStatusCode());
     }
 
     elseif (MatchResult::NO_MATCH == $matchResult->getStatusCode()) {

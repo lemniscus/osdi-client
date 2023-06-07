@@ -47,10 +47,12 @@ class DonationBasic implements MapperInterface {
     catch (CannotMapException $e) {
       $result->setStatusCode($result::ERROR);
       $result->setMessage($e->getMessage());
+      $localObject = $pair->getLocalObject();
+      $remoteObject = $pair->getRemoteObject();
       $result->setContext([
         'origin' => $pair->getOrigin(),
-        'local donation' => $pair->getLocalObject() ? $pair->getLocalObject()->getAll() : NULL,
-        'remote donation' => $pair->getRemoteObject() ? $pair->getRemoteObject()->getAll() : NULL,
+        'local donation' => $localObject ? $localObject->getAllWithoutLoading() : NULL,
+        'remote donation' => $remoteObject ? $remoteObject->getArrayForCreate() : NULL,
       ]);
     }
     catch (\Throwable $e) {

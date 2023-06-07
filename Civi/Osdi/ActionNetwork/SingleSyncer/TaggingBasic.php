@@ -68,6 +68,8 @@ class TaggingBasic extends AbstractSingleSyncer {
     }
     else {
       $result->setStatusCode($result::ERROR);
+      $result->setMessage('Error finding match: ' .
+        $matchResult->getMessage() ?? $matchCode);
     }
 
     $pair->getResultStack()->push($result);

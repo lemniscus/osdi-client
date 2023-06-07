@@ -41,7 +41,7 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
     $result = civicrm_api3('Job', 'osdiclientbatchsyncdonations',
       ['debug' => 1, 'origin' => 'remote', 'sync_profile_id' => $syncProfileId]);
 
-    self::assertEquals('AN->Civi: ', $result['values']);
+    self::assertEquals('Contacts, AN->Civi: , Donations, AN->Civi: ', $result['values']);
     self::assertNull(\Civi::settings()->get('osdiClient.syncJobEndTime'));
 
     self::assertFalse(posix_getsid(9999999999999));

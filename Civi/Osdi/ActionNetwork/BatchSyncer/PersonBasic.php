@@ -39,10 +39,11 @@ class PersonBasic implements BatchSyncerInterface {
     try {
       $cutoff = $this->getOrCreateActNetModTimeHorizon();
       \Civi::settings()->set('osdiClient.personBatchSyncActNetModTimeCutoff', $cutoff);
-
       $syncStartTime = time();
+
       $searchResults = $this->findAndSyncRemoteUpdatesAsNeeded($cutoff);
-      $elapsedSeconds = time() - strtotime($syncStartTime);
+
+      $elapsedSeconds = time() - $syncStartTime;
       Logger::logDebug('Finished batch AN->Civi person sync; count: ' .
         $searchResults->rawCurrentCount() . '; time: ' . ($elapsedSeconds)
         . ' seconds');
@@ -67,12 +68,14 @@ class PersonBasic implements BatchSyncerInterface {
     try {
       $cutoff = $this->getOrCreateLocalModTimeHorizon();
       Logger::logDebug("Horizon for Civi->AN person sync set to $cutoff");
-
       $syncStartTime = time();
+
       [$mostRecentPreSyncModTime, $count]
         = $this->findAndSyncLocalUpdatesAsNeeded($cutoff);
 
-      Logger::logDebug('Finished batch Civi->AN sync; count: ' . $count);
+      Logger::logDebug('Finished batch Civi->AN person sync; count: ' . $count
+        . '; time: ' . (time() - $syncStartTime) . ' seconds');
+
       Logger::logDebug('The most recent modification time of a Civi contact in this' .
         ' sync is ' . ($mostRecentPreSyncModTime ?: 'NULL'));
 
@@ -96,8 +99,16 @@ class PersonBasic implements BatchSyncerInterface {
       ],
     ]);
 
+    $currentCount = 0;
+
     foreach ($searchResults as $remotePerson) {
-      Logger::logDebug('Considering AN id ' . $remotePerson->getId() .
+      $totalCount = $searchResults->rawCurrentCount();
+      $orMore = ($totalCount > 24) ? '+' : '';
+      $countFormat = '#%' . strlen($totalCount) . "d/$totalCount$orMore: ";
+
+      Logger::logDebug(
+        sprintf($countFormat, ++$currentCount) .
+        'Considering AN id ' . $remotePerson->getId() .
         ', mod ' . $remotePerson->modifiedDate->get() .
         ', ' . $remotePerson->emailAddress->get());
 
@@ -116,20 +127,26 @@ class PersonBasic implements BatchSyncerInterface {
         Logger::logError($e->getMessage(), ['exception' => $e]);
       }
 
-      $codeAndMessage = $syncResult->getStatusCode() . ' - ' . $syncResult->getMessage();
+      $codeAndMessage = $syncResult->getStatusCode() . ' - ' .
+        ($syncResult->getMessage() ? ' - ' . $syncResult->getMessage() : '');
       Logger::logDebug('Result for  AN id ' . $remotePerson->getId() .
         ": $codeAndMessage");
       if ($syncResult->isError()) {
-        Logger::logError($codeAndMessage, $syncResult->getContext());
+        Logger::logError($codeAndMessage, $pair);
       }
     }
+
     return $searchResults;
   }
 
   protected function findAndSyncLocalUpdatesAsNeeded($cutoff): array {
     $civiContacts = $this->getCandidateLocalContacts($cutoff);
 
-    Logger::logDebug('Civi->AN sync: ' . $civiContacts->count() . ' to consider');
+    $totalCount = count($civiContacts);
+    $countFormat = '(%' . strlen($totalCount) . "d/$totalCount) ";
+    $currentCount = 0;
+
+    Logger::logDebug("Civi->AN person sync: $totalCount to consider");
 
     foreach ($civiContacts as $i => $contact) {
       if (strtotime($contact['contact.modified_date']) ===
@@ -148,7 +165,8 @@ class PersonBasic implements BatchSyncerInterface {
         ->make('LocalObject', 'Person', $contact['contact_id'])
         ->loadOnce();
 
-      Logger::logDebug('Considering Civi id ' . $localPerson->getId() .
+      Logger::logDebug(sprintf($countFormat, ++$currentCount) .
+        'Considering Civi id ' . $localPerson->getId() .
         ', mod ' . $localPerson->modifiedDate->get() .
         ', ' . $localPerson->emailEmail->get());
 
@@ -172,7 +190,7 @@ class PersonBasic implements BatchSyncerInterface {
       ->get('osdiClient.personBatchSyncActNetModTimeCutoff');
     $cutoffWasRetrievedFromPreviousSync = !empty($cutoff);
     Logger::logDebug('Horizon time was ' .
-      ($cutoffWasRetrievedFromPreviousSync ? '' : 'not') .
+      ($cutoffWasRetrievedFromPreviousSync ? '' : 'not ') .
       'retrieved from the previous sync'
     );
 
@@ -202,7 +220,7 @@ class PersonBasic implements BatchSyncerInterface {
       ->get('osdiClient.syncJobCiviModTimeCutoff');
     $cutoffWasRetrievedFromPreviousSync = !empty($cutoff);
     Logger::logDebug('Horizon time was ' .
-      ($cutoffWasRetrievedFromPreviousSync ? '' : 'not') .
+      ($cutoffWasRetrievedFromPreviousSync ? '' : 'not ') .
       'retrieved from the previous sync'
     );
 
