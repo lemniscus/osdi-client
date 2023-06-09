@@ -195,7 +195,7 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
     $this->assertBatchSyncFromAN($plan, $localPeople);
   }
 
-  private function assertBatchSyncFromAN(mixed $plan, mixed $localPeople): void {
+  private function assertBatchSyncFromAN(array $plan, array $localPeople): void {
     for ($i = 1; $i <= 28; $i++) {
       if (array_key_exists($i, $plan)) {
         $tagNamesBeforeSync = $plan[$i]['rem'];
