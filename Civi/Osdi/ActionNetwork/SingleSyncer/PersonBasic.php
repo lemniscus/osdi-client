@@ -108,7 +108,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
       return $this->pushResult($pair, $result, $result::INELIGIBLE);
     }
 
-    $syncState = $pair->getPersonSyncState();
+    $syncState = $pair->getVar('PersonSyncState');
     if (empty($syncState)) {
       $result->setMessage('no previous sync history');
       return $this->pushResult($pair, $result, $result::ELIGIBLE);
@@ -415,7 +415,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     LocalRemotePair $pair,
     PersonSyncState $syncState
   ): bool {
-    $pair->setPersonSyncState($syncState);
+    $pair->setVar('PersonSyncState', $syncState);
 
     if (empty($syncState->getContactId()) || empty($syncState->getRemotePersonId())) {
       return FALSE;

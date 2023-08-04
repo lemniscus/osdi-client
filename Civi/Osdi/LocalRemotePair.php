@@ -18,32 +18,15 @@ class LocalRemotePair {
   private ?string $localClass = NULL;
   private ?string $remoteClass = NULL;
   private ResultStack $resultStack;
-
-  /**
-   * @var bool
-   * @deprecated
-   */
-  private bool $isError;
-
-  private ?string $message;
-  private ?PersonSyncState $personSyncState;
-  private ?Sync $syncResult;
-
-  private $origin;
+  private ?string $origin = NULL;
+  private array $vars = [];
 
   public function __construct(
       LocalObjectInterface $localObject = NULL,
-    RemoteObjectInterface $remoteObject = NULL,
-    bool $isError = FALSE,
-    string $message = NULL,
-    $personSyncState = NULL,
-    Sync $syncResult = NULL) {
+    RemoteObjectInterface $remoteObject = NULL
+  ) {
     $this->localObject = $localObject;
     $this->remoteObject = $remoteObject;
-    $this->isError = $isError;
-    $this->message = $message;
-    $this->personSyncState = $personSyncState;
-    $this->syncResult = $syncResult;
     $this->resultStack = new ResultStack();
   }
 
@@ -154,31 +137,22 @@ class LocalRemotePair {
     return NULL;
   }
 
+  public function getLastResultOfType(string $type) {
+    return $this->getResultStack()->getLastOfType($type);
+  }
+
   public function getResultStack(): ResultStack {
     return $this->resultStack;
+  }
+
+  public function pushResult(ResultInterface $result): self {
+    $this->resultStack->push($result);
+    return $this;
   }
 
   public function isError(): bool {
     $lastResult = $this->getLastResult();
     return $lastResult ? $lastResult->isError() : FALSE;
-  }
-
-  public function getMessage(): ?string {
-    return $this->message;
-  }
-
-  public function setMessage(?string $message): self {
-    $this->message = $message;
-    return $this;
-  }
-
-  public function getPersonSyncState() {
-    return $this->personSyncState;
-  }
-
-  public function setPersonSyncState($personSyncState) {
-    $this->personSyncState = $personSyncState;
-    return $this;
   }
 
   /**
@@ -212,6 +186,14 @@ class LocalRemotePair {
         $this->remoteObject->getArrayForCreate() : NULL,
       'resultStack' => $this->resultStack->toArray(),
     ];
+  }
+
+  public function getVar(string $key) {
+    return $this->vars[$key] ?? NULL;
+  }
+
+  public function setVar(string $key, $value) {
+    $this->vars[$key] = $value;
   }
 
 }

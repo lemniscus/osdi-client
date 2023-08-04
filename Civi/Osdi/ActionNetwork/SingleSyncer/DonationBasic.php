@@ -121,8 +121,7 @@ class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterfac
     $originObjectId = $pair->getOriginObject()->getId();
 
     /** @var \Civi\Osdi\Result\FetchOldOrFindNewMatch $matchResult */
-    $matchResult = $pair->getResultStack()
-      ->getLastOfType(OldOrNewMatchResult::class);
+    $matchResult = $pair->getLastResultOfType(OldOrNewMatchResult::class);
     $matchStatus = $matchResult->getStatusCode();
 
     if (OldOrNewMatchResult::NO_MATCH_FOUND === $matchStatus) {
