@@ -160,5 +160,4 @@ class DonationBasic extends AbstractLocalObject implements LocalObjectInterface 
     ];
   }
 
-
 }

@@ -111,7 +111,7 @@ class DonationBasic implements MapperInterface {
     }
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $remotePerson */
     $remotePerson = $personPair->getRemoteObject();
-    $remoteDonation->donorHref->set($remotePerson->getUrlForRead());
+    $remoteDonation->setDonor($remotePerson);
 
     // Simple mappings
     $unixTimeStamp = strtotime($localDonation->receiveDate->get());
