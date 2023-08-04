@@ -3,6 +3,7 @@
 namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 
 use Civi\Api4\Contribution;
+use Civi\Api4\OsdiDonationSyncState;
 use Civi\Osdi\ActionNetwork\RemoteFindResult;
 use Civi\Osdi\BatchSyncerInterface;
 use Civi\Osdi\Director;
@@ -76,19 +77,11 @@ class DonationBasic implements BatchSyncerInterface {
         "getCutOff requires either 'remote' or 'local' as its argument.");
     }
 
-    $result = \Civi\Api4\Contribution::get(FALSE)
-      ->addSelect('MAX(receive_date) AS last_receive_date')
-      ->addJoin(
-        'OsdiDonationSyncState AS osdi_donation_sync_state',
-        'INNER',
-        NULL,
-        ['id', '=', 'osdi_donation_sync_state.contribution_id'])
-      ->addWhere('osdi_donation_sync_state.source', '=', $source)
-      ->execute()->first();
+    $latest = strtotime($this->getLatestSyncedContributionDate($source));
+    $twoDaysAgo = strtotime("- 2 day");
+    $cutoff = $this->getSingleSyncer()
+      ->getRemoteSystem()::formatDateTime(min($latest, $twoDaysAgo));
 
-    $latest = $result ? $result['last_receive_date'] : date('Y-m-d');
-
-    $cutoff = date('Y-m-d', strtotime("$latest - 2 day"));
     Logger::logDebug("Using horizon $cutoff for $source donation sync");
     return $cutoff;
   }
@@ -123,11 +116,14 @@ class DonationBasic implements BatchSyncerInterface {
       ],
     ]);
 
+    $syncStates = $this->getSyncStatesForRemoteDonations($searchResults);
+    $idsFromSyncStates = $syncStates->column('remote_donation_id');
     $currentCount = 0;
 
     foreach ($searchResults as $remoteDonation) {
       $totalCount = $searchResults->rawCurrentCount();
-      $orMore = ($totalCount > 24) ? '+' : '';
+      //$orMore = ($totalCount > 24) ? '+' : '';
+      $orMore = '';
       $countFormat = '#%' . strlen($totalCount) . "d/$totalCount$orMore: ";
       $progress = sprintf($countFormat, ++$currentCount);
 
@@ -135,6 +131,12 @@ class DonationBasic implements BatchSyncerInterface {
         $progress .
         'Considering AN donation id ' . $remoteDonation->getId() .
         ', mod ' . $remoteDonation->modifiedDate->get());
+
+      if (in_array($remoteDonation->getId(), $idsFromSyncStates)) {
+        Logger::logDebug($progress .
+          'Result for AN id ' . $remoteDonation->getId() . ': skipped (sync record already exists)');
+        continue;
+      }
 
       try {
         $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($remoteDonation);
@@ -223,6 +225,47 @@ class DonationBasic implements BatchSyncerInterface {
         ['id', '=', 'donation_sync_state.contribution_id']
       )
       ->execute();
+  }
+
+  protected function getSyncStatesForRemoteDonations(
+    RemoteFindResult $searchResults
+  ): \Civi\Api4\Generic\Result {
+    $currentCount = 0;
+    $remoteIds = [];
+    Logger::logDebug('Loading AN donations');
+
+    foreach ($searchResults as $remoteDonation) {
+      $remoteIds[] = $remoteDonation->getId();
+      $currentCount++;
+      if (($currentCount % 25) == 0) {
+        Logger::logDebug("$currentCount donations loaded from Action Network");
+      }
+    }
+    if (($currentCount % 25) != 0) {
+      Logger::logDebug("$currentCount donations loaded from Action Network");
+    }
+
+    $syncStates = OsdiDonationSyncState::get(FALSE)
+      ->addWhere('remote_donation_id', 'IN', $remoteIds)
+      ->execute();
+
+    $searchResults->rewind();
+    return $syncStates;
+  }
+
+  private function getLatestSyncedContributionDate(string $source) {
+    $result = \Civi\Api4\Contribution::get(FALSE)
+      ->addSelect('MAX(receive_date) AS last_receive_date')
+      ->addJoin(
+        'OsdiDonationSyncState AS osdi_donation_sync_state',
+        'INNER',
+        NULL,
+        ['id', '=', 'osdi_donation_sync_state.contribution_id'])
+      ->addWhere('osdi_donation_sync_state.source', '=', $source)
+      ->execute()->first();
+
+    $latest = $result ? $result['last_receive_date'] : date('Y-m-d');
+    return $latest;
   }
 
 }
