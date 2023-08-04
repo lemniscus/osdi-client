@@ -80,6 +80,9 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
   public function getDonor(): ?RemoteObjectInterface {
     if (empty($this->donor)) {
       $this->loadOnce();
+      if (empty($this->_resource)) {
+        return NULL;
+      }
       if (!$this->_resource->hasLink('osdi:person')) {
         return NULL;
       }
