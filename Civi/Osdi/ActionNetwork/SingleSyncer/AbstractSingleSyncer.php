@@ -120,8 +120,9 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     }
 
     $result->setStatusCode($statusCode);
+    // saveSyncStateIfNeeded() may need to use our result, so push it now
+    $pair->pushResult($result);
     $result->setState($this->saveSyncStateIfNeeded($pair));
-    $pair->getResultStack()->push($result);
     $this->logSyncResult($pair, $result);
     return $pair;
   }
