@@ -24,6 +24,10 @@ class RemoteSystem implements \Civi\Osdi\RemoteSystemInterface {
     // TODO: Implement findAll() method.
   }
 
+  public static function formatDateTime(int $unixTimeStamp) {
+    // TODO: Implement formatDateTime() method.
+  }
+
   public function makeOsdiPerson(?HalResource $resource, ?array $initData = NULL) {
     // TODO: Implement makeRemotePerson() method.
   }

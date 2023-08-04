@@ -15,6 +15,8 @@ interface RemoteSystemInterface {
    */
   public function findAll(string $objectType): RemoteFindResult;
 
+  public static function formatDateTime(int $unixTimeStamp);
+
   public function getClient(): HalClientInterface;
 
   public function delete(RemoteObjectInterface $osdiObject);
