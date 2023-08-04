@@ -5,6 +5,7 @@ namespace Civi\Osdi\LocalObject;
 use Civi\Api4\Generic\AbstractAction;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\LocalObjectInterface;
+use Civi\Osdi\Result\Diff as DiffResult;
 use Civi\Osdi\Result\Save as SaveResult;
 
 abstract class AbstractLocalObject implements LocalObjectInterface {
@@ -87,6 +88,45 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
       }
     }
     return $selects ?? [];
+  }
+
+  /**
+   * Compare loaded values with current values and report which, if any, are
+   * different. The empty values NULL, '', and [] are all considered equivalent;
+   * comparison of non-empty values is strict (type-sensitive).
+   */
+  public function diffChanges(): DiffResult {
+    if (!$this->isTouched()) {
+      $vals = $this->getAllWithoutLoading();
+      return new DiffResult($vals, $vals, [], [], []);
+    }
+
+    $leftVals = $this->isLoaded() ? $this->getAllAsLoaded() : [];
+    $rightVals = $this->getAllWithoutLoading();
+    $leftOnly = $rightOnly = $different = [];
+
+    foreach ($rightVals as $fieldName => $rightVal) {
+      $leftVal = $leftVals[$fieldName] ?? NULL;
+      $leftIsEmpty = in_array($leftVal, [NULL, '', []], TRUE);
+      $rightIsEmpty = in_array($rightVal, [NULL, '', []], TRUE);
+
+      if ($leftIsEmpty && !$rightIsEmpty) {
+        $rightOnly[] = $fieldName;
+        continue;
+      }
+      if ($rightIsEmpty && !$leftIsEmpty) {
+        $leftOnly[] = $fieldName;
+        continue;
+      }
+      if ($leftIsEmpty && $rightIsEmpty) {
+        continue;
+      }
+      if ($leftVal !== $rightVal) {
+        $different[] = $fieldName;
+      }
+    }
+
+    return new DiffResult($leftVals, $rightVals, $different, $leftOnly, $rightOnly);
   }
 
   private function initializeFields($idValue = NULL): void {
@@ -246,12 +286,19 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
   public function trySave(): SaveResult {
     $result = new SaveResult();
     try {
-      $statusMessage = empty($this->getId())
-        ? 'created new record'
-        : 'updated existing record';
+      if (empty($this->getId())) {
+        $statusMessage = 'created new record';
+        $context = NULL;
+      }
+      else {
+        $statusMessage = 'updated existing record';
+        $changesBeingSaved = $this->diffChanges()->toArray();
+        $context = ['changes' => $changesBeingSaved];
+      }
       $this->save();
       $result->setStatusCode(SaveResult::SUCCESS);
       $result->setMessage($statusMessage);
+      $result->setContext($context);
       $result->setReturnedObject($this);
     }
     catch (\CRM_Core_Exception $exception) {

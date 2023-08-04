@@ -1,8 +1,8 @@
 <?php
 
-namespace Civi\Osdi\ActionNetwork\Object;
+namespace Civi\Osdi\Result;
 
-class DiffResult {
+class Diff {
 
   private array $differentFields;
 

@@ -7,6 +7,7 @@ use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
+use Civi\Osdi\Result\Diff as DiffResult;
 use Civi\Osdi\Result\Save as SaveResult;
 use Civi\OsdiClient;
 use CRM_OSDI_ExtensionUtil as E;
@@ -279,6 +280,12 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
     return $this->getUrlForRead();
   }
 
+  /**
+   * Compare $left with $right and report which values, if any, are different.
+   * The empty values NULL, '', and [] are all considered equivalent; comparison
+   * of non-empty values is strict (type-sensitive). Before the comparison,
+   * values may be normalized by getAllForCompare().
+   */
   public static function diff(self $left, self $right): DiffResult {
     $different = $leftOnly = $rightOnly = [];
 

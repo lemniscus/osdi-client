@@ -546,7 +546,7 @@ class PersonTest extends \PHPUnit\Framework\TestCase implements
 
     $result = \Civi\Osdi\ActionNetwork\Object\Person::diff($personA, $personB);
 
-    self::assertEquals(\Civi\Osdi\ActionNetwork\Object\DiffResult::class,
+    self::assertEquals(\Civi\Osdi\Result\Diff::class,
       get_class($result));
     self::assertEquals(2, count($result->getDifferentFields()));
     self::assertEquals(1, count($result->getLeftOnlyFields()));
