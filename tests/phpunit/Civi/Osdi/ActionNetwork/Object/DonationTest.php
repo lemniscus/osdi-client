@@ -123,12 +123,13 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
     // Recipient names are CiviCRM Financial Type names. Here we deliberately use a test one.
     $recipients = [['display_name' => 'Test recipient financial type A', 'amount' => '1.00']];
     $donation->recipients->set($recipients);
-    // ActionNetwork accepts 'payment', and 'recurrence' keys but ignores it. We test this.
+    // ActionNetwork accepts 'payment', and 'reference_number' keys but ignores it. We test this.
     $paymentInfo = ['method' => 'EFT', 'reference_number' => 'test_payment_1'];
     $donation->payment->set($paymentInfo);
     $donation->recurrence->set(['recurring' => TRUE, 'period' => 'Monthly']);
     // We are permitted to set the createdDate as a way to back date contributions.
-    $donation->createdDate->set('2020-03-04T05:06:07Z');
+    $formattedDate = $this->system::formatDateTime(strtotime('2020-03-04 05:06:07'));
+    $donation->createdDate->set($formattedDate);
     // Set linked resources.
     $donation->setDonor(self::$donor);
     $donation->setFundraisingPage(static::$fundraisingPage);
@@ -154,16 +155,16 @@ class DonationTest extends \PHPUnit\Framework\TestCase implements
 
     // Note ActionNetwork returns currencies like ISO 4217 but lower case.
     $this->assertEquals('usd', $reFetchedDonation->currency->get());
-    $this->assertEquals('2020-03-04T05:06:07Z', $reFetchedDonation->createdDate->get());
+    $this->assertEquals($formattedDate, $reFetchedDonation->createdDate->get());
     $this->assertEquals($recipients, $reFetchedDonation->recipients->get());
 
     $fetchedPaymentInfo = $reFetchedDonation->payment->get();
     // print "\n" . json_encode($fetchedPaymentInfo, JSON_PRETTY_PRINT) . "\n";
     $this->assertIsArray($fetchedPaymentInfo);
     $this->assertEquals('Credit Card', $fetchedPaymentInfo['method'] ?? NULL,
-      "For some reson, ActionNetwork should declare ALL payments submitted through API as Credit Card, even though we passed in EFT. If this test fails, their policy has changed since this code was written.");
+      "For some reason, ActionNetwork should declare ALL payments submitted through API as Credit Card, even though we passed in EFT. If this test fails, their policy has changed since this code was written.");
     $this->assertNotEquals($paymentInfo['reference_number'], $fetchedPaymentInfo['reference_number'] ?? NULL,
-      "For some reson, ActionNetwork should ignore our reference_number and generate its own. If this test fails, their policy has changed since this code was written.");
+      "For some reason, ActionNetwork should ignore our reference_number and generate its own. If this test fails, their policy has changed since this code was written.");
 
     $this->assertEquals(['recurring' => TRUE, 'period' => 'Monthly'], $reFetchedDonation->recurrence->get());
 
