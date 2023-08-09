@@ -79,7 +79,7 @@ class Field {
   /**
    * @return string|array|null
    */
-  public function getAsLoaded(): ?string {
+  public function getAsLoaded() {
     return $this->loadedValue;
   }
 
