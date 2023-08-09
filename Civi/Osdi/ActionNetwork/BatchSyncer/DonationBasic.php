@@ -77,10 +77,11 @@ class DonationBasic implements BatchSyncerInterface {
         "getCutOff requires either 'remote' or 'local' as its argument.");
     }
 
-    $latest = strtotime($this->getLatestSyncedContributionDate($source));
-    $twoDaysAgo = strtotime("- 2 day");
+    $twoDaysAgo = "- 2 day";
+    $latest = $this->getLatestSyncedContributionDate($source) ?? $twoDaysAgo;
+    $cutoffUnixTime = min(strtotime($latest), strtotime($twoDaysAgo));
     $cutoff = $this->getSingleSyncer()
-      ->getRemoteSystem()::formatDateTime(min($latest, $twoDaysAgo));
+      ->getRemoteSystem()::formatDateTime($cutoffUnixTime);
 
     Logger::logDebug("Using horizon $cutoff for $source donation sync");
     return $cutoff;
@@ -262,10 +263,9 @@ class DonationBasic implements BatchSyncerInterface {
         NULL,
         ['id', '=', 'osdi_donation_sync_state.contribution_id'])
       ->addWhere('osdi_donation_sync_state.source', '=', $source)
-      ->execute()->first();
+      ->execute()->first()['last_receive_date'] ?? NULL;
 
-    $latest = $result ? $result['last_receive_date'] : date('Y-m-d');
-    return $latest;
+    return $result;
   }
 
 }
