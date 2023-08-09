@@ -70,6 +70,14 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
 
   public function getArrayForCreate(): array {
     $data = parent::getArrayForCreate();
+
+    // Action Network doesn't like it when we submit empty fields on donations
+    foreach ($data as $key => $val) {
+      if (is_null($val)) {
+        unset($data[$key]);
+      }
+    }
+
     // Overwrite the two _links references which come through as plain strings instead of the
     // hash with ['href' => ...]
     $data['_links']['osdi:person'] = ['href' => $this->donorHref->get()];
