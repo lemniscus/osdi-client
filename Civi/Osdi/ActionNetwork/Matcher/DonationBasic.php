@@ -118,7 +118,7 @@ class DonationBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterfa
         'local id' => $matchingLocalDonation['id'],
       ]);
       $localObject = $container->make(
-        'LocalObject', 'Donation', $matchingLocalDonation);
+        'LocalObject', 'Donation', $matchingLocalDonation['id']);
       $result->setMatch($localObject);
       $pair->setLocalObject($localObject);
       return $result;
