@@ -7,7 +7,6 @@ use Civi\Api4\OsdiDonationSyncState;
 use Civi\Osdi\ActionNetwork\RemoteFindResult;
 use Civi\Osdi\BatchSyncerInterface;
 use Civi\Osdi\Director;
-use Civi\Osdi\LocalObject\DonationBasic as LocalDonation;
 use Civi\Osdi\Logger;
 use Civi\Osdi\Result\Map;
 use Civi\Osdi\Result\MatchResult;
@@ -200,7 +199,9 @@ class DonationBasic implements BatchSyncerInterface {
 
       try {
         // todo avoid reloading from db? we already pulled the data
-        $localDonation = LocalDonation::fromId($contribution['id']);
+        $localDonation = OsdiClient::container()
+          ->make('LocalObject', 'Donation', $contribution['id'])
+          ->loadOnce();
         $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($localDonation);
         $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
         $codeAndMessage = $syncResult->getStatusCode() . ' - ' . $syncResult->getMessage();
