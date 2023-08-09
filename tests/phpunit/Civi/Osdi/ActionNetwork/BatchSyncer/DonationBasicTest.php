@@ -5,7 +5,6 @@ namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 use Civi\Osdi\ActionNetwork\DonationHelperTrait;
 use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
 use Civi\OsdiClient;
-use OsdiClient\ActionNetwork\TestUtils;
 use PHPUnit;
 
 /**
@@ -26,9 +25,9 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
       ->apply();
   }
 
-  protected function setUp(): void {
-    TestUtils::createRemoteSystem();
-    parent::setUp();
+  public static function setUpBeforeClass(): void {
+    static::$system = \OsdiClient\ActionNetwork\TestUtils::createRemoteSystem();
+    static::$testFundraisingPage = self::getDefaultFundraisingPage();
   }
 
   public function testBatchSyncFromANDoesNotRunConcurrently() {
@@ -239,22 +238,22 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
   }
 
   protected function createRemoteDonationAndGetId(array $set, $remotePerson): string {
-      $remoteDonationToday = new RemoteDonation(static::$system);
-      $recipients = [['display_name' => 'Test recipient financial type', 'amount' => $set['amount']]];
-      $remoteDonationToday->recipients->set($recipients);
-      $remoteDonationToday->createdDate->set($set['when']);
-      $remoteDonationToday->setDonor($remotePerson);
-      $remoteDonationToday->setFundraisingPage(self::$testFundraisingPage);
-      $remoteDonationToday->recurrence->set(['recurring' => FALSE]);
-      $remoteDonationToday->save();
-      return $remoteDonationToday->getId();
+    $remoteDonationToday = new RemoteDonation(static::$system);
+    $recipients = [['display_name' => 'Test recipient financial type', 'amount' => $set['amount']]];
+    $remoteDonationToday->recipients->set($recipients);
+    $remoteDonationToday->createdDate->set($set['when']);
+    $remoteDonationToday->setDonor($remotePerson);
+    $remoteDonationToday->setFundraisingPage(static::$testFundraisingPage);
+    $remoteDonationToday->recurrence->set(['recurring' => FALSE]);
+    $remoteDonationToday->save();
+    return $remoteDonationToday->getId();
   }
 
   protected function getBatchSyncer(): \Civi\Osdi\ActionNetwork\BatchSyncer\DonationBasic {
     $container = OsdiClient::container();
     // Call system under test.
     /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\DonationBasic */
-    $singleSyncer = $container->make('SingleSyncer', 'Donation', self::$system);
+    $singleSyncer = $container->make('SingleSyncer', 'Donation', static::$system);
     $matcher = $container->make('Matcher', 'Donation');
     $singleSyncer->setMatcher($matcher);
     $mapper = $container->make('Mapper', 'Donation');

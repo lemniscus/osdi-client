@@ -27,13 +27,15 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     return \Civi\Test::headless()->installMe(__DIR__)->apply();
   }
 
+  public static function setUpBeforeClass(): void {
+    static::$system = \OsdiClient\ActionNetwork\TestUtils::createRemoteSystem();
+    static::$testFundraisingPage = static::getDefaultFundraisingPage();
+    static::$financialTypeId = static::getTestFinancialTypeId();
+  }
+
   public function setUp(): void {
     $this->mapper = new DonationBasicMapper(static::$system);
     parent::setUp();
-  }
-
-  public function tearDown(): void {
-    parent::tearDown();
   }
 
   /**
