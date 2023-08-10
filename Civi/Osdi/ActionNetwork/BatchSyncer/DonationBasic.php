@@ -37,9 +37,9 @@ class DonationBasic implements BatchSyncerInterface {
   /**
    * Find new Action Network donations since last sync; copy them into Civi.
    *
-   * @return int|null how many remote donations were processed
+   * @return string|null how many remote donations were processed
    */
-  public function batchSyncFromRemote(): ?int {
+  public function batchSyncFromRemote(): ?string {
     if (!Director::acquireLock('Batch AN->Civi donation sync')) {
       return NULL;
     }
@@ -48,17 +48,17 @@ class DonationBasic implements BatchSyncerInterface {
       $syncStartTime = time();
       $cutoff = $this->getCutOff('remote');
 
-      $searchResults = $this->findAndSyncNewRemoteDonations($cutoff);
+      $countText = $this->findAndSyncNewRemoteDonations($cutoff);
 
-      Logger::logDebug('Finished batch AN->Civi donation sync; count: ' .
-        $searchResults->rawCurrentCount() . '; time: ' . (time() - $syncStartTime)
-        . ' seconds');
+      $elapsedTime = time() - $syncStartTime;
+      $stats = "count: $countText; time: $elapsedTime seconds";
+      Logger::logDebug("Finished batch AN->Civi donation sync; $stats");
     }
     finally {
       Director::releaseLock();
     }
 
-    return $searchResults->rawCurrentCount();
+    return $stats;
   }
 
   /**
@@ -86,7 +86,7 @@ class DonationBasic implements BatchSyncerInterface {
     return $cutoff;
   }
 
-  public function batchSyncFromLocal(): ?int {
+  public function batchSyncFromLocal(): ?string {
     if (!Director::acquireLock('Batch Civi->AN donation sync')) {
       return NULL;
     }
@@ -107,7 +107,8 @@ class DonationBasic implements BatchSyncerInterface {
     return $count;
   }
 
-  protected function findAndSyncNewRemoteDonations(string $cutoff): RemoteFindResult {
+  protected function findAndSyncNewRemoteDonations(string $cutoff): string {
+    /** @var \Civi\Osdi\ActionNetwork\RemoteFindResult $searchResults */
     $searchResults = $this->getSingleSyncer()->getRemoteSystem()->find('osdi:donations', [
       [
         'modified_date',
@@ -118,23 +119,22 @@ class DonationBasic implements BatchSyncerInterface {
 
     $syncStates = $this->getSyncStatesForRemoteDonations($searchResults);
     $idsFromSyncStates = $syncStates->column('remote_donation_id');
-    $currentCount = 0;
+    $currentCount = $successCount = $errorCount = $skippedCount = 0;
 
     foreach ($searchResults as $remoteDonation) {
       $totalCount = $searchResults->rawCurrentCount();
-      //$orMore = ($totalCount > 24) ? '+' : '';
-      $orMore = '';
-      $countFormat = '#%' . strlen($totalCount) . "d/$totalCount$orMore: ";
+      $countFormat = '#%' . strlen($totalCount) . "d/$totalCount: ";
       $progress = sprintf($countFormat, ++$currentCount);
 
-      Logger::logDebug(
-        $progress .
-        'Considering AN donation id ' . $remoteDonation->getId() .
-        ', mod ' . $remoteDonation->modifiedDate->get());
+      $donationDate = $remoteDonation->modifiedDate->get();
+      $donationId = $remoteDonation->getId();
+      Logger::logDebug($progress .
+        "Considering AN donation id $donationId, mod $donationDate");
 
-      if (in_array($remoteDonation->getId(), $idsFromSyncStates)) {
+      if (in_array($donationId, $idsFromSyncStates)) {
         Logger::logDebug($progress .
-          'Result for AN id ' . $remoteDonation->getId() . ': skipped (sync record already exists)');
+          "Result for AN id $donationId: skipped (sync record already exists)");
+        $skippedCount++;
         continue;
       }
 
@@ -148,12 +148,12 @@ class DonationBasic implements BatchSyncerInterface {
       }
 
       $codeAndMessage = $syncResult->getStatusCode() .
-        ($syncResult->getMessage() ? ' - ' . $syncResult->getMessage() : '');
+        ($syncResult->getMessage() ? (' - ' . $syncResult->getMessage()) : '');
 
-      Logger::logDebug($progress .
-        'Result for AN id ' . $remoteDonation->getId() . ": $codeAndMessage");
+      Logger::logDebug("{$progress}Result for AN id $donationId: $codeAndMessage");
 
       if ($syncResult->isError()) {
+        $errorCount++;
         $errorIsWorthLogging = TRUE;
         $resultStack = $pair->getResultStack();
 
@@ -178,9 +178,14 @@ class DonationBasic implements BatchSyncerInterface {
           Logger::logError($codeAndMessage, $pair);
         }
       }
+
+      else {
+        $successCount++;
+      }
+    }
     }
 
-    return $searchResults;
+    return "total: $totalCount; success: $successCount; error: $errorCount; skipped: $skippedCount";
   }
 
   protected function findAndSyncNewLocalDonations(string $cutoff): int {

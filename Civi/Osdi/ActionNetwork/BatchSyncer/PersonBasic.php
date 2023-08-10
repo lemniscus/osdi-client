@@ -31,7 +31,7 @@ class PersonBasic implements BatchSyncerInterface {
     $this->singleSyncer = $singleSyncer;
   }
 
-  public function batchSyncFromRemote(): ?int {
+  public function batchSyncFromRemote(): ?string {
     if (!Director::acquireLock('Batch AN->Civi person sync')) {
       return NULL;
     }
@@ -60,7 +60,7 @@ class PersonBasic implements BatchSyncerInterface {
     return $searchResults->rawCurrentCount();
   }
 
-  public function batchSyncFromLocal(): ?int {
+  public function batchSyncFromLocal(): ?string {
     if (!Director::acquireLock('Batch Civi->AN person sync')) {
       return NULL;
     }
@@ -108,7 +108,7 @@ class PersonBasic implements BatchSyncerInterface {
 
       Logger::logDebug(
         sprintf($countFormat, ++$currentCount) .
-        'Considering AN id ' . $remotePerson->getId() .
+        'Considering AN person id ' . $remotePerson->getId() .
         ', mod ' . $remotePerson->modifiedDate->get() .
         ', ' . $remotePerson->emailAddress->get());
 
@@ -127,9 +127,9 @@ class PersonBasic implements BatchSyncerInterface {
         Logger::logError($e->getMessage(), ['exception' => $e]);
       }
 
-      $codeAndMessage = $syncResult->getStatusCode() . ' - ' .
-        ($syncResult->getMessage() ? ' - ' . $syncResult->getMessage() : '');
-      Logger::logDebug('Result for  AN id ' . $remotePerson->getId() .
+      $codeAndMessage = $syncResult->getStatusCode() .
+        ($syncResult->getMessage() ? (' - ' . $syncResult->getMessage()) : '');
+      Logger::logDebug('Result for AN id ' . $remotePerson->getId() .
         ": $codeAndMessage");
       if ($syncResult->isError()) {
         Logger::logError($codeAndMessage, $pair);
@@ -165,16 +165,22 @@ class PersonBasic implements BatchSyncerInterface {
         ->make('LocalObject', 'Person', $contact['contact_id'])
         ->loadOnce();
 
+      $localPersonId = $localPerson->getId();
+
       Logger::logDebug(sprintf($countFormat, ++$currentCount) .
-        'Considering Civi id ' . $localPerson->getId() .
-        ', mod ' . $localPerson->modifiedDate->get() .
-        ', ' . $localPerson->emailEmail->get());
+        "Considering Civi id $localPersonId, mod" .
+        $localPerson->modifiedDate->get() . ', ' .
+        $localPerson->emailEmail->get());
 
       $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($localPerson);
       $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
-      Logger::logDebug('Result for  Civi id ' . $localPerson->getId() .
-        ': ' . $syncResult->getStatusCode() . ' - ' . $syncResult->getMessage()
-        . PHP_EOL . print_r($syncResult->getContext(), TRUE));
+
+      $context = $syncResult->getContext();
+      $codeAndMessage = $syncResult->getStatusCode() .
+        ($syncResult->getMessage() ? (' - ' . $syncResult->getMessage()) : '') .
+        ($context ? (PHP_EOL . print_r($context, TRUE)) : '');
+
+      Logger::logDebug("Result for Civi id $localPersonId: $codeAndMessage");
     }
 
     if ($upToDate ?? FALSE) {
@@ -211,7 +217,7 @@ class PersonBasic implements BatchSyncerInterface {
       $cutoff = RemoteSystem::formatDateTime($cutoffUnixTime);
     }
 
-    Logger::logDebug("Horizon for AN->Civi sync set to $cutoff");
+    Logger::logDebug("Horizon for AN->Civi person sync set to $cutoff");
     return $cutoff;
   }
 

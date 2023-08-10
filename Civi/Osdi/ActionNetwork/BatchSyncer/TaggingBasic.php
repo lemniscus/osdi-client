@@ -21,7 +21,7 @@ class TaggingBasic implements BatchSyncerInterface {
     $this->singleSyncer = $singleSyncer;
   }
 
-  public function batchSyncFromLocal(): ?int {
+  public function batchSyncFromLocal(): ?string {
     throw new InvalidOperationException('Not implemented');
   }
 
@@ -30,9 +30,9 @@ class TaggingBasic implements BatchSyncerInterface {
    * Network, adding any taggings that don't already exist in Civi, and deleting
    * any Civi taggings that aren't present on Action Network.
    *
-   * @return int|null total number of Action Network taggings synced
+   * @return string|null total number of Action Network taggings synced
    */
-  public function batchSyncFromRemote(): ?int {
+  public function batchSyncFromRemote(): ?string {
     if (!Director::acquireLock('Batch AN->Civi tagging sync')) {
       return NULL;
     }

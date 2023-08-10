@@ -45,6 +45,7 @@ function civicrm_api3_job_Osdiclientbatchsyncdonations($params) {
     $params, ['remote', 'local'], ['remote', 'local']);
 
   $container = OsdiClient::container($params['sync_profile_id']);
+  /** @var \Civi\Osdi\BatchSyncerInterface $batchSyncer */
   $batchSyncer = $container->getSingle('BatchSyncer', 'Donation');
 
   $contactsResult = civicrm_api3('Job', 'osdiclientbatchsynccontacts', [

@@ -6,8 +6,8 @@ interface BatchSyncerInterface {
 
   public function __construct(SingleSyncerInterface $singleSyncer = NULL);
 
-  public function batchSyncFromRemote(): ?int;
+  public function batchSyncFromRemote(): ?string;
 
-  public function batchSyncFromLocal(): ?int;
+  public function batchSyncFromLocal(): ?string;
 
 }
