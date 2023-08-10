@@ -53,21 +53,28 @@ class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterfac
     $remoteObject = $pair->getRemoteObject();
     $localObject = $pair->getLocalObject();
 
-    if (empty($localObject) || empty($remoteObject)) {
-      return NULL;
+    if (empty($localObject)) {
+      [$localID, $localIdOp] = [NULL, 'IS NULL'];
+    }
+    else {
+      [$localID, $localIdOp] = [$localObject->getId(), '='];
     }
 
-    $remoteID = $remoteObject->getId();
-    $localID = $localObject->getId();
+    if (empty($remoteObject)) {
+      [$remoteID, $remoteIdOp] = [NULL, 'IS NULL'];
+    }
+    else {
+      [$remoteID, $remoteIdOp] = [$remoteObject->getId(), '='];
+    }
 
-    if (empty($localID) || empty($remoteID)) {
-      // We require both to save a sync state
+    if (empty($localID) && empty($remoteID)) {
+      // We require at least one to save a sync state
       return NULL;
     }
 
     $getAction = OsdiDonationSyncState::get(FALSE)
-      ->addWhere('remote_donation_id', '=', $remoteID)
-      ->addWhere('contribution_id', '=', $localID);
+      ->addWhere('remote_donation_id', $remoteIdOp, $remoteID)
+      ->addWhere('contribution_id', $localIdOp, $localID);
 
     $syncProfileId = OsdiClient::container()->getSyncProfileId();
     if ($syncProfileId) {
@@ -77,7 +84,7 @@ class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterfac
     $dssId = $getAction->execute()->first()['id'] ?? NULL;
 
     if (!$dssId) {
-      $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
+      $syncResult = $pair->getLastResultOfType(Sync::class);
       $status = $syncResult ? $syncResult->getStatusCode() : NULL;
 
       $dssId = OsdiDonationSyncState::create(FALSE)
