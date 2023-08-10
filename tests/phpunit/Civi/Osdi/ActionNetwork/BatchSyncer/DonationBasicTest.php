@@ -30,7 +30,8 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
     static::$testFundraisingPage = self::getDefaultFundraisingPage();
   }
 
-  public function testBatchSyncFromANDoesNotRunConcurrently() {
+  public function testBatchSyncFromCiviDoesNotRunConcurrently() {
+    // First, simulate a conflicting (ongoing) sync job
     \Civi::settings()->add([
       'osdiClient.syncJobProcessId' => getmypid(),
       'osdiClient.syncJobEndTime' => NULL,
@@ -38,18 +39,21 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
 
     $syncProfileId = OsdiClient::container()->getSyncProfileId();
     $result = civicrm_api3('Job', 'osdiclientbatchsyncdonations',
-      ['debug' => 1, 'origin' => 'remote', 'sync_profile_id' => $syncProfileId]);
+      ['debug' => 1, 'origin' => 'local', 'sync_profile_id' => $syncProfileId]);
 
-    self::assertEquals('Contacts, AN->Civi: , Donations, AN->Civi: ', $result['values']);
+    self::assertEquals('Contacts, Civi->AN: , Donations, Civi->AN: ', $result['values']);
     self::assertNull(\Civi::settings()->get('osdiClient.syncJobEndTime'));
 
+    // Second, simulate a no-conflict situation
     self::assertFalse(posix_getsid(9999999999999));
     \Civi::settings()->set('osdiClient.syncJobProcessId', 9999999999999);
 
     $result = civicrm_api3('Job', 'osdiclientbatchsyncdonations',
-      ['debug' => 1, 'origin' => 'remote', 'sync_profile_id' => $syncProfileId]);
+      ['debug' => 1, 'origin' => 'local', 'sync_profile_id' => $syncProfileId]);
 
-    self::assertGreaterThan(strlen('AN->Civi: '), strlen($result['values']));
+    self::assertGreaterThan(
+      strlen('Contacts, Civi->AN: , Donations, Civi->AN: '),
+      strlen($result['values']));
     self::assertNotNull(\Civi::settings()->get('osdiClient.syncJobEndTime'));
   }
 
