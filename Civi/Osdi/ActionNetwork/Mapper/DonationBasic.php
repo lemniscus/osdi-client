@@ -258,8 +258,9 @@ class DonationBasic implements MapperInterface {
    * financial type matching the remote donation.
    */
   protected function mapRemoteFinancialTypeToLocal(RemoteDonation $remoteDonation): int {
-    if (!isset(static::$financialTypesMap)) {
-      static::$financialTypesMap = \Civi\Api4\FinancialType::get(FALSE)
+    $financialTypesMap =& \Civi::$statics['osdiClient.financialTypesMap'];
+    if (!isset($financialTypesMap)) {
+      $financialTypesMap = \Civi\Api4\FinancialType::get(FALSE)
         ->addWhere('is_active', '=', TRUE)
         ->addSelect('name')
         ->execute()->indexBy('name')->column('id');
@@ -279,12 +280,12 @@ class DonationBasic implements MapperInterface {
     // (alternative behaviour: create the financial type if we're happy to
     // expose this? @todo discuss. Note that we're a mapper who "must not
     // create entities"...)
-    if (!isset(static::$financialTypesMap[$financialTypeName])) {
+    if (!isset($financialTypesMap[$financialTypeName])) {
       throw new CannotMapException("Cannot sync a donation for "
         . "'{$financialTypeName}' as there is no matching financial type.");
     }
 
-    return (int) static::$financialTypesMap[$financialTypeName];
+    return (int) $financialTypesMap[$financialTypeName];
   }
 
   /**
