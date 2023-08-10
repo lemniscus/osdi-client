@@ -48,7 +48,7 @@ class PersonBasic implements BatchSyncerInterface {
         $searchResults->rawCurrentCount() . '; time: ' . ($elapsedSeconds)
         . ' seconds');
 
-      $newCutoff = RemoteSystem::formatDateTime(strtotime($syncStartTime) - 30);
+      $newCutoff = RemoteSystem::formatDateTime($syncStartTime - 30);
       \Civi::settings()
         ->set('osdiClient.personBatchSyncActNetModTimeCutoff', $newCutoff);
       Logger::logDebug("Setting horizon for next AN->Civi person sync to $newCutoff");

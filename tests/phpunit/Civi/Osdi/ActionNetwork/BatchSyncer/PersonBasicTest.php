@@ -223,6 +223,11 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
    * @return void
    */
   private function assertBatchSyncFromAN(array $localPeople, int $syncStartTime): void {
+    self::assertGreaterThanOrEqual(
+      $syncStartTime - 30,
+      strtotime(\Civi::settings()->get('osdiClient.personBatchSyncActNetModTimeCutoff'))
+    );
+
     foreach ($localPeople as $i => $localPerson) {
       $localPerson->load();
       if ($i === 3) {
