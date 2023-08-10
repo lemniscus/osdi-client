@@ -8,18 +8,26 @@ return [
     'is_domain'   => 1,
     'is_contact'  => 0,
   ],
+  'osdiClient.donationBatchSyncMaxRetrievedModTime' => [
+    'name'        => 'osdiClient.donationBatchSyncMaxRetrievedModTime',
+    'title'       => ts('Action Network Donation sync max retrieved AN mod time'),
+    'description' => 'Latest donation date retrieved from AN by the batch syncer',
+    'type'        => 'String',
+    'is_domain'   => 1,
+    'is_contact'  => 0,
+  ],
   'osdiClient.personBatchSyncActNetModTimeCutoff' => [
     'name'        => 'osdiClient.personBatchSyncActNetModTimeCutoff',
-    'title'       => ts('Action Network sync AN mod time cutoff'),
-    'description' => 'Lower limit for Action Network modification datetimes in '
-    . 'the last sync job, formatted like 2021-03-03T18:15:57Z',
+    'title'       => ts('Action Network Person sync AN mod time cutoff'),
+    'description' => 'Lower limit for Action Network person modification '
+      . 'datetimes in the last sync job, formatted like 2021-03-03T18:15:57Z',
     'type'        => 'String',
     'is_domain'   => 1,
     'is_contact'  => 0,
   ],
   'osdiClient.syncJobCiviModTimeCutoff' => [
     'name'        => 'osdiClient.syncJobCiviModTimeCutoff',
-    'title'       => ts('Action Network sync Civi mod time cutoff'),
+    'title'       => ts('Action Network Person sync Civi mod time cutoff'),
     'description' => 'Lower limit for Civi modification datetimes in '
       . 'the last sync job',
     'type'        => 'String',

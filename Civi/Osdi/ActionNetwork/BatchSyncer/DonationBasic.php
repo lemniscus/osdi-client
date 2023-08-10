@@ -71,16 +71,26 @@ class DonationBasic implements BatchSyncerInterface {
    * @return string Y-m-d format date.
    */
   protected function getCutOff(string $source): string {
-    if (!in_array($source, ['remote', 'local'])) {
+    if ('remote' === $source) {
+      $safetyWindow = $this->getSingleSyncer()
+        ->getRemoteSystem()::formatDateTime(strtotime('- 2 day'));
+      $cutoff = \Civi::settings()
+        ->get('osdiClient.donationBatchSyncMaxRetrievedModTime')
+        ?? $safetyWindow;
+      $cutoff = min($cutoff, $safetyWindow);
+    }
+
+    elseif ('local' === $source) {
+      $safetyWindow = "- 2 day";
+      $latest = $this->getLatestSyncedContributionDate($source) ?? $safetyWindow;
+      $cutoffUnixTime = min(strtotime($latest), strtotime($safetyWindow));
+      $cutoff = date('Y-m-d H:i:s', $cutoffUnixTime);
+    }
+
+    else {
       throw new \InvalidArgumentException(
         "getCutOff requires either 'remote' or 'local' as its argument.");
     }
-
-    $twoDaysAgo = "- 2 day";
-    $latest = $this->getLatestSyncedContributionDate($source) ?? $twoDaysAgo;
-    $cutoffUnixTime = min(strtotime($latest), strtotime($twoDaysAgo));
-    $cutoff = $this->getSingleSyncer()
-      ->getRemoteSystem()::formatDateTime($cutoffUnixTime);
 
     Logger::logDebug("Using horizon $cutoff for $source donation sync");
     return $cutoff;
@@ -127,6 +137,8 @@ class DonationBasic implements BatchSyncerInterface {
       $progress = sprintf($countFormat, ++$currentCount);
 
       $donationDate = $remoteDonation->modifiedDate->get();
+      $maxDonationDate = max($donationDate, $maxDonationDate ?? $donationDate);
+
       $donationId = $remoteDonation->getId();
       Logger::logDebug($progress .
         "Considering AN donation id $donationId, mod $donationDate");
@@ -183,6 +195,10 @@ class DonationBasic implements BatchSyncerInterface {
         $successCount++;
       }
     }
+
+    if (isset($maxDonationDate)) {
+      \Civi::settings()->set(
+        'osdiClient.donationBatchSyncMaxRetrievedModTime', $maxDonationDate);
     }
 
     return "total: $totalCount; success: $successCount; error: $errorCount; skipped: $skippedCount";
