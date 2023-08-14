@@ -27,17 +27,19 @@ namespace {
 
 namespace Civi\Osdi\Api3CleanUpLogTable {
 
+  use Civi\Api4\OsdiLog;
   use Civi\Osdi\Exception\InvalidArgumentException;
   use CRM_OSDI_ExtensionUtil as E;
 
   function apiSpec(&$spec) {
-    $spec['size'] = [
-      'title' => E::ts('Size Limit (MB)'),
-      'description' => 'Default: 64. Set to "none" for no limit. '
-      . '. Rows will be deleted if Age Limit OR Size Limit is exceeded.',
+    $spec['count'] = [
+      'title' => E::ts('Row Count Limit'),
+      'description' => 'Default: 24000. '
+        . 'Set to "none" for no limit. '
+        . 'Rows will be deleted if Age Limit OR Size Limit is exceeded.',
       'type' => \CRM_Utils_Type::T_STRING,
       'api.required' => FALSE,
-      'api.default' => 64,
+      'api.default' => '24000',
     ];
     $spec['age'] = [
       'title' => E::ts('Age Limit'),
@@ -49,52 +51,44 @@ namespace Civi\Osdi\Api3CleanUpLogTable {
     ];
   }
 
+  /**
+   * Clean up the log table. Note, we investigated using a size limit (in bytes)
+   * but it's extremely expensive (in terms of memory, disk i/o, time) to
+   * figure out precisely how big an InnoDB table is or how big a swath of rows
+   * is. The best thing we can suggest is to use a conservative row count limit,
+   * based on the rough estimate of 4 kilobytes disk space per row.
+   */
   function run($params): array {
-    [$megabyteLimit, $ageLimit] = validateParams($params);
+    [$countLimit, $ageLimit] = validateParams($params);
     $logTableName = \CRM_OSDI_DAO_Log::getTableName();
 
-    $deletedRowCount = deleteOldRows($ageLimit, $logTableName);
-
-    if ($megabyteLimit === 'none') {
-      $message = "deleted $deletedRowCount older than $ageLimit";
-      return makeSuccessResult($message, $params);
+    $deletedOldRowCount = deleteOldRows($ageLimit, $logTableName);
+    if ($deletedOldRowCount) {
+      $messages[] = "deleted $deletedOldRowCount entries older than $ageLimit";
     }
 
-    // At this point, the age limit has been taken care of; we are only
-    // concerned with the size limit.
-
-    $byteLimit = $megabyteLimit * 1024 * 104;
-    $tableBytes = getTableBytes($logTableName);
-    $sizeIsOverLimit = $tableBytes > $byteLimit;
-
-    if (!$sizeIsOverLimit) {
-      $message = ($deletedRowCount == 0) ?
-        'deletion not triggered' :
-        "deleted $deletedRowCount older than $ageLimit";
-      return makeSuccessResult($message, $params);
+    $deletedExcessRowCount = deleteExcessRows($countLimit, $logTableName);
+    if ($deletedExcessRowCount) {
+      $messages[] = "deleted $deletedExcessRowCount entries to bring count down to $countLimit";
     }
 
-    for ($i = 0; $i < 200; $i++) {
-      // We should get below the size limit in well under 200 iterations of this
-      // loop, but we cap it at 200 just as a sanity check.
+    $messages = $messages ?? ['no entries met the criteria for deletion'];
+    $message = implode(', and ', $messages);
 
-      $excessSizeRatio = ($tableBytes / $byteLimit) - 1;
-      $totalRows = getTableRowCount($logTableName);
-      $chunkSize = max(1, $totalRows * ($excessSizeRatio / 10));
+    $oldestLog = OsdiLog::get(FALSE)
+      ->setLimit(1)
+      ->addOrderBy('id', 'ASC')
+      ->setSelect(['id', 'created_date'])
+      ->execute()->first();
 
-      $query = "DELETE FROM `$logTableName` ORDER BY id DESC LIMIT $chunkSize";
-      $deletedRowCount += \CRM_Core_DAO::executeQuery($query)->affectedRows();
-
-      $tableBytes = getTableBytes($logTableName);
-      if ($tableBytes <= $byteLimit) {
-        $message = "deleted $deletedRowCount to bring table size below $megabyteLimit";
-        return makeSuccessResult($message, $params);
-      }
+    if ($oldestLog) {
+      $id = $oldestLog['id'];
+      $date = $oldestLog['created_date'];
+      $message .= "; oldest entry is currently id $id, dated $date.";
     }
-
-    $message = "deleted $deletedRowCount, but $logTableName is still $tableBytes "
-      . "bytes, which is greater than the specified limit of $byteLimit bytes "
-      . "($megabyteLimit MB)";
+    else {
+      $message .="; there are currently no entries in the table.";
+    }
 
     return makeSuccessResult($message, $params);
   }
@@ -104,7 +98,22 @@ namespace Civi\Osdi\Api3CleanUpLogTable {
       return 0;
     }
     $dateCutoff = date('Y-m-d H:i:s', strtotime("- $ageLimit"));
+    // could use Civi API here but this is efficient
     $query = "DELETE FROM `$logTableName` WHERE created_date < '$dateCutoff'";
+    return \CRM_Core_DAO::executeQuery($query)->affectedRows();
+  }
+
+  function deleteExcessRows($countLimit, string $logTableName): ?int {
+    if ('none' === $countLimit) {
+      return 0;
+    }
+    $rowCount = OsdiLog::get()->selectRowCount()->execute()->rowCount ?? 0;
+    $excessRows = $rowCount - $countLimit;
+    if ($excessRows < 1) {
+      return 0;
+    }
+    // could use Civi API here but this is efficient
+    $query = "DELETE FROM `$logTableName` ORDER BY id ASC LIMIT $excessRows";
     return \CRM_Core_DAO::executeQuery($query)->affectedRows();
   }
 
@@ -113,9 +122,9 @@ namespace Civi\Osdi\Api3CleanUpLogTable {
   }
 
   function validateParams($params): array {
-    $megabyteLimit = strtolower($params['size'] ?? '');
-    if (!is_numeric($megabyteLimit) && ($megabyteLimit !== 'none')) {
-      throw new InvalidArgumentException('"%s" is not a valid option for size limit', $megabyteLimit);
+    $countLimit = strtolower($params['count'] ?? '');
+    if (!is_numeric($countLimit) && ($countLimit !== 'none')) {
+      throw new InvalidArgumentException('"%s" is not a valid option for row count limit', $countLimit);
     }
 
     $ageLimit = strtolower($params['age']) ?? '';
@@ -128,33 +137,11 @@ namespace Civi\Osdi\Api3CleanUpLogTable {
       }
     }
 
-    if (('none' === $megabyteLimit) && ('none' === $ageLimit)) {
+    if (('none' === $countLimit) && ('none' === $ageLimit)) {
       throw new InvalidArgumentException('Either an age limit or size limit must be specified');
     }
 
-    return array($megabyteLimit, $ageLimit);
-  }
-
-  function getTableBytes(string $logTableName): ?string {
-    static $dbName = NULL;
-    $dbName = $dbName ?? \CRM_Core_DAO::getDatabaseName();
-    $query = "SELECT data_length + index_length AS table_size "
-      . "FROM information_schema.TABLES "
-      . "WHERE table_schema = '$dbName' AND table_name = '$logTableName'";
-    $tableSize = \CRM_Core_DAO::singleValueQuery($query);
-    if (!is_numeric($tableSize)) {
-      throw new \Exception('Could not get civicrm_osdi_log table size');
-    }
-    return $tableSize;
-  }
-
-  function getTableRowCount(string $logTableName): ?string {
-    $query = "SELECT COUNT(*) FROM `$logTableName`";
-    $count = \CRM_Core_DAO::singleValueQuery($query);
-    if (!is_numeric($count)) {
-      throw new \Exception('Could not get civicrm_osdi_log table row count');
-    }
-    return $count;
+    return array($countLimit, $ageLimit);
   }
 
 }
