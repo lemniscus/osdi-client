@@ -9,6 +9,7 @@ use Civi\Core\DAO\Event\PreDelete;
 use Civi\Core\DAO\Event\PreUpdate;
 use Civi\Osdi\BatchSyncerInterface;
 use Civi\Osdi\LocalRemotePair;
+use Civi\Osdi\Logger;
 use Civi\Osdi\SingleSyncerInterface;
 use Civi\OsdiClient;
 use CRM_OSDI_ExtensionUtil as E;
@@ -216,7 +217,15 @@ class PersonBasic {
     $pair->setOrigin(LocalRemotePair::ORIGIN_LOCAL);
 
     $result = $syncer->syncDeletion($pair);
-    return !($result->isError());
+    if ($result->isError()) {
+      Logger::logError('Error while trying to sync deletion',
+        $result->toArray());
+    }
+    // the default Task Runner spews an exception into the main Civi log if
+    // we return false.
+    // see https://github.com/civicrm/civicrm-core/blob/5.63/CRM/Queue/TaskRunner.php#L52
+    // return !($result->isError());
+    return TRUE;
   }
 
   public static function syncLocalPersonTaggings(

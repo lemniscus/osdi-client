@@ -139,7 +139,11 @@ class TaggingBasic {
       Logger::logError('Error while trying to create remote tagging',
         $result->toArray());
     }
-    return !($result->isError());
+    // the default Task Runner spews an exception into the main Civi log if
+    // we return false.
+    // see https://github.com/civicrm/civicrm-core/blob/5.63/CRM/Queue/TaskRunner.php#L52
+    // return !($result->isError());
+    return TRUE;
   }
 
   public static function syncDeletionFromQueue(
@@ -158,10 +162,14 @@ class TaggingBasic {
 
     $result = $syncer->syncDeletion($pair);
     if ($result->isError()) {
-      Logger::logError('Error while trying to create remote tagging',
+      Logger::logError('Error while trying to delete remote tagging',
         $result->toArray());
     }
-    return !($result->isError());
+    // the default Task Runner spews an exception into the main Civi log if
+    // we return false.
+    // see https://github.com/civicrm/civicrm-core/blob/5.63/CRM/Queue/TaskRunner.php#L52
+    // return !($result->isError());
+    return TRUE;
   }
 
   protected function makeLocalObjectArrayFromDao(\CRM_Core_DAO_EntityTag $dao): array {
