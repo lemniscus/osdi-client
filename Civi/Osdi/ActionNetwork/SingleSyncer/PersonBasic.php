@@ -335,10 +335,6 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     return NULL;
   }
 
-  protected function newRemoteShouldBeCreatedForLocal(LocalRemotePair $pair): bool {
-    return TRUE;
-  }
-
   private function originHasErrorFlags(LocalRemotePair $pair): int {
     $flags = OsdiFlag::get(FALSE)
       ->selectRowCount()
@@ -439,7 +435,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
       $syncState->delete();
     }
 
-    if (!is_null($localObject) && !is_null($remoteObject)) {
+    if (isset($localObject) && isset($remoteObject)) {
       $pair->setLocalObject($localObject)->setRemoteObject($remoteObject);
       return TRUE;
     }
