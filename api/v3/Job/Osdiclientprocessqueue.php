@@ -48,11 +48,16 @@ function civicrm_api3_job_Osdiclientprocessqueue($params) {
     while ($queue->numberOfItems() > 0) {
       try {
         $result = $runItemsAction->execute()->single();
+        $outcome = $result['outcome'] ?? '-';
+        $itemId = $result['item']['id'];
+        \Civi\Osdi\Logger::logDebug("Ran queue item id $itemId: $outcome");
       }
       catch (Throwable $e) {
+        $result = [];
+        $outcome = '-';
         throw $e;
       }
-      $outcome = $result['outcome'];
+
       $statusSummary[$outcome] = $statusSummary[$outcome] ?? 0;
       $statusSummary[$outcome]++;
     }
@@ -60,6 +65,8 @@ function civicrm_api3_job_Osdiclientprocessqueue($params) {
   finally {
     Director::releaseLock();
   }
+
+  \Civi\Osdi\Logger::logDebug('Queued task run finished');
 
   return civicrm_api3_create_success($statusSummary, $params, 'Job', 'Osdiclientprocessqueue');
 }

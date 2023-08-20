@@ -51,7 +51,7 @@ class DonationBasic implements BatchSyncerInterface {
       $countText = $this->findAndSyncNewRemoteDonations($cutoff);
 
       $elapsedTime = time() - $syncStartTime;
-      $stats = "count: $countText; time: $elapsedTime seconds";
+      $stats = "$countText; time: $elapsedTime seconds";
       Logger::logDebug("Finished batch AN->Civi donation sync; $stats");
     }
     finally {
@@ -105,16 +105,16 @@ class DonationBasic implements BatchSyncerInterface {
       $syncStartTime = time();
       $cutoff = $this->getCutOff('local');
 
-      $count = $this->findAndSyncNewLocalDonations($cutoff);
+      $countText = $this->findAndSyncNewLocalDonations($cutoff);
+      $message = "$countText; time: " . (time() - $syncStartTime) . ' seconds';
 
-      Logger::logDebug('Finished batch Civi->AN donation sync; count: ' . $count
-        . '; time: ' . (time() - $syncStartTime) . ' seconds');
+      Logger::logDebug('Finished batch Civi->AN donation sync; ' . $message);
     }
     finally {
       Director::releaseLock();
     }
 
-    return $count;
+    return $message;
   }
 
   protected function findAndSyncNewRemoteDonations(string $cutoff): string {
@@ -127,9 +127,8 @@ class DonationBasic implements BatchSyncerInterface {
       ],
     ]);
 
-    $syncStates = $this->getSyncStatesForRemoteDonations($searchResults);
-    $idsFromSyncStates = $syncStates->column('remote_donation_id');
-    $currentCount = $successCount = $errorCount = $skippedCount = 0;
+    $idsFromSyncStates = $this->matchRemoteDonationsToSyncStates($searchResults);
+    $totalCount = $currentCount = $successCount = $errorCount = $skippedCount = 0;
 
     foreach ($searchResults as $remoteDonation) {
       $totalCount = $searchResults->rawCurrentCount();
@@ -204,12 +203,12 @@ class DonationBasic implements BatchSyncerInterface {
     return "total: $totalCount; success: $successCount; error: $errorCount; skipped: $skippedCount";
   }
 
-  protected function findAndSyncNewLocalDonations(string $cutoff): int {
+  protected function findAndSyncNewLocalDonations(string $cutoff): string {
     $contributions = $this->findNewLocalDonations($cutoff);
 
     $totalCount = count($contributions);
     $countFormat = '%' . strlen($totalCount) . "d/$totalCount: ";
-    $currentCount = 0;
+    $currentCount = $successCount = $errorCount = 0;
 
     Logger::logDebug("Civi->AN donation sync: $totalCount to consider");
 
@@ -225,17 +224,19 @@ class DonationBasic implements BatchSyncerInterface {
           ->loadOnce();
         $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($localDonation);
         $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
+        $syncResult->isError() ? $errorCount++ : $successCount++;
         $codeAndMessage = $syncResult->getStatusCode() . ' - ' . $syncResult->getMessage();
         Logger::logDebug($progress .
           "Result for Contribution {$contribution['id']}: $codeAndMessage");
       }
       catch (\Throwable $e) {
+        $errorCount++;
         Logger::logError($e->getMessage(), ['exception' => $e]);
       }
 
     }
 
-    return $currentCount;
+    return "total: $totalCount; success: $successCount; error: $errorCount";
   }
 
   protected function findNewLocalDonations(string $cutoff): \Civi\Api4\Generic\Result {
@@ -250,9 +251,9 @@ class DonationBasic implements BatchSyncerInterface {
       ->execute();
   }
 
-  protected function getSyncStatesForRemoteDonations(
+  protected function matchRemoteDonationsToSyncStates(
     RemoteFindResult $searchResults
-  ): \Civi\Api4\Generic\Result {
+  ): array {
     $currentCount = 0;
     $remoteIds = [];
     Logger::logDebug('Loading AN donations');
@@ -272,8 +273,7 @@ class DonationBasic implements BatchSyncerInterface {
       ->addWhere('remote_donation_id', 'IN', $remoteIds)
       ->execute();
 
-    $searchResults->rewind();
-    return $syncStates;
+    return $syncStates->column('remote_donation_id');
   }
 
   private function getLatestSyncedContributionDate(string $source) {

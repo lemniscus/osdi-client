@@ -41,12 +41,11 @@ class PersonBasic implements BatchSyncerInterface {
       \Civi::settings()->set('osdiClient.personBatchSyncActNetModTimeCutoff', $cutoff);
       $syncStartTime = time();
 
-      $searchResults = $this->findAndSyncRemoteUpdatesAsNeeded($cutoff);
+      $countText = $this->findAndSyncRemoteUpdatesAsNeeded($cutoff);
 
       $elapsedSeconds = time() - $syncStartTime;
-      Logger::logDebug('Finished batch AN->Civi person sync; count: ' .
-        $searchResults->rawCurrentCount() . '; time: ' . ($elapsedSeconds)
-        . ' seconds');
+      Logger::logDebug("Finished batch AN->Civi person sync; $countText; "
+        . "time: $elapsedSeconds seconds");
 
       $newCutoff = RemoteSystem::formatDateTime($syncStartTime - 30);
       \Civi::settings()
@@ -57,7 +56,7 @@ class PersonBasic implements BatchSyncerInterface {
       Director::releaseLock();
     }
 
-    return $searchResults->rawCurrentCount();
+    return $countText;
   }
 
   public function batchSyncFromLocal(): ?string {
@@ -90,7 +89,7 @@ class PersonBasic implements BatchSyncerInterface {
     return $count;
   }
 
-  protected function findAndSyncRemoteUpdatesAsNeeded($cutoff): \Civi\Osdi\ActionNetwork\RemoteFindResult {
+  protected function findAndSyncRemoteUpdatesAsNeeded($cutoff): string {
     $searchResults = $this->getSingleSyncer()->getRemoteSystem()->find('osdi:people', [
       [
         'modified_date',
@@ -99,22 +98,23 @@ class PersonBasic implements BatchSyncerInterface {
       ],
     ]);
 
-    $currentCount = 0;
+    $totalCount = $currentCount = $successCount = $errorCount = $skippedCount = 0;
 
     foreach ($searchResults as $remotePerson) {
       $totalCount = $searchResults->rawCurrentCount();
       $orMore = ($totalCount > 24) ? '+' : '';
       $countFormat = '#%' . strlen($totalCount) . "d/$totalCount$orMore: ";
 
+      $remoteId = $remotePerson->getId();
       Logger::logDebug(
         sprintf($countFormat, ++$currentCount) .
-        'Considering AN person id ' . $remotePerson->getId() .
+        "Considering AN person id $remoteId" .
         ', mod ' . $remotePerson->modifiedDate->get() .
         ', ' . $remotePerson->emailAddress->get());
 
-      if ('2c8f5384-0476-4aaa-aee4-471805c48a54' === $remotePerson->getId()) {
-        Logger::logDebug('Skipping    AN id ' . $remotePerson->getId() .
-          ': special record');
+      if ('2c8f5384-0476-4aaa-aee4-471805c48a54' === $remoteId) {
+        Logger::logDebug("Skipping    AN id $remoteId: special record");
+        $skippedCount++;
         continue;
       }
 
@@ -123,20 +123,26 @@ class PersonBasic implements BatchSyncerInterface {
         $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
       }
       catch (\Throwable $e) {
-        $syncResult = new Sync(NULL, NULL, NULL, $e->getMessage());
+        $syncResult = new Sync(NULL, NULL, Sync::ERROR, $e->getMessage());
         Logger::logError($e->getMessage(), ['exception' => $e]);
       }
 
       $codeAndMessage = $syncResult->getStatusCode() .
         ($syncResult->getMessage() ? (' - ' . $syncResult->getMessage()) : '');
-      Logger::logDebug('Result for AN id ' . $remotePerson->getId() .
-        ": $codeAndMessage");
+
+      Logger::logDebug("Result for AN id $remoteId: $codeAndMessage");
+
       if ($syncResult->isError()) {
+        $errorCount++;
         Logger::logError($codeAndMessage, $pair);
+      }
+
+      else {
+        $successCount++;
       }
     }
 
-    return $searchResults;
+    return "total: $totalCount; success: $successCount; error: $errorCount; skipped: $skippedCount";
   }
 
   protected function findAndSyncLocalUpdatesAsNeeded($cutoff): array {
@@ -144,15 +150,18 @@ class PersonBasic implements BatchSyncerInterface {
 
     $totalCount = count($civiContacts);
     $countFormat = '(%' . strlen($totalCount) . "d/$totalCount) ";
-    $currentCount = 0;
+    $currentCount = $successCount = $errorCount = $skippedCount = 0;
 
     Logger::logDebug("Civi->AN person sync: $totalCount to consider");
 
-    foreach ($civiContacts as $i => $contact) {
+    foreach ($civiContacts as $contact) {
+      ++$currentCount;
+      
       if (strtotime($contact['contact.modified_date']) ===
         $contact['sync_state.local_post_sync_modified_time']
       ) {
         $upToDate[] = $contact['contact_id'];
+        $skippedCount++;
         continue;
       }
 
@@ -167,28 +176,36 @@ class PersonBasic implements BatchSyncerInterface {
 
       $localPersonId = $localPerson->getId();
 
-      Logger::logDebug(sprintf($countFormat, ++$currentCount) .
+      Logger::logDebug(sprintf($countFormat, $currentCount) .
         "Considering Civi id $localPersonId, mod" .
         $localPerson->modifiedDate->get() . ', ' .
         $localPerson->emailEmail->get());
 
-      $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($localPerson);
-      $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
+      try {
+        $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($localPerson);
+        $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
+        $syncResult->isError() ? $errorCount++ : $successCount++;
 
-      $context = $syncResult->getContext();
-      $codeAndMessage = $syncResult->getStatusCode() .
-        ($syncResult->getMessage() ? (' - ' . $syncResult->getMessage()) : '') .
-        ($context ? (PHP_EOL . print_r($context, TRUE)) : '');
+        $context = $syncResult->getContext();
+        $codeAndMessage = $syncResult->getStatusCode() .
+          ($syncResult->getMessage() ? (' - ' . $syncResult->getMessage()) : '') .
+          ($context ? (PHP_EOL . print_r($context, TRUE)) : '');
 
-      Logger::logDebug("Result for Civi id $localPersonId: $codeAndMessage");
+        Logger::logDebug("Result for Civi id $localPersonId: $codeAndMessage");
+      }
+
+      catch (\Throwable $e) {
+        $errorCount++;
+        Logger::logError(sprintf($countFormat, $currentCount) . $e->getMessage(), ['exception' => $e]);
+      }
     }
 
     if ($upToDate ?? FALSE) {
       Logger::logDebug('Civi Ids already up to date: ' . implode(', ', $upToDate));
     }
 
-    $count = ($i ?? -1) + 1;
-    return [$contact['contact.modified_date'] ?? NULL, $count];
+    $countText = "total: $totalCount; success: $successCount; error: $errorCount; skipped: $skippedCount";
+    return [$contact['contact.modified_date'] ?? NULL, $countText];
   }
 
   protected function getOrCreateActNetModTimeHorizon() {

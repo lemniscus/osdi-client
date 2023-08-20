@@ -84,6 +84,6 @@ function civicrm_api3_job_Osdiclientbatchsyncdonations($params) {
     implode(', ', $message),
     $params,
     'Job',
-    'civicrm_api3_job_Osdiclientbatchsyncdonations');
+    'Osdiclientbatchsyncdonations');
 }
 
