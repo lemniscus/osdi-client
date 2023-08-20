@@ -269,6 +269,10 @@ class DonationBasic implements BatchSyncerInterface {
       Logger::logDebug("$currentCount donations loaded from Action Network");
     }
 
+    if (empty($remoteIds)) {
+      return [];
+    }
+
     $syncStates = OsdiDonationSyncState::get(FALSE)
       ->addWhere('remote_donation_id', 'IN', $remoteIds)
       ->execute();
