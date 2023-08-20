@@ -2,6 +2,7 @@
 
 require_once 'osdi_client.civix.php';
 // phpcs:disable
+use Civi\Osdi\Logger;
 use CRM_OSDI_ExtensionUtil as E;
 // phpcs:enable
 
@@ -26,6 +27,23 @@ function osdi_client_civicrm_config(&$config) {
     return;
   }
   Civi::$statics[__FUNCTION__] = 1;
+
+  Civi::dispatcher()->addListener('civi.api.exception', function (\Civi\API\Event\ExceptionEvent $e) {
+    $signature = $e->getEntityName() . ':' . $e->getActionName();
+    if (str_contains(strtolower($signature), 'osdi')) {
+      Logger::logError('API Exception', ['exception' => $e->getException()]);
+    }
+  });
+
+  Civi::dispatcher()->addListener('civi.api.respond', function (\Civi\API\Event\RespondEvent $e) {
+    $signature = $e->getEntityName() . ':' . $e->getActionName();
+    if (str_contains(strtolower($signature), 'osdi')) {
+      $response = $e->getResponse();
+      if (is_array($response && ($response['is_error'] ?? FALSE))) {
+        Logger::logError('API Error', $response);
+      }
+    }
+  });
 
   Civi::dispatcher()->addListener('civi.dao.preDelete', ['\Civi\Osdi\CrmEventDispatch', 'daoPreDelete']);
   Civi::dispatcher()->addListener('civi.dao.preUpdate', ['\Civi\Osdi\CrmEventDispatch', 'daoPreUpdate']);
