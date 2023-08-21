@@ -300,7 +300,8 @@ class DonationBasic implements MapperInterface {
     LocalObjectInterface $localDonation
   ): void {
     /** @var \Civi\Osdi\ActionNetwork\Object\Donation $remoteDonation */
-    $localDonation->source->set($remoteDonation->getFundraisingPage()->title->get());
+    $pageTitle = $remoteDonation->getFundraisingPage()->title->get();
+    $localDonation->source->set("Action Network: $pageTitle");
   }
 
   /**

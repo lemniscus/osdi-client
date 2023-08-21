@@ -55,6 +55,8 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $remoteDonation->createdDate->set('2020-03-04T05:06:07Z');
     $remoteDonation->setDonor($personPair->getRemoteObject());
     $remoteDonation->setFundraisingPage(self::$testFundraisingPage);
+    $fundraisingPageTitle = self::$testFundraisingPage->title->get();
+    $this->assertNotEmpty($fundraisingPageTitle);
     $remoteDonation->recurrence->set(['recurring' => FALSE]);
     $referrerData = [
       'source' => 'phpunit_source',
@@ -64,6 +66,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $remoteDonation->save();
 
     // Call system under test
+    /** @var \Civi\Osdi\LocalObject\DonationBasic $localDonation */
     $localDonation = $this->mapper->mapRemoteToLocal($remoteDonation);
     $localDonation->save();
 
@@ -73,7 +76,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $this->assertEquals('USD', $localDonation->currency->get());
     $this->assertEquals(static::$financialTypeId, $localDonation->financialTypeId->get());
     $this->assertNull($localDonation->contributionRecurId->get());
-    $this->assertEquals(self::$testFundraisingPage->title->get(), $localDonation->source->get());
+    $this->assertEquals("Action Network: $fundraisingPageTitle", $localDonation->source->get());
     $expectedPaymentInstrumentID = \CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'payment_instrument_id', 'Credit Card');
     $this->assertEquals($expectedPaymentInstrumentID, $localDonation->paymentInstrumentId->get());
     $this->assertEquals('Credit Card', $localDonation->paymentInstrumentLabel->get());
