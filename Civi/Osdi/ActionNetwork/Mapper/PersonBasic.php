@@ -89,7 +89,10 @@ class PersonBasic implements MapperInterface {
     }
 
     if ($rpEmail = $remotePerson->emailAddress->get()) {
-      $localPerson->emailEmail->set($rpEmail);
+      $lpEmail = $localPerson->emailEmail->get() ?? '';
+      if (strtolower($rpEmail) !== strtolower($lpEmail)) {
+        $localPerson->emailEmail->set($rpEmail);
+      }
     }
 
     if ($rpPhone = $remotePerson->phoneNumber->get()) {
@@ -121,7 +124,7 @@ class PersonBasic implements MapperInterface {
       }
     }
     if (empty($stateAbbrev = $person->postalRegion->get())) {
-      return [NULL, $countryId];
+      return [NULL, (int) $countryId];
     }
     $stateAbbrevList = \CRM_Core_BAO_Address::buildOptions(
       'state_province_id',
@@ -132,7 +135,7 @@ class PersonBasic implements MapperInterface {
     if ($stateId === FALSE) {
       $stateId = NULL;
     }
-    return [$stateId, $countryId];
+    return [$stateId, (int) $countryId];
   }
 
   public function mapLanguageFromActionNetwork(RemotePerson $remotePerson): ?string {
