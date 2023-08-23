@@ -98,7 +98,8 @@ class PersonBasic implements BatchSyncerInterface {
       ],
     ]);
 
-    $totalCount = $currentCount = $successCount = $errorCount = $skippedCount = 0;
+    $totalCount = $currentCount = 0;
+    $counts = array_fill_keys([Sync::SUCCESS, Sync::ERROR, 'skipped'], 0);
 
     foreach ($searchResults as $remotePerson) {
       $totalCount = $searchResults->rawCurrentCount();
@@ -114,7 +115,7 @@ class PersonBasic implements BatchSyncerInterface {
 
       if ('2c8f5384-0476-4aaa-aee4-471805c48a54' === $remoteId) {
         Logger::logDebug("Skipping    AN id $remoteId: special record");
-        $skippedCount++;
+        $counts['skipped']++;
         continue;
       }
 
@@ -127,22 +128,24 @@ class PersonBasic implements BatchSyncerInterface {
         Logger::logError($e->getMessage(), ['exception' => $e]);
       }
 
-      $codeAndMessage = $syncResult->getStatusCode() .
+      $statusCode = $syncResult->getStatusCode() ?: 'no code';
+      $counts[$statusCode] = ($counts[$statusCode] ?? 0) + 1;
+
+      $codeAndMessage = $statusCode .
         ($syncResult->getMessage() ? (' - ' . $syncResult->getMessage()) : '');
 
       Logger::logDebug("Result for AN id $remoteId: $codeAndMessage");
 
       if ($syncResult->isError()) {
-        $errorCount++;
         Logger::logError($codeAndMessage, $pair);
       }
 
-      else {
-        $successCount++;
-      }
     }
 
-    return "total: $totalCount; success: $successCount; error: $errorCount; skipped: $skippedCount";
+    foreach ($counts as $k => $v) {
+      $counts[$k] = "$k: $v";
+    }
+    return "total: $totalCount; " . implode('; ', $counts);
   }
 
   protected function findAndSyncLocalUpdatesAsNeeded($cutoff): array {
@@ -150,18 +153,19 @@ class PersonBasic implements BatchSyncerInterface {
 
     $totalCount = count($civiContacts);
     $countFormat = '(%' . strlen($totalCount) . "d/$totalCount) ";
-    $currentCount = $successCount = $errorCount = $skippedCount = 0;
+    $counts = array_fill_keys([Sync::SUCCESS, Sync::ERROR, 'skipped'], 0);
+    $currentCount = 0;
 
     Logger::logDebug("Civi->AN person sync: $totalCount to consider");
 
     foreach ($civiContacts as $contact) {
       ++$currentCount;
-      
+
       if (strtotime($contact['contact.modified_date']) ===
         $contact['sync_state.local_post_sync_modified_time']
       ) {
         $upToDate[] = $contact['contact_id'];
-        $skippedCount++;
+        $counts['skipped']++;
         continue;
       }
 
@@ -183,11 +187,12 @@ class PersonBasic implements BatchSyncerInterface {
 
       try {
         $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($localPerson);
-        $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
-        $syncResult->isError() ? $errorCount++ : $successCount++;
+        $syncResult = $pair->getLastResultOfType(Sync::class);
+        $statusCode = $syncResult->getStatusCode() ?: 'no code';
+        $counts[$statusCode] = ($counts[$statusCode] ?? 0) + 1;
 
         $context = $syncResult->getContext();
-        $codeAndMessage = $syncResult->getStatusCode() .
+        $codeAndMessage = $statusCode .
           ($syncResult->getMessage() ? (' - ' . $syncResult->getMessage()) : '') .
           ($context ? (PHP_EOL . print_r($context, TRUE)) : '');
 
@@ -195,7 +200,7 @@ class PersonBasic implements BatchSyncerInterface {
       }
 
       catch (\Throwable $e) {
-        $errorCount++;
+        $counts[Sync::ERROR]++;
         Logger::logError(sprintf($countFormat, $currentCount) . $e->getMessage(), ['exception' => $e]);
       }
     }
@@ -204,7 +209,10 @@ class PersonBasic implements BatchSyncerInterface {
       Logger::logDebug('Civi Ids already up to date: ' . implode(', ', $upToDate));
     }
 
-    $countText = "total: $totalCount; success: $successCount; error: $errorCount; skipped: $skippedCount";
+    foreach ($counts as $k => $v) {
+      $counts[$k] = "$k: $v";
+    }
+    $countText = "total: $totalCount; " . implode('; ', $counts);
     return [$contact['contact.modified_date'] ?? NULL, $countText];
   }
 
