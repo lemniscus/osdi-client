@@ -15,7 +15,10 @@ class TestUtils {
     self::defineActionNetworkApiToken();
     $syncProfile->api_token = ACTION_NETWORK_TEST_API_TOKEN;
     $syncProfile->is_default = TRUE;
-    $syncProfile->save(FALSE);
+
+    if (!$syncProfile->find(TRUE)) {
+      $syncProfile->save(FALSE);
+    }
 
     //    $client = new Jsor\HalClient\HalClient(
     //      'https://actionnetwork.org/api/v2/', new CRM_OSDI_FixtureHttpClient());

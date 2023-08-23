@@ -3,12 +3,12 @@ namespace Civi\Osdi\ActionNetwork;
 
 use Civi\Api4\FinancialType;
 use Civi\Osdi\ActionNetwork\Mapper\DonationBasic as DonationBasicMapper;
-use Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail;
 use Civi\Osdi\ActionNetwork\Object\FundraisingPage;
 use Civi\Osdi\ActionNetwork\Object\Person;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Logger;
 use Civi\OsdiClient;
+use OsdiClient\ActionNetwork\PersonMatchingFixture;
 
 
 trait DonationHelperTrait {
@@ -20,18 +20,9 @@ trait DonationHelperTrait {
   protected static int $financialTypeId;
 
   public function createInSyncPerson(): LocalRemotePair {
-    static $count = 0;
-    $count++;
-
-    // We need a remote person that matches a local person.
-    $remotePerson = new Person(static::$system);
-    $remotePerson->givenName->set('Wilma');
-    $remotePerson->familyName->set('FlintstoneTest');
-    // Use an email the system won't have seen before, so we are sure we have a new contact.
-    $email = "wilma$count." . (new \DateTime())->format('Ymd.Hisv') . '@example.org';
-    $remotePerson->emailAddress->set($email);
-    $remotePerson->save();
-    Logger::logDebug("New test person: {$remotePerson->getId()}, $email");
+    $remotePerson = PersonMatchingFixture::saveNewUniqueRemotePerson();
+    Logger::logDebug("New test person: {$remotePerson->getId()}, "
+      . $remotePerson->emailAddress->get());
 
     // ... use sync to create local person
     /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\PersonBasic $personSyncer */

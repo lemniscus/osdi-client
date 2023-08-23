@@ -3,6 +3,10 @@
 namespace OsdiClient\ActionNetwork;
 
 use API_Exception;
+use Civi\Osdi\CrudObjectInterface;
+use Civi\Osdi\LocalObjectInterface;
+use Civi\Osdi\RemoteObjectInterface;
+use Civi\OsdiClient;
 use PHPUnit\Framework\TestCase;
 
 class PersonMatchingFixture {
@@ -116,16 +120,24 @@ class PersonMatchingFixture {
     return [$contactId, $savedRemotePerson];
   }
 
-  public static function makeUnsavedOsdiPersonWithFirstLastEmail() {
+  public static function makeUnsavedOsdiPersonWithFirstLastEmail($i = ''): RemoteObjectInterface {
     $unsavedNewPerson = self::makeBlankOsdiPerson();
     $unsavedNewPerson->givenName->set('Tester');
     $unsavedNewPerson->familyName->set('Von Test');
-    $unsavedNewPerson->emailAddress->set('tester@testify.net');
+    $unsavedNewPerson->emailAddress->set("tester$i@testify.net");
     return $unsavedNewPerson;
   }
 
-  public static function setUpExactlyOneMatchByEmailAndName(): array {
-    $unsavedRemotePerson = self::makeUnsavedOsdiPersonWithFirstLastEmail();
+  public static function makeUnsavedLocalPersonWithFirstLastEmail($i = ''): LocalObjectInterface {
+    $unsavedNewPerson = OsdiClient::container()->make('LocalObject', 'Person');
+    $unsavedNewPerson->firstName->set('Tester');
+    $unsavedNewPerson->lastName->set('Von Test');
+    $unsavedNewPerson->emailEmail->set("tester$i@testify.net");
+    return $unsavedNewPerson;
+  }
+
+  public static function setUpExactlyOneMatchByEmailAndName($i = ''): array {
+    $unsavedRemotePerson = self::makeUnsavedOsdiPersonWithFirstLastEmail($i);
     $savedRemotePerson = $unsavedRemotePerson->save();
 
     $emailAddress = $savedRemotePerson->emailAddress->get();
@@ -238,6 +250,31 @@ class PersonMatchingFixture {
       $emailAddress
     )->first()['id'];
     return [$savedRemotePerson, $idsOfContactsWithSameEmailAndSameName];
+  }
+
+  public static function saveNewUniqueLocalPerson(string $name = NULL): CrudObjectInterface {
+    /** @var \Civi\Osdi\LocalObject\PersonBasic $localPerson */
+    $localPerson = OsdiClient::container()->make('LocalObject', 'Person');
+    $localPerson->firstName->set($name ?? 'OSDI');
+    $localPerson->lastName->set('Test');
+    $localPerson->emailEmail->set(self::makeUniqueEmailAddress());
+    return $localPerson->save();
+  }
+
+  public static function saveNewUniqueRemotePerson(string $name = NULL): RemoteObjectInterface {
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $remotePerson */
+    $remotePerson = OsdiClient::container()->make('OsdiObject', 'osdi:people');
+    $remotePerson->givenName->set($name ?? 'OSDI');
+    $remotePerson->familyName->set('Test');
+    $remotePerson->emailAddress->set(self::makeUniqueEmailAddress());
+    return $remotePerson->save();
+  }
+
+  private static function makeUniqueEmailAddress(): string {
+    static $count = 0;
+    $count++;
+    $time = (new \DateTime())->format('Ymd.Hisv');
+    return "wilma$count.$time@example.org";
   }
 
 }
