@@ -248,19 +248,15 @@ class PersonBasic implements BatchSyncerInterface {
     );
 
     if (!$cutoffWasRetrievedFromPreviousSync) {
-      $cutoffUnixTime = \Civi\Api4\OsdiPersonSyncState::get(FALSE)
+      $maxModTime = \Civi\Api4\OsdiPersonSyncState::get(FALSE)
         ->addSelect('MAX(local_pre_sync_modified_time) AS maximum')
         ->addWhere('sync_origin', '=', PersonSyncState::ORIGIN_LOCAL)
         ->execute()->single()['maximum'];
 
       Logger::logDebug('Maximum pre-sync mod time from previous Civi->AN syncs: '
-        . ($cutoffUnixTime ? RemoteSystem::formatDateTime($cutoffUnixTime) : 'NULL'));
+        . ($maxModTime ?: 'NULL'));
 
-      if (empty($cutoffUnixTime)) {
-        $cutoffUnixTime = time() - 60;
-      }
-
-      $cutoff = date('Y-m-d H:i:s', $cutoffUnixTime);
+      $cutoff = $maxModTime ?: date('Y-m-d H:i:s', time() - 60);
     }
     return $cutoff;
   }
