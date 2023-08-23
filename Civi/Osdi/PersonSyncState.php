@@ -161,7 +161,12 @@ class PersonSyncState implements SyncStateInterface {
   }
 
   public function toArray(): array {
-    return $this->data;
+    $d = $this->data;
+    if (isset($d['sync_origin'])) {
+      $d['sync_origin'] =
+        ($d['sync_origin'] === $this::ORIGIN_LOCAL) ? 'local' : 'remote';
+    }
+    return $d;
   }
 
   public function getId(): ?int {
