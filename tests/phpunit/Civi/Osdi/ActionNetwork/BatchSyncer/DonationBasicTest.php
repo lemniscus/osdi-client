@@ -28,6 +28,7 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
   public static function setUpBeforeClass(): void {
     static::$system = \OsdiClient\ActionNetwork\TestUtils::createRemoteSystem();
     static::$testFundraisingPage = self::getDefaultFundraisingPage();
+    static::$financialTypeId = static::getTestFinancialTypeId();
   }
 
   public function testBatchSyncFromCiviDoesNotRunConcurrently() {
