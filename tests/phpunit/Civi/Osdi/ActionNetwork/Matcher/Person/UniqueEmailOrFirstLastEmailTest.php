@@ -107,7 +107,7 @@ class UniqueEmailOrFirstLastEmailTest extends \PHPUnit\Framework\TestCase implem
   //}
 
   public function testRemoteMatch_NoEmail() {
-    $unsavedRemotePerson = F::makeNewOsdiPersonWithFirstLastEmail();
+    $unsavedRemotePerson = F::makeUnsavedOsdiPersonWithFirstLastEmail();
     $unsavedRemotePerson->save();
     $contactArr = F::civiApi4CreateContact('Testy', 'McTest')->first();
     $contactId = $contactArr['id'];

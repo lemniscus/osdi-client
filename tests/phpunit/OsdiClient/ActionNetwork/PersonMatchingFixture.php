@@ -103,7 +103,7 @@ class PersonMatchingFixture {
   }
 
   public static function setUpLocalAndRemotePeople_SameName_DifferentEmail($system) {
-    $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
+    $unsavedRemotePerson = self::makeUnsavedOsdiPersonWithFirstLastEmail();
     $savedRemotePerson = $unsavedRemotePerson->save();
     $emailAddress = $savedRemotePerson->emailAddress->get();
 
@@ -116,7 +116,7 @@ class PersonMatchingFixture {
     return [$contactId, $savedRemotePerson];
   }
 
-  public static function makeNewOsdiPersonWithFirstLastEmail() {
+  public static function makeUnsavedOsdiPersonWithFirstLastEmail() {
     $unsavedNewPerson = self::makeBlankOsdiPerson();
     $unsavedNewPerson->givenName->set('Tester');
     $unsavedNewPerson->familyName->set('Von Test');
@@ -124,8 +124,8 @@ class PersonMatchingFixture {
     return $unsavedNewPerson;
   }
 
-  public static function setUpExactlyOneMatchByEmailAndName(\Civi\Osdi\RemoteSystemInterface $system): array {
-    $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
+  public static function setUpExactlyOneMatchByEmailAndName(): array {
+    $unsavedRemotePerson = self::makeUnsavedOsdiPersonWithFirstLastEmail();
     $savedRemotePerson = $unsavedRemotePerson->save();
 
     $emailAddress = $savedRemotePerson->emailAddress->get();
@@ -158,7 +158,7 @@ class PersonMatchingFixture {
     [
       $savedRemotePerson,
       $idOfMatchingContact,
-    ] = self::setUpExactlyOneMatchByEmailAndName($system);
+    ] = self::setUpExactlyOneMatchByEmailAndName();
 
     $emailAddress = $savedRemotePerson->emailAddress->get();
 
@@ -182,7 +182,7 @@ class PersonMatchingFixture {
    * @return array [$emailAddress, $savedRemotePerson, $contactId]
    */
   public static function setUpExactlyOneMatchByEmail_DifferentNames(): array {
-    $savedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail()->save();
+    $savedRemotePerson = self::makeUnsavedOsdiPersonWithFirstLastEmail()->save();
     $emailAddress = $savedRemotePerson->emailAddress->get();
     TestCase::assertNotEmpty($emailAddress);
     TestCase::assertNotEquals('Fizz', $savedRemotePerson->givenName->get());
@@ -194,7 +194,7 @@ class PersonMatchingFixture {
   }
 
   public static function setUpRemotePerson_TwoLocalContactsMatchingByEmail_NeitherMatchingByName(): array {
-    $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
+    $unsavedRemotePerson = self::makeUnsavedOsdiPersonWithFirstLastEmail();
     $savedRemotePerson = $unsavedRemotePerson->save();
 
     $emailAddress = $savedRemotePerson->emailAddress->get();
@@ -218,7 +218,7 @@ class PersonMatchingFixture {
   }
 
   public static function setUpRemotePerson_TwoLocalContactsMatchingByEmail_BothMatchingByName(\Civi\Osdi\ActionNetwork\RemoteSystem $system): array {
-    $unsavedRemotePerson = self::makeNewOsdiPersonWithFirstLastEmail();
+    $unsavedRemotePerson = self::makeUnsavedOsdiPersonWithFirstLastEmail();
     $savedRemotePerson = $unsavedRemotePerson->save();
 
     $emailAddress = $savedRemotePerson->emailAddress->get();

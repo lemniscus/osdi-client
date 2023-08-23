@@ -568,7 +568,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     // SETUP
 
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $originalRemotePerson */
-    $originalRemotePerson = PersonMatchFixture::makeNewOsdiPersonWithFirstLastEmail();
+    $originalRemotePerson = PersonMatchFixture::makeUnsavedOsdiPersonWithFirstLastEmail();
     self::$createdRemotePeople[] = $originalRemotePerson->save();
     $pair = self::$syncer->matchAndSyncIfEligible($originalRemotePerson);
 
@@ -636,7 +636,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $originalRemotePerson */
     [$originalRemotePerson, $contactId] =
-      PersonMatchFixture::setUpExactlyOneMatchByEmailAndName(self::$remoteSystem);
+      PersonMatchFixture::setUpExactlyOneMatchByEmailAndName();
     self::$createdRemotePeople[] = $originalRemotePerson;
 
     $originalFirstName = $originalRemotePerson->givenName->get();
@@ -676,7 +676,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $remotePerson */
     [$remotePerson, $contactId] =
-      PersonMatchFixture::setUpExactlyOneMatchByEmailAndName(self::$remoteSystem);
+      PersonMatchFixture::setUpExactlyOneMatchByEmailAndName();
 
     self::$createdRemotePeople[] = $remotePerson;
 
@@ -708,7 +708,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     // SETUP
 
     [$originalRemotePerson, $contactId] =
-      PersonMatchFixture::setUpExactlyOneMatchByEmailAndName(self::$remoteSystem);
+      PersonMatchFixture::setUpExactlyOneMatchByEmailAndName();
     self::$createdRemotePeople[] = $originalRemotePerson;
 
     $newStreet = '123 Test St.';
@@ -746,7 +746,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     // SETUP
 
     [$originalRemotePerson, $contactId] =
-      PersonMatchFixture::setUpExactlyOneMatchByEmailAndName(self::$remoteSystem);
+      PersonMatchFixture::setUpExactlyOneMatchByEmailAndName();
     self::$createdRemotePeople[] = $originalRemotePerson;
 
     /** @var \Civi\Osdi\ActionNetwork\Object\Person $originalRemotePerson */
