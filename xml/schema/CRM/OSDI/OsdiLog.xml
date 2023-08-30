@@ -41,6 +41,9 @@
     <title>Entity Table</title>
     <type>varchar</type>
     <length>127</length>
+    <pseudoconstant>
+      <optionGroupName>osdi_log_used_for</optionGroupName>
+    </pseudoconstant>
   </field>
   <index>
     <name>index_entity_table</name>
