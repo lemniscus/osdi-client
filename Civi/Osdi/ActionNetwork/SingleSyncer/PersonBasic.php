@@ -65,6 +65,7 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     }
     catch (\Throwable $e) {
       $result->setMessage('error retrieving sync state');
+      $result->setContext(['exception' => $e]);
       return $this->pushResult($pair, $result, $result::ERROR);
     }
 
