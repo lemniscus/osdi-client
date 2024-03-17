@@ -27,13 +27,6 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
   protected ?MapperInterface $mapper = NULL;
   protected ?MatcherInterface $matcher = NULL;
   protected RemoteSystemInterface $remoteSystem;
-  protected array $syncProfile = [];
-
-  /**
-   * @var int|null
-   * @deprecated
-   */
-  private ?int $syncProfileId = NULL;
 
   public function __construct(?RemoteSystemInterface $remoteSystem = NULL) {
     $this->remoteSystem = $remoteSystem ?? OsdiClient::container()->getSingle(
@@ -355,32 +348,6 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
 
   protected function getRemoteObjectClass(): string {
     return \Civi\Osdi\ActionNetwork\Object\Person::class;
-  }
-
-  /**
-   *
-   * @deprecated
-   *
-   * @param array $syncProfile
-   *
-   * @return $this
-   */
-  public function setSyncProfile(array $syncProfile): self {
-    $this->syncProfile = $syncProfile;
-    if (isset($syncProfile['id'])) {
-      $this->syncProfileId = $syncProfile['id'];
-    }
-    if (isset($syncProfile['mapper'])) {
-      $this->setMapper(new $syncProfile['mapper']($this->getRemoteSystem()));
-    }
-    if (isset($syncProfile['matcher'])) {
-      $this->setMatcher(new $syncProfile['matcher']($this->getRemoteSystem()));
-    }
-    return $this;
-  }
-
-  public function getSyncProfile(): array {
-    return $this->syncProfile;
   }
 
   private function wasDeletedByUs(LocalRemotePair $pair): int {

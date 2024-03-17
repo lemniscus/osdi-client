@@ -65,15 +65,6 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     return $this;
   }
 
-  public function getSyncProfile(): array {
-    return $this->syncProfile;
-  }
-
-  public function setSyncProfile(array $syncProfile): self {
-    $this->syncProfile = $syncProfile;
-    return $this;
-  }
-
   public function matchAndSyncIfEligible(CrudObjectInterface $originObject): LocalRemotePair {
     if (is_a($originObject, LocalObjectInterface::class)) {
       $pair = $this->toLocalRemotePair($originObject)

@@ -155,13 +155,10 @@ class ContainerTest extends PHPUnit\Framework\TestCase implements
     $s1 = OsdiClient::container()->make('SingleSyncer', 'Person', $system);
     $s2 = OsdiClient::container()->make('SingleSyncer', 'Person', $system);
 
-    $s1->setSyncProfile(['foo']);
-    $s2->setSyncProfile(['bar']);
     self::assertNotEquals($s1, $s2);
 
     $s3 = OsdiClient::container()->getSingle('SingleSyncer', 'Person', $system);
     $s4 = OsdiClient::container()->getSingle('SingleSyncer', 'Person', $system);
-    $s4->setSyncProfile(['baz']);
 
     self::assertIsObject($s3);
     self::assertNotEquals($s1, $s3);

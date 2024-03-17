@@ -347,24 +347,10 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     self::assertEquals(Sync::INELIGIBLE, $syncResult->getStatusCode());
   }
 
-  public function dataProviderDeletedPersonDoesNotGetRecreated() {
-    return [
-      ['use SyncProfile' => TRUE],
-      ['use SyncProfile' => FALSE],
-    ];
-  }
-
-  /**
-   * @dataProvider dataProviderDeletedPersonDoesNotGetRecreated
-   */
-  public function testDeletedPersonDoesNotGetRecreated($useSyncProfile) {
-    $syncerClass = get_class(self::$syncer);
-    $syncer = new $syncerClass(self::$remoteSystem);
-    if ($useSyncProfile) {
-      $syncer->setSyncProfile(self::$syncer->getSyncProfile());
-    }
-
-    $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person');
+  public function testDeletedPersonDoesNotGetRecreated() {
+    $container = \Civi\OsdiClient::container();
+    $syncer = $container->make('SingleSyncer', 'Person');
+    $localPerson = $container->make('LocalObject', 'Person');
     $localPerson->firstName->set('Cheese');
     $localPerson->emailEmail->set('bitz@bop.com');
     $localPerson->save();

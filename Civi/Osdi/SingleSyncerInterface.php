@@ -33,8 +33,6 @@ interface SingleSyncerInterface {
 
   public function getRemoteSystem(): RemoteSystemInterface;
 
-  public function getSyncProfile(): array;
-
   public function makeLocalObject($id = NULL): LocalObjectInterface;
 
   public function makeRemoteObject($id = NULL): RemoteObjectInterface;
@@ -65,8 +63,6 @@ interface SingleSyncerInterface {
   public function setMatcher(?MatcherInterface $matcher): self;
 
   public function setRemoteSystem(RemoteSystemInterface $remoteSystem): self;
-
-  public function setSyncProfile(array $syncProfile): self;
 
   /**
    * Package the given local and remote objects as a LocalRemotePair.
