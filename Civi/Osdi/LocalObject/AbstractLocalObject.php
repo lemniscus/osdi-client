@@ -130,7 +130,7 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
   }
 
   private function initializeFields($idValue = NULL): void {
-    foreach ($this->getFieldMetadata() as $name => $metadata) {
+    foreach (static::getFieldMetadata() as $name => $metadata) {
       $options = array_merge($metadata, ['bundle' => $this]);
       $this->$name = new Field($name, $options);
     }
