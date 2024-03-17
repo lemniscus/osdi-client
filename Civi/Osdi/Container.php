@@ -57,6 +57,16 @@ class Container {
 
   private ?CRM_OSDI_BAO_SyncProfile $syncProfile;
 
+  /**
+   * @deprecated Should be refactored out once we remove RemoteSystem's
+   * dependency on CRM_OSDI_BAO_SyncProfile
+   *
+   * @return \CRM_OSDI_BAO_SyncProfile|null
+   */
+  public function getSyncProfile(): ?CRM_OSDI_BAO_SyncProfile {
+    return $this->syncProfile;
+  }
+
   private array $singletons = [];
 
   /**
