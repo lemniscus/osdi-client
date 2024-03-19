@@ -2,6 +2,7 @@
 
 namespace Civi;
 
+use Civi\Api4\OsdiSyncProfile;
 use Civi\Osdi\Container;
 use Civi\Osdi\Exception\InvalidArgumentException;
 
@@ -29,6 +30,8 @@ class OsdiClient {
     if (self::$containerSingleton && !$mixedSyncProfileParam) {
       return self::$containerSingleton;
     }
+
+    // we're creating a new container
 
     $paramIsInteger = is_int($mixedSyncProfileParam)
       || (is_string($mixedSyncProfileParam)
@@ -70,7 +73,14 @@ class OsdiClient {
       }
     }
 
+    // if we had no container before, hook listeners might not have been registered.
+    osdi_client_add_syncprofile_dependent_listeners();
+
     return self::$containerSingleton;
+  }
+
+  public static function containerIsInitialized(): bool {
+    return !empty(self::$containerSingleton);
   }
 
   public static function containerWithDefaultSyncProfile(bool $refresh = FALSE) {
@@ -78,6 +88,23 @@ class OsdiClient {
       self::$containerSingleton = NULL;
     }
     return self::container();
+  }
+
+  public static function postSaveOsdiSyncProfile(string $op, string $objectName, ?int $objectId, &$objectRef) {
+    if ($op !== 'create' && $op !== 'edit') {
+      return;
+    }
+    /** @var \CRM_OSDI_DAO_SyncProfile $objectRef */
+    if ($objectRef->is_default) {
+      $profileArray = OsdiSyncProfile::get(FALSE)
+        ->addWhere('id', '=', $objectId)
+        ->execute()->single();
+      \Civi::settings()->set('osdiClient.defaultSyncProfile', $profileArray);
+
+      // if we were missing a default SyncProfile before, hook listeners might
+      // not have been registered.
+      osdi_client_add_syncprofile_dependent_listeners();
+    }
   }
 
 }

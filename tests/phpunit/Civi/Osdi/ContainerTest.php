@@ -149,20 +149,20 @@ class ContainerTest extends PHPUnit\Framework\TestCase implements
   }
 
   public function testSingleton() {
-    $system = self::$system;
+    $container = OsdiClient::container();
+    $container->register('Foo', 'Bar', \DateTime::class);
 
-    /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\PersonBasic $s1 */
-    $s1 = OsdiClient::container()->make('SingleSyncer', 'Person', $system);
-    $s2 = OsdiClient::container()->make('SingleSyncer', 'Person', $system);
+    $t1 = $container->make('Foo', 'Bar', '1999-12-31');
+    $t2 = $container->make('Foo', 'Bar', '2000-01-01');
 
-    self::assertNotEquals($s1, $s2);
+    self::assertNotEquals($t1, $t2);
 
-    $s3 = OsdiClient::container()->getSingle('SingleSyncer', 'Person', $system);
-    $s4 = OsdiClient::container()->getSingle('SingleSyncer', 'Person', $system);
+    $t3 = $container->getSingle('Foo', 'Bar', '1984-03-02');
+    $t4 = $container->getSingle('Foo', 'Bar');
 
-    self::assertIsObject($s3);
-    self::assertNotEquals($s1, $s3);
-    self::assertEquals($s3, $s4);
+    self::assertIsObject($t3);
+    self::assertNotEquals($t1, $t3);
+    self::assertEquals($t3, $t4);
   }
 
 }

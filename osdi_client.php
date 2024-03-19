@@ -10,18 +10,6 @@ require_once __DIR__ . DIRECTORY_SEPARATOR
     . 'vendor' . DIRECTORY_SEPARATOR
     . 'autoload.php';
 
-/**
- * Implements hook_civicrm_searchKitTasks().
- */
-//function osdi_client_civicrm_searchKitTasks(array &$tasks, bool $checkPermissions, ?int $userId) {
-//  $tasks['Contact']['osdi-sync'] = [
-//    'module' => 'osdiSearchTasks',
-//    'title' => E::ts('Upload to Action Network'),
-//    'icon' => 'fa-cloud-upload',
-//    'uiDialog' => ['templateUrl' => '~/osdiSearchTasks/osdiSearchTaskSync.html'],
-//  ];
-//}
-
 function osdi_client_civicrm_config(&$config) {
   if (isset(Civi::$statics[__FUNCTION__])) {
     return;
@@ -45,6 +33,28 @@ function osdi_client_civicrm_config(&$config) {
     }
   });
 
+  Civi::dispatcher()->addListener('&hook_civicrm_post::OsdiSyncProfile', ['\Civi\OsdiClient', 'postSaveOsdiSyncProfile']);
+  Civi::dispatcher()->addListener('&hook_civicrm_queueRun_osdiclient', ['\Civi\Osdi\Queue', 'runQueue']);
+
+  osdi_client_add_syncprofile_dependent_listeners();
+
+  _osdi_client_civix_civicrm_config($config);
+}
+
+function osdi_client_add_syncprofile_dependent_listeners(): void {
+  // only run this function once per Civi container build
+  if (Civi::dispatcher()->hasListeners(__FUNCTION__)) {
+    return;
+  }
+
+  // don't bother if we don't have/can't make an OsdiClient container
+  if (empty(Civi::settings()->get('osdiClient.defaultSyncProfile'))) {
+    if (!\Civi\OsdiClient::containerIsInitialized()) {
+      return;
+    }
+  }
+
+  Civi::dispatcher()->addListener(__FUNCTION__, 'dummy');
   Civi::dispatcher()->addListener('civi.dao.preDelete', ['\Civi\Osdi\CrmEventDispatch', 'daoPreDelete']);
   Civi::dispatcher()->addListener('civi.dao.preUpdate', ['\Civi\Osdi\CrmEventDispatch', 'daoPreUpdate']);
   Civi::dispatcher()->addListener('&hook_civicrm_alterLocationMergeData', ['\Civi\Osdi\CrmEventDispatch', 'alterLocationMergeData']);
@@ -52,9 +62,6 @@ function osdi_client_civicrm_config(&$config) {
   Civi::dispatcher()->addListener('&hook_civicrm_pre', ['\Civi\Osdi\CrmEventDispatch', 'pre']);
   Civi::dispatcher()->addListener('&hook_civicrm_post', ['\Civi\Osdi\CrmEventDispatch', 'post']);
   Civi::dispatcher()->addListener('&hook_civicrm_postCommit', ['\Civi\Osdi\CrmEventDispatch', 'postCommit']);
-  Civi::dispatcher()->addListener('&hook_civicrm_queueRun_osdiclient', ['\Civi\Osdi\Queue', 'runQueue']);
-
-  _osdi_client_civix_civicrm_config($config);
 }
 
 function osdi_client_civicrm_check(&$messages, $statusNames, $includeDisabled) {
@@ -116,15 +123,6 @@ function osdi_client_civicrm_enable() {
 }
 
 // --- Functions below this ship commented out. Uncomment as required. ---
-
-/**
- * Implements hook_civicrm_preProcess().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_preProcess
- */
-//function osdi_client_civicrm_preProcess($formName, &$form) {
-//
-//}
 
 /**
  * Implements hook_civicrm_navigationMenu().

@@ -5,6 +5,19 @@
  */
 class CRM_OSDI_Upgrader extends CRM_Extension_Upgrader_Base {
 
+  public function upgrade_1000() {
+    try {
+      $profileArray = \Civi\Api4\OsdiSyncProfile::get(FALSE)
+        ->addWhere('is_default', '=', TRUE)
+        ->execute()->single();
+      \Civi::settings()->set('osdiClient.defaultSyncProfile', $profileArray);
+      return TRUE;
+    }
+    catch (Throwable $exception) {
+      return FALSE;
+    }
+  }
+
   // By convention, functions that look like "function upgrade_NNNN()" are
   // upgrade tasks. They are executed in order (like Drupal's hook_update_N).
 
