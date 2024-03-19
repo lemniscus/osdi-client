@@ -148,9 +148,7 @@ class PersonBasic extends AbstractLocalObject implements LocalObjectInterface {
   }
 
   protected function saveCoreContactFields() {
-    $record = $this->getSaveableFieldContents('');
-    $record['contact_type'] = 'Individual';
-    $record['id'] = $this->getId();
+    $record = $this->getContactRecordForSave();
 
     $postSaveContactArray = Contact::save(FALSE)
       ->addRecord($record)->execute()->first();
@@ -250,6 +248,13 @@ class PersonBasic extends AbstractLocalObject implements LocalObjectInterface {
 
   protected function defaultCountryId() {
     return \CRM_Core_Config::singleton()->defaultContactCountry;
+  }
+
+  protected function getContactRecordForSave(): array {
+    $record = $this->getSaveableFieldContents('');
+    $record['contact_type'] = 'Individual';
+    $record['id'] = $this->getId();
+    return $record;
   }
 
   protected function getSaveableFieldContents($joinName, $keepJoinName = FALSE): array {
