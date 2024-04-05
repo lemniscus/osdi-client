@@ -63,13 +63,7 @@ class PersonBasic implements MapperInterface {
     $remotePerson->phoneNumber->set($phoneNumber ?? '');
     $remotePerson->phoneStatus->set($noSms ? 'unsubscribed' : 'subscribed');
 
-    if ($zip = $l->addressPostalCode->get()) {
-      $remotePerson->postalStreet->set($l->addressStreetAddress->get());
-      $remotePerson->postalLocality->set($l->addressCity->get());
-      $remotePerson->postalRegion->set($l->addressStateProvinceIdAbbreviation->get());
-      $remotePerson->postalCode->set($zip);
-      $remotePerson->postalCountry->set($l->addressCountryIdName->get());
-    }
+    $this->mapLocalToRemoteAddress($l, $remotePerson);
 
     return $remotePerson;
   }
@@ -99,15 +93,8 @@ class PersonBasic implements MapperInterface {
       $localPerson->phonePhone->set($rpPhone);
     }
 
-    if ($zip = $remotePerson->postalCode->get()) {
-      [$stateId, $countryId]
-        = $this->getStateAndCountryIdsFromActNetAddress($remotePerson);
-      $localPerson->addressStreetAddress->set($remotePerson->postalStreet->get());
-      $localPerson->addressCity->set($remotePerson->postalLocality->get());
-      $localPerson->addressStateProvinceId->set($stateId);
-      $localPerson->addressPostalCode->set($zip);
-      $localPerson->addressCountryId->set($countryId);
-    }
+    $this->mapRemoteToLocalAddress($remotePerson, $localPerson);
+
     return $localPerson;
   }
 
@@ -153,6 +140,28 @@ class PersonBasic implements MapperInterface {
       }
     }
     return NULL;
+  }
+
+  protected function mapRemoteToLocalAddress(RemoteObjectInterface $remotePerson, mixed $localPerson): void {
+    if ($zip = $remotePerson->postalCode->get()) {
+      [$stateId, $countryId]
+        = $this->getStateAndCountryIdsFromActNetAddress($remotePerson);
+      $localPerson->addressStreetAddress->set($remotePerson->postalStreet->get());
+      $localPerson->addressCity->set($remotePerson->postalLocality->get());
+      $localPerson->addressStateProvinceId->set($stateId);
+      $localPerson->addressPostalCode->set($zip);
+      $localPerson->addressCountryId->set($countryId);
+    }
+  }
+
+  protected function mapLocalToRemoteAddress(\Civi\Osdi\CrudObjectInterface $l, RemotePerson|RemoteObjectInterface $remotePerson): void {
+    if ($zip = $l->addressPostalCode->get()) {
+      $remotePerson->postalStreet->set($l->addressStreetAddress->get());
+      $remotePerson->postalLocality->set($l->addressCity->get());
+      $remotePerson->postalRegion->set($l->addressStateProvinceIdAbbreviation->get());
+      $remotePerson->postalCode->set($zip);
+      $remotePerson->postalCountry->set($l->addressCountryIdName->get());
+    }
   }
 
 }
