@@ -154,7 +154,7 @@ class PersonBasic implements MapperInterface {
     }
   }
 
-  protected function mapLocalToRemoteAddress(\Civi\Osdi\CrudObjectInterface $l, RemotePerson|RemoteObjectInterface $remotePerson): void {
+  protected function mapLocalToRemoteAddress(\Civi\Osdi\CrudObjectInterface $l, RemoteObjectInterface $remotePerson): void {
     if ($zip = $l->addressPostalCode->get()) {
       $remotePerson->postalStreet->set($l->addressStreetAddress->get());
       $remotePerson->postalLocality->set($l->addressCity->get());
