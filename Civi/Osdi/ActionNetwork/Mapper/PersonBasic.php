@@ -142,7 +142,7 @@ class PersonBasic implements MapperInterface {
     return NULL;
   }
 
-  protected function mapRemoteToLocalAddress(RemoteObjectInterface $remotePerson, mixed $localPerson): void {
+  protected function mapRemoteToLocalAddress(RemoteObjectInterface $remotePerson, LocalObjectInterface $localPerson): void {
     if ($zip = $remotePerson->postalCode->get()) {
       [$stateId, $countryId]
         = $this->getStateAndCountryIdsFromActNetAddress($remotePerson);
