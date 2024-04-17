@@ -2,7 +2,7 @@
 
 namespace Civi\Osdi;
 
-use Symfony\Component\EventDispatcher\Event;
+use Civi\Core\Event\GenericHookEvent;
 
 class Queue {
 
@@ -24,12 +24,13 @@ class Queue {
     return $queue;
   }
 
-  public static function runQueue(Event $e) {
+  public static function runQueue(GenericHookEvent $e) {
+
     //CRM_Queue_Queue $queue, array $items, array &$outcomes
-    foreach ($items as $itemPos => $item) {
+    foreach ($e->items as $itemPos => $item) {
       Logger::logDebug('Running queued task: ' . $item->data->title);
-      $outcome = (new \CRM_Queue_TaskRunner())->run($queue, $item);
-      $outcomes[$itemPos] = $outcome;
+      $outcome = (new \CRM_Queue_TaskRunner())->run($e->queue, $item);
+      $e->outcomes[$itemPos] = $outcome;
       Logger::logDebug("Queued task result: $outcome");
     }
   }
