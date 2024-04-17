@@ -47,8 +47,9 @@ class OsdiClient {
     elseif (is_null($mixedSyncProfileParam)) {
       $syncProfileBAO = new \CRM_OSDI_BAO_SyncProfile();
       $syncProfileBAO->is_default = TRUE;
-      if ($syncProfileBAO->find(TRUE) !== 1) {
-        throw new InvalidArgumentException('There should be exactly 1 default sync profile');
+      $foundBAOs = $syncProfileBAO->find(TRUE);
+      if ($foundBAOs !== 1) {
+        throw new InvalidArgumentException('There should be exactly 1 default sync profile, %u found', $foundBAOs);
       }
     }
     elseif (is_a($mixedSyncProfileParam, \CRM_OSDI_BAO_SyncProfile::class)) {
