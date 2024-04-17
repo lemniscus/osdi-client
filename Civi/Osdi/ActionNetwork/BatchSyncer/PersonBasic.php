@@ -181,7 +181,7 @@ class PersonBasic implements BatchSyncerInterface {
       $localPersonId = $localPerson->getId();
 
       Logger::logDebug(sprintf($countFormat, $currentCount) .
-        "Considering Civi id $localPersonId, mod" .
+        "Considering Civi id $localPersonId, mod " .
         $localPerson->modifiedDate->get() . ', ' .
         $localPerson->emailEmail->get());
 
