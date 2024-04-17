@@ -5,6 +5,7 @@ namespace Civi\Osdi\LocalObject;
 use Civi\Test\HeadlessInterface;
 use Civi\Core\HookInterface;
 use Civi\Test\TransactionalInterface;
+use OsdiClient\ActionNetwork\TestUtils;
 
 /**
  * @group headless
@@ -16,6 +17,11 @@ class TaggingTest extends \PHPUnit\Framework\TestCase implements
 
   public function setUpHeadless(): \Civi\Test\CiviEnvBuilder {
     return \Civi\Test::headless()->installMe(__DIR__)->apply();
+  }
+
+  public static function setUpBeforeClass(): void {
+    parent::setUpBeforeClass();
+    TestUtils::createSyncProfile();
   }
 
   public function testGetCiviEntity() {
