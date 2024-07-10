@@ -130,7 +130,7 @@ class PersonBasicTest extends PHPUnit\Framework\TestCase implements
       'osdiClient.syncJobEndTime' => '2000-11-11 00:00:11',
     ]);
 
-    $testTime = time();
+    $testTime = date('Y-m-d\TH:i:s\Z');
 
     for ($i = 1; $i < 5; $i++) {
       $email = "syncJobFromANTest$i@null.org";
