@@ -83,7 +83,7 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
 
     $taggingSyncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic($remoteSystem);
     $taggingSyncer->setMapper(new \Civi\Osdi\ActionNetwork\Mapper\TaggingBasic($taggingSyncer))
-      ->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\TaggingBasic($taggingSyncer))
+      ->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\TaggingBasic())
       ->setPersonSyncer($personSyncer)
       ->setTagSyncer($tagSyncer);
 
@@ -189,9 +189,9 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
       $taggingSyncer->oneWayMapAndWrite($pair);
     }
     catch (\Throwable $e) {
-      self::fail('A DB constraint error pops up ONLY if this test function is run 
-      after certain others, which is strange because we\'re using TransactionalInterface. 
-      See Civi log file (CONSTRAINT `FK_civicrm_entity_tag_tag_id` FOREIGN KEY (`tag_id`) 
+      self::fail('A DB constraint error pops up ONLY if this test function is run
+      after certain others, which is strange because we\'re using TransactionalInterface.
+      See Civi log file (CONSTRAINT `FK_civicrm_entity_tag_tag_id` FOREIGN KEY (`tag_id`)
       REFERENCES `civicrm_tag` (`id`))');
     }
 

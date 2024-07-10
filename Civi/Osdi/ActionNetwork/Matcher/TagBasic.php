@@ -37,7 +37,6 @@ class TagBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
   protected function tryToFindMatchForRemoteObject(LocalRemotePair $pair): MatchResult {
     $result = new MatchResult(MatchResult::ORIGIN_REMOTE);
-    $localClass = $pair->getLocalClass();
 
     $civiApiTagGet = \Civi\Api4\Tag::get(FALSE)
       ->addWhere('name', '=', $pair->getRemoteObject()->name->get())
@@ -45,7 +44,7 @@ class TagBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
     if ($civiApiTagGet->count()) {
       $tagArray = $civiApiTagGet->single();
-      $localObject = new $localClass();
+      $localObject = OsdiClient::container()->make('LocalObject', 'Tag');
       $localObject->loadFromArray($tagArray);
       $result->setMatch($localObject);
       $result->setStatusCode($result::FOUND_MATCH);

@@ -11,17 +11,6 @@ use Civi\OsdiClient;
 
 class TaggingBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
-  protected SingleSyncerInterface $personSyncer;
-
-  protected SingleSyncerInterface $taggingSyncer;
-
-  public function __construct(
-    ?SingleSyncerInterface $taggingSyncer = NULL
-  ) {
-    $this->taggingSyncer = $taggingSyncer ?? OsdiClient::container()->getSingle(
-      'SingleSyncer', 'Tagging');
-  }
-
   public function tryToFindMatchForLocalObject(LocalRemotePair $taggingPair): MatchResult {
     $result = new MatchResult(MatchResult::ORIGIN_LOCAL);
 
@@ -79,9 +68,12 @@ class TaggingBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterfac
       return $result->setStatusCode($result::NO_MATCH);
     }
 
-    $targetTagging = call_user_func(
-      [$taggingPair->getLocalClass(), 'fromArray'],
-      $civiApiTaggingGet->first());
+    $targetTagging = OsdiClient::container()->callStatic(
+      'LocalObject',
+      'Tagging',
+      'fromArray',
+      $civiApiTaggingGet->first()
+    );
 
     $result->setMatch($targetTagging);
     $taggingPair->setTargetObject($targetTagging);
@@ -89,44 +81,11 @@ class TaggingBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterfac
     return $result;
   }
 
-  public function getPersonSyncer(): ?SingleSyncerInterface {
-    if (empty($this->personSyncer)) {
-      $this->personSyncer = $this->taggingSyncer->getPersonSyncer();
-    }
-    return $this->personSyncer;
-  }
-
-  public function setPersonSyncer(?SingleSyncerInterface $personSyncer): self {
-    $this->personSyncer = $personSyncer;
-    return $this;
-  }
-
-  public function getTagSyncer(): ?SingleSyncerInterface {
-    if (empty($this->tagSyncer)) {
-      $this->tagSyncer = $this->taggingSyncer->getTagSyncer();
-    }
-    return $this->tagSyncer;
-  }
-
-  public function setTagSyncer(?SingleSyncerInterface $tagSyncer): self {
-    $this->tagSyncer = $tagSyncer;
-    return $this;
-  }
-
-  public function getTaggingSyncer(): ?SingleSyncerInterface {
-    return $this->taggingSyncer;
-  }
-
-  public function setTaggingSyncer(?SingleSyncerInterface $taggingSyncer): self {
-    $this->taggingSyncer = $taggingSyncer;
-    return $this;
-  }
-
   protected function matchPerson(
     string $origin,
     CrudObjectInterface $originTagging
   ): ?CrudObjectInterface {
-    $personSyncer = $this->getPersonSyncer();
+    $personSyncer = OsdiClient::container()->getSingle('SingleSyncer', 'Person');
     $personPair = $personSyncer
       ->toLocalRemotePair()
       ->setOrigin($origin)
@@ -145,7 +104,7 @@ class TaggingBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterfac
     string $origin,
     CrudObjectInterface $originTagging
   ): ?CrudObjectInterface {
-    $tagSyncer = $this->getTagSyncer();
+    $tagSyncer = OsdiClient::container()->getSingle('SingleSyncer', 'Tag');
     $tagPair = $tagSyncer
       ->toLocalRemotePair()
       ->setOrigin($origin)

@@ -168,10 +168,6 @@ class LocalRemotePair {
     return $this;
   }
 
-  public function getRemoteClass(): ?string {
-    return $this->remoteClass;
-  }
-
   public function setRemoteClass(?string $className) {
     $this->remoteClass = $className;
     return $this;

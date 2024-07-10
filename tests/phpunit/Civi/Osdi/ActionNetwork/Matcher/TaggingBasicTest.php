@@ -49,6 +49,7 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
   private static function makeNewSyncer(): \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic {
     $remoteSystem = self::$remoteSystem;
 
+    // todo use Container for all this
     $personSyncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\PersonBasic($remoteSystem);
     $personSyncer->setMapper(new \Civi\Osdi\ActionNetwork\Mapper\PersonBasic($remoteSystem))
       ->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\Person\UniqueEmailOrFirstLastEmail($remoteSystem));
@@ -59,7 +60,7 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
 
     $taggingSyncer = new \Civi\Osdi\ActionNetwork\SingleSyncer\TaggingBasic($remoteSystem);
     $taggingSyncer->setMapper(new \Civi\Osdi\ActionNetwork\Mapper\TaggingBasic($taggingSyncer))
-      ->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\TaggingBasic($taggingSyncer))
+      ->setMatcher(new \Civi\Osdi\ActionNetwork\Matcher\TaggingBasic())
       ->setPersonSyncer($personSyncer)
       ->setTagSyncer($tagSyncer);
 

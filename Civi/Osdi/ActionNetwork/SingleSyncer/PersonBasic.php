@@ -309,16 +309,6 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     return $result;
   }
 
-  public function makeLocalRemotePair(
-    LocalObjectInterface $localObject = NULL,
-    RemoteObjectInterface $remoteObject = NULL
-  ): LocalRemotePair {
-    $pair = new LocalRemotePair($localObject, $remoteObject);
-    $pair->setLocalClass($this->getLocalObjectClass());
-    $pair->setRemoteClass($this->getRemoteObjectClass());
-    return $pair;
-  }
-
   /**
    * @param \Civi\Osdi\CrudObjectInterface $person
    */
