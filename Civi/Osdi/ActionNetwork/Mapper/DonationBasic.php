@@ -66,15 +66,16 @@ class DonationBasic implements MapperInterface {
   }
 
   /**
-   * Return $remoteDonation after setting various fields based on $localDonation.
+   * Return $remoteDonation after setting various fields based on
+   * $localDonation.
    *
    * First, find a matching remote person (overwriting anyone attached to the
-   * existing remote donation), or throw an error. Link the remote person to the
-   * remote donation. Copy from local to remote: currency, amount, recurrence.
-   * Copy date received -> created date, financial type -> recipients:display_name.
-   * Link the remote donation to the AN Fundraising Page called "CiviCRM" (which
-   * must exist). Note, payment method and reference number cannot be written
-   * by the API, so they are not mapped.
+   * existing remote donation), or throw an error. Link the remote person to
+   * the remote donation. Copy from local to remote: currency, amount,
+   * recurrence. Copy date received -> created date, financial type ->
+   * recipients:display_name. Link the remote donation to the AN Fundraising
+   * Page called "CiviCRM" (which must exist). Note, payment method and
+   * reference number cannot be written by the API, so they are not mapped.
    *
    * @todo instead of taking two objects as params, take a LocalRemotePair and
    * add to its result stack. That's a more powerful way to track status than
@@ -88,94 +89,29 @@ class DonationBasic implements MapperInterface {
     LocalObjectInterface $localDonation,
     RemoteObjectInterface $remoteDonation = NULL
   ): RemoteObjectInterface {
-    $container = OsdiClient::container();
-
-    /** @var \Civi\Osdi\LocalObject\DonationBasic $localDonation */
     $localDonation->loadOnce();
-    /** @var \Civi\Osdi\ActionNetwork\Object\Donation $remoteDonation */
-    $remoteDonation = $remoteDonation ?? $container->make('OsdiObject',
-      'osdi:donations', $this->remoteSystem);
+    $remoteDonation = $remoteDonation ?? OsdiClient::container()->make(
+      'OsdiObject', 'osdi:donations', $this->remoteSystem);
 
-    // Load the contact that the donation belongs to.
-    /** @var \Civi\Osdi\LocalObject\PersonBasic $localPerson */
-    $localPerson = $localDonation->getPerson();
-
-    $personPair = new LocalRemotePair($localPerson);
-    $personPair->setOrigin(LocalRemotePair::ORIGIN_LOCAL);
-    /** @var \Civi\Osdi\SingleSyncerInterface $personSyncer */
-    $personSyncer = $container->getSingle('SingleSyncer', 'Person', $this->remoteSystem);
-    $matchResult = $personSyncer->fetchOldOrFindAndSaveNewMatch($personPair);
-    if (!$matchResult->hasMatch()) {
-      throw new CannotMapException("Cannot sync a donation whose Contact"
-        . " (ID %d) has no RemotePerson match.", $localPerson->getId());
-    }
-    /** @var \Civi\Osdi\ActionNetwork\Object\Person $remotePerson */
-    $remotePerson = $personPair->getRemoteObject();
-    $remoteDonation->setDonor($remotePerson);
-
-    // Simple mappings
-    $unixTimeStamp = strtotime($localDonation->receiveDate->get());
-    $formattedTime = $this->remoteSystem::formatDateTime($unixTimeStamp);
-    $remoteDonation->createdDate->set($formattedTime);
-    $remoteDonation->currency->set($localDonation->currency->get());
-    $recipient['display_name'] = $localDonation->financialTypeLabel->get();
-    $recipient['amount'] = $localDonation->amount->get();
-    $remoteDonation->recipients->set([$recipient]);
-
-    // Recurrence
-    if ($localDonation->contributionRecurId->get()) {
-      $freq = $localDonation->contributionRecurFrequency->get();
-      $period = [
-        'year' => 'Yearly',
-        'month' => 'Monthly',
-        'week' => 'Weekly',
-        'day' => 'Daily',
-      ][$freq] ?? NULL;
-      if (!$period) {
-        throw new CannotMapException('Unsupported recurring period "%s"',
-          $freq);
-      }
-      $remoteDonation->recurrence->set(['recurring' => TRUE, 'period' => $period]);
-    }
-    else {
-      $remoteDonation->recurrence->set(['recurring' => FALSE]);
-    }
+    $this->mapLocalDonorToRemote($localDonation, $remoteDonation);
+    $this->mapLocalBasicFieldsToRemote($localDonation, $remoteDonation);
+    $this->mapLocalRecurrenceToRemote($localDonation, $remoteDonation);
+    $this->mapLocalFundraisingPageToRemote(static::FUNDRAISING_PAGE_NAME, $localDonation, $remoteDonation);
 
     // This data is ignored by AN so no point trying to set it.
     // $remoteDonation->payment = ['method' => 'EFT', 'reference_number' => 'test_payment_1'];
-
-    // Fundraising page
-    // @todo $remoteDonation->fundraisingPageHref
-    // This is a challenge: on the Civi side we have just a string;
-    // on the remote side we have an object. And we can't look up the
-    // object by name.
-    $found = NULL;
-    foreach ($this->getRemoteFundraisingPages() as $fundraisingPage) {
-      if ($fundraisingPage->title->get() === static::FUNDRAISING_PAGE_NAME) {
-        $found = $fundraisingPage;
-        break;
-      }
-    }
-    if ($found) {
-      $remoteDonation->setFundraisingPage($fundraisingPage);
-    }
-    else {
-      throw new CannotMapException('Cannot map local donation: Failed '
-        . 'to find remote fundraising page called %s', json_encode(static::FUNDRAISING_PAGE_NAME));
-    }
-
-    // @todo $remoteDonation->referrerData
 
     return $remoteDonation;
   }
 
   /**
-   * Return $localDonation after setting various fields based on $remoteDonation.
+   * Return $localDonation after setting various fields based on
+   * $remoteDonation.
    *
-   * First, find a matching local person (overwriting the id of anyone attached to the
-   * existing local donation), or throw an error. Link the local person to the
-   * local donation. Copy from local to remote: amount and currency. Copy
-   * created date -> date received, reference number -> transaction id,
+   * First, find a matching local person (overwriting the id of anyone attached
+   * to the existing local donation), or throw an error. Link the local person
+   * to the local donation. Copy from local to remote: amount and currency.
+   * Copy created date -> date received, reference number -> transaction id,
    * fundraising page title -> source. Find the Civi financial type whose name
    * matches the AN donation's recipient display_name or throw an error.
    * Likewise with payment method.
@@ -240,17 +176,6 @@ class DonationBasic implements MapperInterface {
     // @todo $remoteDonation->referrerData
 
     return $localDonation;
-  }
-
-  /**
-   * Return all the fundraising pages from AN (cached once per thread)
-   */
-  protected function getRemoteFundraisingPages(): RemoteFindResult {
-    if (empty(static::$remoteFundraisingPages)) {
-      static::$remoteFundraisingPages
-        = $this->remoteSystem->findAll('osdi:fundraising_pages');
-    }
-    return static::$remoteFundraisingPages;
   }
 
   /**
@@ -323,6 +248,106 @@ class DonationBasic implements MapperInterface {
         . "'{$remotePaymentMethod}' as there is no matching payment instrument.");
     }
     return (int) static::$paymentInstrumentsMap[$remotePaymentMethod];
+  }
+
+  /**
+   * Map a string to an Action Network fundraising page.
+   *
+   * This is a challenge: on the Civi side we have just a string;
+   * on the remote side we have an object. And we can't look up the
+   * object by name.
+   *
+   * @param \Civi\Osdi\LocalObjectInterface $localDonation
+   */
+  protected function mapLocalFundraisingPageToRemote(string $title, LocalObjectInterface $localDonation, RemoteDonation $remoteDonation): void {
+    $fundraisingPage = $this->findRemoteFundraisingPageByTitle($title);
+    if ($fundraisingPage) {
+      $remoteDonation->setFundraisingPage($fundraisingPage);
+    }
+    else {
+      throw new CannotMapException('Cannot map local donation: Failed '
+        . 'to find remote fundraising page called %s', json_encode($title));
+    }
+  }
+
+  protected function mapLocalDonorToRemote($localDonation, RemoteDonation $remoteDonation): void {
+    $localPerson = $localDonation->getPerson();
+    $personPair = new LocalRemotePair($localPerson);
+    $personPair->setOrigin(LocalRemotePair::ORIGIN_LOCAL);
+
+    /** @var \Civi\Osdi\SingleSyncerInterface $personSyncer */
+    $personSyncer = OsdiClient::container()->getSingle('SingleSyncer', 'Person');
+    $matchResult = $personSyncer->fetchOldOrFindAndSaveNewMatch($personPair);
+    if (!$matchResult->hasMatch()) {
+      throw new CannotMapException("Cannot sync a donation whose Contact"
+        . " (ID %d) has no RemotePerson match.", $localPerson->getId());
+    }
+
+    /** @var \Civi\Osdi\ActionNetwork\Object\Person $remotePerson */
+    $remotePerson = $personPair->getRemoteObject();
+    $remoteDonation->setDonor($remotePerson);
+  }
+
+  protected function mapLocalRecurrenceToRemote($localDonation, RemoteDonation $remoteDonation): void {
+    if ($localDonation->contributionRecurId->get()) {
+      $freq = $localDonation->contributionRecurFrequency->get();
+      $period = [
+        'year' => 'Yearly',
+        'month' => 'Monthly',
+        'week' => 'Weekly',
+        'day' => 'Daily',
+      ][$freq] ?? NULL;
+      if (!$period) {
+        throw new CannotMapException('Unsupported recurring period "%s"',
+          $freq);
+      }
+      $remoteDonation->recurrence->set([
+        'recurring' => TRUE,
+        'period' => $period,
+      ]);
+    }
+    else {
+      $remoteDonation->recurrence->set(['recurring' => FALSE]);
+    }
+  }
+
+  private function mapLocalBasicFieldsToRemote($localDonation, RemoteDonation $remoteDonation): void {
+    $unixTimeStamp = strtotime($localDonation->receiveDate->get());
+    $formattedTime = $this->remoteSystem::formatDateTime($unixTimeStamp);
+    $remoteDonation->createdDate->set($formattedTime);
+    $remoteDonation->currency->set(strtolower($localDonation->currency->get()));
+    $recipient['display_name'] = $localDonation->financialTypeLabel->get();
+    $recipient['amount'] = $localDonation->amount->get();
+    $remoteDonation->recipients->set([$recipient]);
+  }
+
+  private function findRemoteFundraisingPageByTitle(string $title): ?RemoteObjectInterface {
+    $pages = &$this->getRemoteFundraisingPageCache();
+
+    foreach ($pages as $pageSet) {
+      foreach ($pageSet as $fundraisingPage) {
+        if ($fundraisingPage->title->get() === $title) {
+          return $fundraisingPage;
+        }
+      }
+    }
+
+    return NULL;
+  }
+
+  protected function &getRemoteFundraisingPageCache() {
+    $syncProfileId = OsdiClient::container()->getSyncProfileId();
+    $pages = &\Civi::$statics[__CLASS__ . ':RemoteFundPages'][$syncProfileId];
+    if (empty($pages)) {
+      $pages['added'] = [];
+      $pages['found'] = $this->remoteSystem->findAll('osdi:fundraising_pages');
+    }
+    return $pages;
+  }
+
+  protected function addRemoteFundraisingPageToCache(RemoteObjectInterface $page) {
+    $pages = &$this->getRemoteFundraisingPageCache();
+    $pages['added'][] = $page;
   }
 
 }

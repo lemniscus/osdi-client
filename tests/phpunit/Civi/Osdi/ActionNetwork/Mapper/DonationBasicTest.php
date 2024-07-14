@@ -101,7 +101,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $this->assertNotEmpty($remoteDonation->fundraisingPageHref->get());
     $this->assertEquals(DonationBasicMapper::FUNDRAISING_PAGE_NAME, $remoteDonation->getFundraisingPage()->title->get());
     $this->assertEquals('2022-03-04', substr($remoteDonation->createdDate->get(), 0, 10));
-    $this->assertEquals('USD', $remoteDonation->currency->get());
+    $this->assertEquals('usd', $remoteDonation->currency->get());
     $this->assertEquals([['display_name' => 'Donation', 'amount' => 1.23]], $remoteDonation->recipients->get());
     $this->assertEquals(['recurring' => FALSE], $remoteDonation->recurrence->get());
   }
