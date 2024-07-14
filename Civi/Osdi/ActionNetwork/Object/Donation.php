@@ -134,7 +134,8 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
   public function getFundraisingPage(): ?RemoteObjectInterface {
     if (empty($this->fundraisingPage)) {
       $fundraisingPageResource = $this->_resource->getFirstLink('osdi:fundraising_page')->get();
-      $this->fundraisingPage = new FundraisingPage($this->_system, $fundraisingPageResource);
+      $this->fundraisingPage = OsdiClient::container()->make(
+        'OsdiObject', 'osdi:fundraising_pages', $this->_system, $fundraisingPageResource);
     }
     return $this->fundraisingPage;
   }
