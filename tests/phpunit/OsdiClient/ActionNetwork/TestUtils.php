@@ -43,4 +43,32 @@ class TestUtils {
       ->execute()->first();
   }
 
+  /**
+   * Create a situation in which the object's modification time is one second
+   * later than the modification time recorded in the Person Sync State (if any).
+   */
+  public static function makeItSeemLikePersonWasModifiedAfterLastSync(
+    Civi\Osdi\CrudObjectInterface $person
+  ): Civi\Osdi\PersonSyncState {
+    $oneSecondBefore = function ($timeString): string {
+      return date('Y-m-d H:i:s', strtotime($timeString) - 1);
+    };
+
+    $syncProfileId = Civi\OsdiClient::container()->getSyncProfileId();
+
+    if (is_a($person, Civi\Osdi\LocalObjectInterface::class)) {
+      $syncState = Civi\Osdi\PersonSyncState::getForLocalPerson($person, $syncProfileId);
+      $syncState->setLocalPostSyncModifiedTime(
+        $oneSecondBefore($syncState->getLocalPostSyncModifiedTime()));
+    }
+    elseif (is_a($person, Civi\Osdi\RemoteObjectInterface::class)) {
+      $syncState = Civi\Osdi\PersonSyncState::getForRemotePerson($person, $syncProfileId);
+      $syncState->setRemotePostSyncModifiedTime(
+        $oneSecondBefore($syncState->getRemotePostSyncModifiedTime()));
+    }
+
+    $syncState->save();
+    return $syncState;
+  }
+
 }

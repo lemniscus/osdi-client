@@ -12,6 +12,7 @@ use Civi\Osdi\Result\Sync;
 use Civi\Osdi\Result\SyncEligibility;
 use Civi\OsdiClient;
 use OsdiClient\ActionNetwork\PersonMatchingFixture as PersonMatchFixture;
+use OsdiClient\ActionNetwork\TestUtils;
 
 abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
@@ -298,12 +299,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     // we create a situation in which local person 1 (the merged contact) would
     // be eligible for sync -- but because of the error flag it's not
-
-    $syncProfileId = OsdiClient::container()->getSyncProfileId();
-    $syncState = PersonSyncState::getForLocalPerson($localPerson1, $syncProfileId);
-    $syncState->setLocalPostSyncModifiedTime(
-      $this->oneSecondBefore($syncState->getLocalPostSyncModifiedTime()));
-    $syncState->save();
+    TestUtils::makeItSeemLikePersonWasModifiedAfterLastSync($localPerson1);
 
     $pair = $syncer->matchAndSyncIfEligible($localPerson1);
     $resultStack = $pair->getResultStack();
@@ -320,9 +316,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
       ->addValue('status', OsdiFlag::STATUS_RESOLVED)
       ->execute();
 
-    $syncState->setLocalPostSyncModifiedTime(
-      $this->oneSecondBefore($syncState->getLocalPostSyncModifiedTime()));
-    $syncState->save();
+    TestUtils::makeItSeemLikePersonWasModifiedAfterLastSync($localPerson1);
 
     $pair = $syncer->matchAndSyncIfEligible($localPerson1);
     $resultStack = $pair->getResultStack();
