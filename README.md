@@ -6,9 +6,9 @@ The extension is licensed under [AGPL-3.0](LICENSE.txt).
 
 ## Requirements
 
-* PHP 7.4 or higher
-* CiviCRM 5.57.3 (may work with older or newer versions, but has not been tested)
-* Your own custom extension built on the architecture of this extension (see [Architecture](#architecture) below) 
+* PHP 8.1 or higher
+* CiviCRM 5.69.5 (may work with older or newer versions, but has not been tested)
+* Your own custom extension built on the architecture of this extension (see [Architecture](#architecture) below)
 
 ## Installation (Web UI)
 
@@ -16,12 +16,11 @@ This extension has not yet been published for installation via the web UI.
 
 ## Installation (CLI, Zip)
 
-Sysadmins and developers may download the `.zip` file for this extension and
-install it with the command-line tool [cv](https://github.com/civicrm/cv). Dependencies will need to be installed using `composer`. 
+Sysadmins and developers may download the `.zip` file for this extension and install it with the command-line tool [cv](https://github.com/civicrm/cv).
 
 ```bash
 cd <extension-dir>
-cv dl osdi-client@https://github.com/lemniscus/osdi-client/archive/master.zip
+cv dl osdi-client@https://github.com/lemniscus/osdi-client/archive/main.zip
 cv en osdi-client
 ```
 
@@ -75,7 +74,7 @@ A SyncProfile is where you configure basic information about how the software co
 
 Make sure one and only one SyncProfile is marked as default.
 
-The **classes** field tells the software to use certain PHP classes which may override the default behavior, or to ignore certain PHP classes which provide behavior you don't need. The default registry, which you may override via a SyncProfile,  is located within the `Civi\Osdi\Container` class. 
+The **classes** field tells the software to use certain PHP classes which may override the default behavior, or to ignore certain PHP classes which provide behavior you don't need. The default registry, which you may override via a SyncProfile,  is located within the `Civi\Osdi\Container` class.
 
 ### Configure Scheduled Jobs
 
@@ -179,7 +178,7 @@ todo
 
 ### CrmEventResponders
 
-As the name says, these classes are concerned with responding to events in the CRM. For example, when two contacts are merged, we respond by examining what changed and queuing sync actions if necessary.  
+As the name says, these classes are concerned with responding to events in the CRM. For example, when two contacts are merged, we respond by examining what changed and queuing sync actions if necessary.
 
 ### RemoteSystem<a name="remote-system"></a>
 
