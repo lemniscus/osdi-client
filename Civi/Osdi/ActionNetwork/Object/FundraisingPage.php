@@ -2,6 +2,8 @@
 
 namespace Civi\Osdi\ActionNetwork\Object;
 
+use Civi\Osdi\ActionNetwork\RemoteFindResult;
+
 class FundraisingPage extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInterface {
 
   public Field $identifiers;
@@ -30,6 +32,12 @@ class FundraisingPage extends AbstractRemoteObject implements \Civi\Osdi\RemoteO
 
   public function getUrlForCreate(): string {
     return 'https://actionnetwork.org/api/v2/fundraising_pages';
+  }
+
+  public function getDonations(): RemoteFindResult {
+    $pageUrl = $this->getUrlForRead();
+    $donationsLink = $this->_system->linkify("$pageUrl/donations");
+    return new RemoteFindResult($this->_system, 'osdi:donations', $donationsLink);
   }
 
 }
