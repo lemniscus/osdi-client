@@ -165,9 +165,11 @@ Namespace: `Civi\Osdi\ActionNetwork\Matcher`
 
 Single-Syncer classes are responsible for syncing a single object on either system with its doppelgänger on the other system.
 
-A Single-Syncer may use a [Matcher](#matcher) to find an existing twin, and may create a new twin if one doesn't exist. It will normally use a [Mapper](#mapper) to copy data between the twins, then ask the mapped objects to save themselves.
+A Single-Syncer may use a [Matcher](#matcher) to find an existing twin, and may create a new twin if one doesn't exist.
+It will normally use a [Mapper](#mapper) to copy data between the twins, then ask the mapped objects to save themselves.
 
-A Single-Syncer may keep track of twins, and may track their recent history. For example, a `Person` Single-Syncer may use `PersonSyncState` records as a way to remember what it has done previously, and use this information in the future to determine whether and in which direction to sync Action Network People with their Civi twins.
+A Single-Syncer may keep track of twins, and may track their recent history.
+For example, a `Person` Single-Syncer may use `PersonSyncState` records as a way to remember what it has done previously, and use this information in the future to determine whether and in which direction to sync Action Network People with their Civi twins.
 
 Namespace: `Civi\Osdi\ActionNetwork\SingleSyncer`
 
@@ -178,7 +180,8 @@ todo
 
 ### CrmEventResponders
 
-As the name says, these classes are concerned with responding to events in the CRM. For example, when two contacts are merged, we respond by examining what changed and queuing sync actions if necessary.
+As the name says, these classes are concerned with responding to events in the CRM.
+For example, when two contacts are merged, we respond by examining what changed and queuing sync actions if necessary.
 
 ### RemoteSystem<a name="remote-system"></a>
 
@@ -202,11 +205,13 @@ There is a generous collection of PHPUnit tests that can (and should only) be ru
 
 ## Creating a custom extension for your use-case
 
-~~If your requirements are extremely simple, you can use the built-in Syncers, Mappers, Matchers, LocalObjects and RemoteObjects. You will need to create a SyncProfile that combines these classes into a working package.~~ (work in progress)
+If your requirements are extremely simple, you can use the built-in Syncers, Mappers, Matchers, LocalObjects and RemoteObjects.
+You will need to create a SyncProfile that combines these classes into a working package.
+(work in progress)
 
 Some common things you might include in your custom extension:
 
 - A version of the `Person` LocalObject that includes custom fields specific to your organization.
 - A Mapper that works with your custom `Person` LocalObject.
 - A Matcher that works with your custom `Person` LocalObject.
-- A new RemoteObject, LocalObject, Matcher, Mapper and Syncer to sync an entity type that this extension doesn't yet handle; for example, Contributions/[Donations](https://actionnetwork.org/docs/v2/donations). Depending on the complexity of the entities, some of these new classes may be extended from existing base classes with very little new code.
+- A new RemoteObject, LocalObject, Matcher, Mapper and Syncer to sync an entity type that this extension doesn't yet handle; for example, [Messages](https://actionnetwork.org/docs/v2/messages). Depending on the complexity of the entities, some of these new classes may be extended from existing base classes with very little new code.
