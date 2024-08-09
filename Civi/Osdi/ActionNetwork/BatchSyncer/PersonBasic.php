@@ -119,6 +119,7 @@ class PersonBasic implements BatchSyncerInterface {
         continue;
       }
 
+      $pair = NULL;
       try {
         $pair = $this->getSingleSyncer()->matchAndSyncIfEligible($remotePerson);
         $syncResult = $pair->getResultStack()->getLastOfType(Sync::class);
