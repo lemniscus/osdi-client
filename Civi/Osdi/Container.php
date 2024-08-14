@@ -10,6 +10,9 @@ use Jsor\HalClient\HttpClient\Guzzle6HttpClient;
 class Container {
 
   protected array $registry = [
+    'LocalSystem' => [
+      'Civi' => LocalSystem::class,
+    ],
     'RemoteSystem' => [
       'ActionNetwork' => \Civi\Osdi\ActionNetwork\RemoteSystem::class,
     ],

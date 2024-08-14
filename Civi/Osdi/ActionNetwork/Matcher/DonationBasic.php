@@ -9,6 +9,7 @@ use Civi\OsdiClient;
 class DonationBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
   protected function tryToFindMatchForLocalObject(LocalRemotePair $pair): MatchResult {
+    $container = OsdiClient::container();
     $result = new MatchResult($pair->getOrigin());
 
     /** @var \Civi\Osdi\LocalObject\DonationBasic $localDonation */
@@ -16,7 +17,7 @@ class DonationBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterfa
     $localPerson = $localDonation->getPerson()->loadOnce();
     $personPair = new LocalRemotePair($localPerson);
     $personPair->setOrigin(LocalRemotePair::ORIGIN_LOCAL);
-    $personSyncer = OsdiClient::container()->getSingle('SingleSyncer', 'Person');
+    $personSyncer = $container->getSingle('SingleSyncer', 'Person');
     $personMatchResult = $personSyncer->fetchOldOrFindAndSaveNewMatch($personPair);
 
     if (!$personMatchResult->hasMatch()) {
@@ -36,10 +37,14 @@ class DonationBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterfa
 
       $localAmount = (float) $localDonation->amount->get();
       $remoteAmount = (float) $remoteDonation->amount->get();
-      $localTime = strtotime($localDonation->receiveDate->get() ?? '');
-      $remoteTime = strtotime($remoteDonation->createdDate->get() ?? '');
+      $localSystem = $container->getSingle('LocalSystem', 'Civi');
+      $localTime = $localDonation->receiveDate->get() ?? '';
+      $remoteTime = $remoteDonation->createdDate->get();
+      $remoteTimeLocalized = $remoteTime
+        ? $localSystem->convertToLocalizedDateTimeString(new \DateTime($remoteTime))
+        : '';
 
-      if (($localAmount === $remoteAmount) && ($localTime === $remoteTime)) {
+      if (($localAmount === $remoteAmount) && ($localTime === $remoteTimeLocalized)) {
         $result->setStatusCode(MatchResult::FOUND_MATCH);
         $result->setMessage('Matched on person, timestamp and amount');
         $result->setMatch($remoteDonation);
@@ -91,14 +96,18 @@ class DonationBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterfa
     // We found a matching person
     $localPerson = $personPair->getLocalObject();
     $remoteAmount = (float) $remoteDonation->amount->get();
-    $remoteTime = $remoteDonation->createdDate->get() ?? '';
+    $remoteTimeString = $remoteDonation->createdDate->get();
+    $localSystem = $container->getSingle('LocalSystem', 'Civi');
+    $localizedTimeString = $remoteTimeString
+      ? $localSystem->convertToLocalizedDateTimeString(new \DateTime($remoteTimeString))
+      : '';
 
     $selects = $container->callStatic('LocalObject', 'Donation', 'getSelects');
     $localDonations = Contribution::get(FALSE)
       ->setSelect(array_keys($selects))
       ->addWhere('contact_id', '=', $localPerson->getId())
       ->addWhere('total_amount', '=', $remoteAmount)
-      ->addWhere('receive_date', '=', $remoteTime)
+      ->addWhere('receive_date', '=', $localizedTimeString)
       ->execute();
 
     $matchCount = $localDonations->count();

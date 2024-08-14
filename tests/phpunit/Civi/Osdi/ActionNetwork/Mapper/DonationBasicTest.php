@@ -31,6 +31,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     static::$system = \OsdiClient\ActionNetwork\TestUtils::createRemoteSystem();
     static::$testFundraisingPage = static::getDefaultFundraisingPage();
     static::$financialTypeId = static::getTestFinancialTypeId();
+    static::setLocalTimeZone();
   }
 
   public function setUp(): void {
@@ -52,7 +53,8 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $remoteDonation->currency->set('USD');
     $recipients = [['display_name' => 'Test recipient financial type', 'amount' => '2.22']];
     $remoteDonation->recipients->set($recipients);
-    $remoteDonation->createdDate->set('2020-03-04T05:06:07Z');
+    $remoteTimeString = '2020-03-04T05:06:07Z';
+    $remoteDonation->createdDate->set($remoteTimeString);
     $remoteDonation->setDonor($personPair->getRemoteObject());
     $remoteDonation->setFundraisingPage(self::$testFundraisingPage);
     $fundraisingPageTitle = self::$testFundraisingPage->title->get();
@@ -65,6 +67,10 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
     $remoteDonation->referrerData->set($referrerData);
     $remoteDonation->save();
 
+    $localTimezone = new \DateTimeZone(\Civi::settings()->get('osdiClient.localUtcOffset'));
+    $time = new \DateTime($remoteTimeString);
+    $localTimeString = $time->setTimezone($localTimezone)->format('Y-m-d H:i:s');
+
     // Call system under test
     /** @var \Civi\Osdi\LocalObject\DonationBasic $localDonation */
     $localDonation = $this->mapper->mapRemoteToLocal($remoteDonation);
@@ -72,7 +78,7 @@ class DonationBasicTest extends \PHPUnit\Framework\TestCase implements
 
     // Check expectations
     $this->assertEquals($contactId, $localDonation->getPerson()->getId());
-    $this->assertEquals('2020-03-04 05:06:07', $localDonation->receiveDate->get());
+    $this->assertEquals($localTimeString, $localDonation->receiveDate->get());
     $this->assertEquals('USD', $localDonation->currency->get());
     $this->assertEquals(static::$financialTypeId, $localDonation->financialTypeId->get());
     $this->assertNull($localDonation->contributionRecurId->get());

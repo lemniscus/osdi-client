@@ -34,8 +34,9 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
 
     static::$testFundraisingPage = static::getDefaultFundraisingPage();
     static::$financialTypeId = static::getTestFinancialTypeId();
+    static::setLocalTimeZone();
   }
-  
+
   private static function makePair($input): \Civi\Osdi\LocalRemotePair {
     $pair = new \Civi\Osdi\LocalRemotePair();
     if (is_a($input, RemoteObjectInterface::class)) {
@@ -55,8 +56,10 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
     $remotePerson = $personPair->getRemoteObject();
     $localPerson = $personPair->getLocalObject();
 
+    $localSystem = OsdiClient::container()->getSingle('LocalSystem', 'Civi');
     $localDonationTime = '2020-03-04 05:06:07';
-    $remoteDonationTime = static::$system::formatDateTime(strtotime($localDonationTime));
+    $unixTime = $localSystem->convertFromLocalizedDateTimeString($localDonationTime)->format('U');
+    $remoteDonationTime = static::$system::formatDateTime($unixTime);
 
     $remoteDonation = new \Civi\Osdi\ActionNetwork\Object\Donation(self::$system);
     $remoteDonation->setDonor($remotePerson);

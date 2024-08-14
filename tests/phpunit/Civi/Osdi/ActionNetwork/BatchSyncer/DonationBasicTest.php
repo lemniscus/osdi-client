@@ -29,6 +29,7 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
     static::$system = \OsdiClient\ActionNetwork\TestUtils::createRemoteSystem();
     static::$testFundraisingPage = self::getDefaultFundraisingPage();
     static::$financialTypeId = static::getTestFinancialTypeId();
+    static::setLocalTimeZone();
   }
 
   public function testBatchSyncFromCiviDoesNotRunConcurrently() {
@@ -76,6 +77,12 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
       ['amount' => '3.45', 'when' => date('Y-m-d\TH:i:s\Z', strtotime('now - 1 day'))],
       ['amount' => '7.89', 'when' => date('Y-m-d\TH:i:s\Z', strtotime('now - 1 month'))],
     ];
+    $localTimezone = new \DateTimeZone(\Civi::settings()->get('osdiClient.localUtcOffset'));
+    foreach ($sets as $i => $set) {
+      $sets[$i]['localWhen'] = (new \DateTime($set['when']))
+        ->setTimezone($localTimezone)
+        ->format('Y-m-d H:i:s');
+    }
     $createdRemoteDonationIds = [
       $this->createRemoteDonationAndGetId($sets[0], $personPair->getRemoteObject()),
       $this->createRemoteDonationAndGetId($sets[1], $personPair->getRemoteObject()),
@@ -100,7 +107,7 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
       $this->assertArrayHasKey($remoteId, $syncState, "Missing remote id in dataset $i: $remoteId");
       $this->assertEquals($sets[$i]['amount'], $syncState[$remoteId]['contribution.total_amount'], "Mismatch of amount on dataset $i");
       $this->assertEquals(
-        strtr($sets[$i]['when'], ['Z' => '', 'T' => ' ']),
+        $sets[$i]['localWhen'],
         $syncState[$remoteId]['contribution.receive_date'],
         "Mismatch of receive date on dataset $i");
     }
@@ -132,7 +139,7 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
         // Third donation is new, should match $set[2]
         $this->assertArrayHasKey($remoteId, $syncState2, "Missing remote id in dataset $i: $remoteId in OsdiDonationSyncState results fetched after repeat sync call");
         $this->assertEquals($sets[$i]['amount'], $syncState2[$remoteId]['contribution.total_amount'], "Mismatch of amount on dataset $i");
-        $this->assertEquals(strtr($sets[$i]['when'], ['Z' => '', 'T'=> ' ']), $syncState2[$remoteId]['contribution.receive_date'], "Mismatch of receive date on dataset $i");
+        $this->assertEquals($sets[$i]['localWhen'], $syncState2[$remoteId]['contribution.receive_date'], "Mismatch of receive date on dataset $i");
       }
     }
 
@@ -152,7 +159,7 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
       $remotePersonOneId);
 
     // Now add one more contribution and repeat.
-    $createdContributionIds[] = $this->createLocalContribution(...$localSets[2]);
+    $createdContributionIds[] = $this->createLocalContribution($localSets[2]);
 
     // Call system under test
     $batchSyncer->batchSyncFromLocal();
@@ -176,7 +183,7 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
       $createdContributionIds, $remotePersonOneId);
 
     // Now add one more contribution and repeat.
-    $createdContributionIds[] = $this->createLocalContribution(...$localSets[2]);
+    $createdContributionIds[] = $this->createLocalContribution($localSets[2]);
 
     // Call system under test
     $result = civicrm_api3('Job', 'osdiclientbatchsyncdonations',
@@ -214,28 +221,28 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
       $this->assertArrayHasKey($donationId, $remoteIdToContributionId, "A remote donation $_ exists for our test contact that we do not have a sync state for.");
       $set = $sets[$contributionIdToSetNo[$remoteIdToContributionId[$donationId]]];
       // Check the amount, date matches.
-      $this->assertEquals($set[0]['total_amount'], $donation->amount->get());
-      $this->assertEquals($set[0]['receive_date'], strtr($donation->createdDate->get(), ['Z' => '', 'T'=> ' ']));
+      $this->assertEquals($set['total_amount'], $donation->amount->get());
+      $this->assertEquals($set['receive_date_UTC'], $donation->createdDate->get());
       $found++;
     }
     $this->assertEquals($expectedCount, $found);
   }
 
-  protected function createLocalContribution(array $orderParams, array $paymentParams, int $contactId): int {
+  protected function createLocalContribution(array $params): int {
 
-    $orderParams += [
-      'receive_date' => date('Y-m-d H:i:s', strtotime('now - 1 day')),
+    $orderParams = [
+      'receive_date' => $params['receive_date'],
       'financial_type_id' => 1,
-      'contact_id' => $contactId,
-      'total_amount' => 1.23,
+      'contact_id' => $params['contactId'],
+      'total_amount' => $params['total_amount'],
     ];
     $contribution = civicrm_api3('Order', 'create', $orderParams);
 
-    $paymentParams += [
+    $paymentParams = [
       'contribution_id' => $contribution['id'],
-      'total_amount' => $orderParams['total_amount'],
-      'trxn_date' => $orderParams['receive_date'],
-      'trxn_id' => 'abc',
+      'total_amount' => $params['total_amount'],
+      'trxn_date' => $params['receive_date'],
+      'trxn_id' => $params['trxn_id'],
     ];
     civicrm_api3('Payment', 'create', $paymentParams);
 
@@ -274,31 +281,32 @@ class DonationBasicTest extends PHPUnit\Framework\TestCase implements
     $contactId = $personPair->getLocalObject()->getId();
     $remotePersonId = $personPair->getRemoteObject()->getId();
 
+    $localTimezone = new \DateTimeZone(\Civi::settings()->get('osdiClient.localUtcOffset'));
+    $utc = new \DateTimeZone('UTC');
     $now = time();
-    $yesterday = date('Y-m-d H:i:s', $now - 60 * 60 * 24 * 1);
+    $yesterday = \DateTime::createFromFormat('U', $now)->sub(new \DateInterval('P1D'));
+    $yesterdayLocalTime = $yesterday->setTimezone($localTimezone)->format('Y-m-d H:i:s');
+    $yesterdayUtc = $yesterday->setTimeZone($utc)->format('Y-m-d\TH:i:s\Z');
 
-    $sets = [
-      [
-        ['total_amount' => 1.23, 'receive_date' => $yesterday],
-        ['trxn_id' => 'testtrxn_1'],
-        $contactId,
-      ],
-      [
-        ['total_amount' => 4.56, 'receive_date' => $yesterday],
-        ['trxn_id' => 'testtrxn_2'],
-        $contactId,
-      ],
-      [
-        ['total_amount' => 7.89, 'receive_date' => $yesterday],
-        ['trxn_id' => 'testtrxn_3'],
-        $contactId,
-      ],
-    ];
+    $sets = array_fill(0, 3, [
+      'receive_date' => $yesterdayLocalTime,
+      'receive_date_UTC' => $yesterdayUtc,
+      'contactId' => $contactId,
+    ]);
+
+    $sets[0]['total_amount'] = 1.23;
+    $sets[0]['trxn_id'] = 'testtrxn_1';
+
+    $sets[1]['total_amount'] = 4.56;
+    $sets[1]['trxn_id'] = 'testtrxn_2';
+
+    $sets[2]['total_amount'] = 7.89;
+    $sets[2]['trxn_id'] = 'testtrxn_3';
 
     // Create donations in Civi, call sync, load recent donations and check it's there.
     $createdContributionIds = [
-      $this->createLocalContribution(...$sets[0]),
-      $this->createLocalContribution(...$sets[1]),
+      $this->createLocalContribution($sets[0]),
+      $this->createLocalContribution($sets[1]),
     ];
 
     return array($remotePersonId, $now, $sets, $createdContributionIds);

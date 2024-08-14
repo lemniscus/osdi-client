@@ -145,7 +145,8 @@ class DonationBasic implements MapperInterface {
 
     // Simple mappings
     $localDonation->amount->set($remoteDonation->amount->get());
-    $localDonation->receiveDate->set($remoteDonation->createdDate->get());
+    $receiveDate = $this->convertRemoteTimeToLocal($remoteDonation->createdDate->get());
+    $localDonation->receiveDate->set($receiveDate);
     $localDonation->currency->set(strtoupper($remoteDonation->currency->get()));
 
     // Find financial type
@@ -312,9 +313,8 @@ class DonationBasic implements MapperInterface {
   }
 
   private function mapLocalBasicFieldsToRemote($localDonation, RemoteDonation $remoteDonation): void {
-    $unixTimeStamp = strtotime($localDonation->receiveDate->get());
-    $formattedTime = $this->remoteSystem::formatDateTime($unixTimeStamp);
-    $remoteDonation->createdDate->set($formattedTime);
+    $remoteTime = $this->convertLocalTimeToRemote($localDonation->receiveDate->get());
+    $remoteDonation->createdDate->set($remoteTime);
     $remoteDonation->currency->set(strtolower($localDonation->currency->get()));
     $recipient['display_name'] = $localDonation->financialTypeLabel->get();
     $recipient['amount'] = $localDonation->amount->get();
@@ -348,6 +348,17 @@ class DonationBasic implements MapperInterface {
   protected function addRemoteFundraisingPageToCache(RemoteObjectInterface $page) {
     $pages = &$this->getRemoteFundraisingPageCache();
     $pages['added'][] = $page;
+  }
+
+  public function convertLocalTimeToRemote($localDateTime) {
+    $localSystem = OsdiClient::container()->getSingle('LocalSystem', 'Civi');
+    $unixTimeStamp = $localSystem->convertFromLocalizedDateTimeString($localDateTime)->format('U');
+    return $this->remoteSystem::formatDateTime($unixTimeStamp);
+  }
+
+  public function convertRemoteTimeToLocal($remoteDateTime) {
+    $localSystem = OsdiClient::container()->getSingle('LocalSystem', 'Civi');
+    return $localSystem->convertToLocalizedDateTimeString(new \DateTime($remoteDateTime));
   }
 
 }

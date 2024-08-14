@@ -1,17 +1,17 @@
 <?php
 return [
-  'osdiClient.syncJobProcessId' => [
-    'name'        => 'osdiClient.syncJobProcessId',
-    'title'       => ts('Action Network sync PID'),
-    'description' => 'Process ID of the last Action Network sync job',
-    'type'        => 'Integer',
-    'is_domain'   => 1,
-    'is_contact'  => 0,
-  ],
   'osdiClient.donationBatchSyncMaxRetrievedModTime' => [
     'name'        => 'osdiClient.donationBatchSyncMaxRetrievedModTime',
     'title'       => ts('Action Network Donation sync max retrieved AN mod time'),
     'description' => 'Latest donation date retrieved from AN by the batch syncer',
+    'type'        => 'String',
+    'is_domain'   => 1,
+    'is_contact'  => 0,
+  ],
+  'osdiClient.localUtcOffset' => [
+    'name'        => 'osdiClient.localUtcOffset',
+    'title'       => ts('UTC offset for Action Network sync'),
+    'description' => 'Time zone of Civi contributions for the purpose of sync',
     'type'        => 'String',
     'is_domain'   => 1,
     'is_contact'  => 0,
@@ -31,6 +31,14 @@ return [
     'description' => 'Lower limit for Civi modification datetimes in '
       . 'the last sync job',
     'type'        => 'String',
+    'is_domain'   => 1,
+    'is_contact'  => 0,
+  ],
+  'osdiClient.syncJobProcessId' => [
+    'name'        => 'osdiClient.syncJobProcessId',
+    'title'       => ts('Action Network sync PID'),
+    'description' => 'Process ID of the last Action Network sync job',
+    'type'        => 'Integer',
     'is_domain'   => 1,
     'is_contact'  => 0,
   ],

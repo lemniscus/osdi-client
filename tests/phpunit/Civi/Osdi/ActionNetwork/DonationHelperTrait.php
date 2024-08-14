@@ -84,4 +84,7 @@ trait DonationHelperTrait {
     return $financialTypeApiResult->single()['id'];
   }
 
+  public static function setLocalTimeZone($offset = 'EDT') {
+    \Civi::settings()->set('osdiClient.localUtcOffset', $offset);
+  }
 }
