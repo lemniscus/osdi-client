@@ -16,6 +16,9 @@
     <comment>Unique PersonSyncState ID</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>EntityRef</type>
+    </html>
   </field>
   <primaryKey>
     <name>id</name>
@@ -29,6 +32,10 @@
     <comment>FK to Contact</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <label>Local Contact</label>
+      <type>EntityRef</type>
+    </html>
   </field>
   <index>
     <name>index_contact_id</name>
@@ -48,6 +55,10 @@
     <comment>FK to OSDI Sync Profile</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <label>Sync Profile</label>
+      <type>EntityRef</type>
+    </html>
   </field>
   <index>
     <name>index_sync_profile_id</name>
@@ -69,6 +80,9 @@
     <comment>FK to identifier field on remote system</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>Text</type>
+    </html>
   </field>
   <index>
     <name>index_remote_person_id</name>
@@ -83,6 +97,9 @@
     <comment>Modification date and time of the remote person record as of the beginning of the last sync</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>Select Date</type>
+    </html>
   </field>
   <index>
     <name>index_remote_pre_sync_modified_time</name>
@@ -97,6 +114,9 @@
     <comment>Modification date and time of the remote person record at the end of the last sync</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>Select Date</type>
+    </html>
   </field>
   <index>
     <name>index_remote_post_sync_modified_time</name>
@@ -111,6 +131,9 @@
     <comment>Modification date and time of the local contact record as of the beginning of the last sync, in unix timestamp format</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>Select Date</type>
+    </html>
   </field>
   <index>
     <name>index_local_pre_sync_modified_time</name>
@@ -125,6 +148,9 @@
     <comment>Modification date and time of the local contact record at the end of the last sync</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>Select Date</type>
+    </html>
   </field>
   <index>
     <name>index_local_post_sync_modified_time</name>
@@ -139,6 +165,9 @@
     <comment>Date and time of the last sync</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>Select Date</type>
+    </html>
   </field>
   <index>
     <name>index_sync_time</name>
@@ -154,7 +183,6 @@
     <default>NULL</default>
     <html>
       <type>Radio</type>
-
     </html>
     <pseudoconstant>
       <callback>\Civi\Osdi\PersonSyncState::syncOriginPseudoConstant</callback>
@@ -174,6 +202,12 @@
     <comment>Status code of the last sync, from \Civi\Osdi\Result\Sync</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>Select</type>
+    </html>
+    <pseudoconstant>
+      <callback>\Civi\Osdi\Result\Sync::getAllStatusCodes</callback>
+    </pseudoconstant>
   </field>
   <index>
     <name>index_sync_status</name>

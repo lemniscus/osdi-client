@@ -15,7 +15,7 @@
     <required>true</required>
     <comment>Unique DonationSyncState ID</comment>
     <html>
-      <type>Number</type>
+      <type>EntityRef</type>
     </html>
   </field>
   <primaryKey>
@@ -49,6 +49,10 @@
     <comment>FK to OSDI Sync Profile</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <label>Sync Profile</label>
+      <type>EntityRef</type>
+    </html>
   </field>
   <index>
     <name>index_sync_profile_id</name>
@@ -70,6 +74,9 @@
     <comment>FK to identifier field on remote system</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>Text</type>
+    </html>
   </field>
   <index>
     <name>index_remote_donation_id</name>
@@ -85,6 +92,12 @@
     <comment>Whether the donation source was local (CiviCRM) or remote</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>Radio</type>
+    </html>
+    <pseudoconstant>
+      <callback>CRM_OSDI_BAO_DonationSyncState::getSources</callback>
+    </pseudoconstant>
   </field>
 
   <field>
@@ -95,6 +108,9 @@
     <comment>Date and time of the last sync</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>Select Date</type>
+    </html>
   </field>
   <index>
     <name>index_sync_time</name>
@@ -110,6 +126,12 @@
     <comment>Status code of the last sync, from \Civi\Osdi\Result\Sync</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>Select</type>
+    </html>
+    <pseudoconstant>
+      <callback>\Civi\Osdi\Result\Sync::getAllStatusCodes</callback>
+    </pseudoconstant>
   </field>
   <index>
     <name>index_sync_status</name>

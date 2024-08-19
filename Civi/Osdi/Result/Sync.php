@@ -97,4 +97,15 @@ class Sync extends AbstractResult implements \Civi\Osdi\ResultInterface {
     ];
   }
 
+  public static function getAllStatusCodes() {
+    $codes = [
+      static::SUCCESS,
+      static::ERROR,
+      static::INELIGIBLE,
+      static::NO_SYNC_NEEDED,
+      static::OTHER
+    ];
+    return array_combine($codes, $codes);
+  }
+
 }

@@ -11,7 +11,7 @@
 --
 -- /*******************************************************
 -- *
--- * Clean up the existing tables - this section generated from drop.tpl
+-- * Clean up the existing tables - this section generated from file:drop.tpl
 -- *
 -- *******************************************************/
 
@@ -25,6 +25,7 @@ DROP TABLE IF EXISTS `civicrm_osdi_log`;
 DROP TABLE IF EXISTS `civicrm_osdi_flag`;
 
 SET FOREIGN_KEY_CHECKS=1;
+
 -- /*******************************************************
 -- *
 -- * Create new tables
@@ -53,8 +54,7 @@ CREATE TABLE `civicrm_osdi_flag` (
   INDEX `index_remote_object_id`(remote_object_id),
   INDEX `index_flag_type`(flag_type),
   INDEX `index_status`(status),
-  CONSTRAINT FK_civicrm_osdi_flag_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL
-)
+  CONSTRAINT FK_civicrm_osdi_flag_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL)
 ENGINE=InnoDB;
 
 -- /*******************************************************
@@ -75,8 +75,7 @@ CREATE TABLE `civicrm_osdi_log` (
   INDEX `index_creator`(creator),
   INDEX `index_entity_table`(entity_table),
   INDEX `index_entity_id`(entity_id),
-  INDEX `index_created_date`(created_date)
-)
+  INDEX `index_created_date`(created_date))
 ENGINE=InnoDB;
 
 -- /*******************************************************
@@ -93,8 +92,7 @@ CREATE TABLE `civicrm_osdi_sync_profile` (
   `entry_point` varchar(1023) COMMENT 'API entry point (AEP) URL',
   `api_token` varchar(1023) COMMENT 'API token',
   `classes` longtext COMMENT 'Three-level associative array (category => key => class name) of classes to register with the OSDI Client\'s container/service locator',
-  PRIMARY KEY (`id`)
-)
+  PRIMARY KEY (`id`))
 ENGINE=InnoDB;
 
 -- /*******************************************************
@@ -127,8 +125,7 @@ CREATE TABLE `civicrm_osdi_person_sync_state` (
   INDEX `index_sync_time`(sync_time),
   INDEX `index_sync_status`(sync_status),
   CONSTRAINT FK_civicrm_osdi_person_sync_state_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE CASCADE,
-  CONSTRAINT FK_civicrm_osdi_person_sync_state_sync_profile_id FOREIGN KEY (`sync_profile_id`) REFERENCES `civicrm_osdi_sync_profile`(`id`) ON DELETE CASCADE
-)
+  CONSTRAINT FK_civicrm_osdi_person_sync_state_sync_profile_id FOREIGN KEY (`sync_profile_id`) REFERENCES `civicrm_osdi_sync_profile`(`id`) ON DELETE CASCADE)
 ENGINE=InnoDB;
 
 -- /*******************************************************
@@ -152,8 +149,7 @@ CREATE TABLE `civicrm_osdi_donation_sync_state` (
   INDEX `index_sync_time`(sync_time),
   INDEX `index_sync_status`(sync_status),
   CONSTRAINT FK_civicrm_osdi_donation_sync_state_contribution_id FOREIGN KEY (`contribution_id`) REFERENCES `civicrm_contribution`(`id`) ON DELETE CASCADE,
-  CONSTRAINT FK_civicrm_osdi_donation_sync_state_sync_profile_id FOREIGN KEY (`sync_profile_id`) REFERENCES `civicrm_osdi_sync_profile`(`id`) ON DELETE CASCADE
-)
+  CONSTRAINT FK_civicrm_osdi_donation_sync_state_sync_profile_id FOREIGN KEY (`sync_profile_id`) REFERENCES `civicrm_osdi_sync_profile`(`id`) ON DELETE CASCADE)
 ENGINE=InnoDB;
 
 -- /*******************************************************
@@ -170,6 +166,5 @@ CREATE TABLE `civicrm_osdi_deletion` (
   PRIMARY KEY (`id`),
   INDEX `index_sync_profile_id`(sync_profile_id),
   INDEX `index_remote_object_id`(remote_object_id),
-  CONSTRAINT FK_civicrm_osdi_deletion_sync_profile_id FOREIGN KEY (`sync_profile_id`) REFERENCES `civicrm_osdi_sync_profile`(`id`) ON DELETE CASCADE
-)
+  CONSTRAINT FK_civicrm_osdi_deletion_sync_profile_id FOREIGN KEY (`sync_profile_id`) REFERENCES `civicrm_osdi_sync_profile`(`id`) ON DELETE CASCADE)
 ENGINE=InnoDB;
