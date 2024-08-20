@@ -29,6 +29,9 @@
     <comment>FK to OSDI Sync Profile</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>EntityRef</type>
+    </html>
   </field>
   <index>
     <name>index_sync_profile_id</name>
@@ -50,6 +53,9 @@
     <comment>FK to identifier field on remote system</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>Text</type>
+    </html>
   </field>
   <index>
     <name>index_remote_object_id</name>

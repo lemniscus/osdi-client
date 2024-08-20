@@ -29,6 +29,9 @@
     <comment>FK to Contact</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>EntityRef</type>
+    </html>
   </field>
   <index>
     <name>index_contact_id</name>
@@ -50,6 +53,9 @@
     <comment>FK to identifier field on remote system</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>Text</type>
+    </html>
   </field>
   <index>
     <name>index_remote_object_id</name>
@@ -124,6 +130,9 @@
     <comment>Structured data to help understand the issue</comment>
     <import>true</import>
     <export>true</export>
+    <html>
+      <type>TextArea</type>
+    </html>
   </field>
 
   <field>
@@ -132,6 +141,9 @@
     <type>timestamp</type>
     <comment>When the flag was created</comment>
     <default>CURRENT_TIMESTAMP</default>
+    <html>
+      <type>Select Date</type>
+    </html>
   </field>
 
   <field>
@@ -140,6 +152,9 @@
     <type>timestamp</type>
     <comment>When the flag was created or modified.</comment>
     <default>CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP</default>
+    <html>
+      <type>Select Date</type>
+    </html>
   </field>
 
 </table>

@@ -29,6 +29,9 @@
     <length>127</length>
     <required>true</required>
     <comment>Class that created this log entry</comment>
+    <html>
+      <type>Text</type>
+    </html>
   </field>
   <index>
     <name>index_creator</name>
@@ -44,6 +47,9 @@
     <pseudoconstant>
       <optionGroupName>osdi_log_used_for</optionGroupName>
     </pseudoconstant>
+    <html>
+      <type>Select</type>
+    </html>
   </field>
   <index>
     <name>index_entity_table</name>
@@ -55,6 +61,9 @@
     <title>Entity</title>
     <type>int unsigned</type>
     <comment>FK to PersonSyncState, DonationSyncState, etc</comment>
+    <html>
+      <type>EntityRef</type>
+    </html>
   </field>
   <index>
     <name>index_entity_id</name>
@@ -67,6 +76,9 @@
     <type>timestamp</type>
     <comment>When the log entry was created</comment>
     <default>CURRENT_TIMESTAMP</default>
+    <html>
+      <type>Select Date</type>
+    </html>
   </field>
   <index>
     <name>index_created_date</name>
@@ -79,6 +91,9 @@
     <type>longtext</type>
     <serialize>JSON</serialize>
     <comment>Log context</comment>
+    <html>
+      <type>TextArea</type>
+    </html>
   </field>
 
   <dynamicForeignKey>
