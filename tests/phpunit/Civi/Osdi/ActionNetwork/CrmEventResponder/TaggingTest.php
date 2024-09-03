@@ -140,7 +140,7 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
 
       foreach ($remoteTaggingCollection as $remoteTagging) {
         /** @var \Civi\Osdi\ActionNetwork\Object\Tagging $remoteTagging */
-        $tagName = $remoteTagging->getTag()->loadOnce()->name->get();
+        $tagName = $remoteTagging->getTagUsingCache()->loadOnce()->name->get();
         $tagLetter = substr($tagName, -1);
         $taggingCode = "$personNumber$tagLetter";
         $actual[$taggingCode] = $taggingCode;
@@ -495,6 +495,7 @@ class TaggingTest extends PHPUnit\Framework\TestCase implements
     [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
     [$localPerson1, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
     [$localPerson2, $remotePerson2] = $this->makeSamePersonOnBothSides(2);
+    $this->deleteAllTaggingsOnRemotePeople([$remotePerson1, $remotePerson2]);
 
     $localTagging1a = new Civi\Osdi\LocalObject\TaggingBasic();
     $localTagging1a->setPerson($localPerson1)->setTag($localTags['a'])->save();

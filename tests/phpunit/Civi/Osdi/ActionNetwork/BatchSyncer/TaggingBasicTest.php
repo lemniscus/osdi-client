@@ -4,6 +4,7 @@ namespace Civi\Osdi\ActionNetwork\BatchSyncer;
 
 use Civi;
 use Civi\Api4\EntityTag;
+use Civi\Osdi\Logger;
 use Civi\OsdiClient;
 use OsdiClient\ActionNetwork\TestUtils;
 use PHPUnit;
@@ -180,22 +181,22 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
   }
 
   public function testBatchSyncFromRemote() {
-    [$plan, $localPeople] = $this->setUpBatchSyncFromAN();
+    [$plan, $localPeople, $remotePeople] = $this->setUpBatchSyncFixture();
     self::$syncer->batchSyncFromRemote();
-    $this->assertBatchSyncFromAN($plan, $localPeople);
+    $this->assertBatchSyncFromRemote($plan, $localPeople);
   }
 
   public function testBatchSyncFromRemoteViaApi() {
-    [$plan, $localPeople] = $this->setUpBatchSyncFromAN();
+    [$plan, $localPeople, $remotePeople] = $this->setUpBatchSyncFixture();
     $syncProfileId = OsdiClient::container()->getSyncProfileId();
 
     $result = civicrm_api3('Job', 'osdiclientbatchsynctaggings',
       ['debug' => 1, 'origin' => 'remote', 'sync_profile_id' => $syncProfileId]);
 
-    $this->assertBatchSyncFromAN($plan, $localPeople);
+    $this->assertBatchSyncFromRemote($plan, $localPeople);
   }
 
-  private function assertBatchSyncFromAN(array $plan, array $localPeople): void {
+  private function assertBatchSyncFromRemote(array $plan, array $localPeople): void {
     for ($i = 1; $i <= 28; $i++) {
       if (array_key_exists($i, $plan)) {
         $tagNamesBeforeSync = $plan[$i]['rem'];
@@ -252,7 +253,7 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
 
       $remoteTag = new \Civi\Osdi\ActionNetwork\Object\Tag(self::$remoteSystem);
       $remoteTag->name->set($tagName);
-      $remoteTag->save();
+      $remoteTag->save()->cache();
       $remoteTags[$index] = $remoteTag;
 
       $localTag = new \Civi\Osdi\LocalObject\TagBasic();
@@ -263,16 +264,28 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
     return [$localTags, $remoteTags];
   }
 
-  private function setUpBatchSyncFromAN(): array {
+  private function setUpBatchSyncFixture(): array {
+    Logger::logDebug("[TEST SETUP] creating tags");
     [$localTags, $remoteTags] = $this->makeSameTagsOnBothSides();
 
     foreach ($remoteTags as $remoteTag) {
+      Logger::logDebug("[TEST SETUP] deleting all taggings of remote tag '{$remoteTag->name->get()}'");
       /** @var \Civi\Osdi\ActionNetwork\RemoteFindResult $remoteTaggingCollection */
       $remoteTaggingCollection = $remoteTag->getTaggings()->loadAll();
       foreach ($remoteTaggingCollection as $remoteTagging) {
         $remoteTagging->delete();
       }
     }
+
+    /* this fixture is designed to test
+     *   - no tags on origin, 1 or 2 on target
+     *   - no tags on target, 1 or 2 on origin
+     *   - single tag on each end, different
+     *   - more tags on origin than on target, overlapping
+     *   - more tags on target than on origin, overlapping
+     *   - same tag on both ends
+     *   - no tags on either end
+     */
 
     $plan = [
       1 => [
@@ -291,7 +304,11 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
         'rem' => ['a'],
         'loc' => [],
       ],
-      // 5-24 will be the same as 4
+      // 5-23 will be the same as 4
+      24 => [
+        'rem' => [],
+        'loc' => [],
+      ],
       25 => [
         'rem' => ['a', 'b'],
         'loc' => [],
@@ -315,8 +332,10 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
         $tagNamesBeforeSync = $plan[$i];
       }
 
+      Logger::logDebug("[TEST SETUP] writing local & remote persons $i and their taggings");
       [$localPerson, $remotePerson] = $this->makeSamePersonOnBothSides($i);
       $localPeople[$i] = $localPerson;
+      $remotePeople[$i] = $remotePerson;
 
       foreach ($tagNamesBeforeSync['rem'] as $tagLetter) {
         $remoteTagging = new Civi\Osdi\ActionNetwork\Object\Tagging(self::$remoteSystem);
@@ -331,7 +350,38 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
         $localTagging->save();
       }
     }
-    return [$plan, $localPeople];
+    return [$plan, $localPeople, $remotePeople];
+  }
+
+  public function testBatchSyncFromLocal() {
+    [$plan, $localPeople, $remotePeople] = $this->setUpBatchSyncFixture();
+    self::$syncer->batchSyncFromLocal();
+    $this->assertBatchSyncFromLocal($plan, $remotePeople);
+  }
+
+  /**
+   * @param array[] $plan
+   * @param \Civi\Osdi\ActionNetwork\Object\Person[] $remotePeople
+   */
+  private function assertBatchSyncFromLocal(array $plan, array $remotePeople) {
+    for ($i = 1; $i <= 28; $i++) {
+      if (array_key_exists($i, $plan)) {
+        $tagNamesBeforeSync = $plan[$i]['loc'];
+      }
+
+      $expectedRemoteTaggings[$i] = $tagNamesBeforeSync;
+      $actualRemoteTaggings[$i] = [];
+
+      $remotePerson = $remotePeople[$i];
+      $remotePersonTaggings = $remotePerson->getTaggings();
+
+      foreach ($remotePersonTaggings as $tagging) {
+        $tag = $tagging->getTagUsingCache()->loadOnce();
+        $actualRemoteTaggings[$i][] = substr($tag->name->get(), -1);
+      }
+    }
+
+    self::assertEquals($expectedRemoteTaggings, $actualRemoteTaggings);
   }
 
 }
