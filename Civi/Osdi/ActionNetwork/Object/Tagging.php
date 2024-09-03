@@ -6,6 +6,7 @@ use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\RemoteObjectInterface;
+use Civi\OsdiClient;
 use Jsor\HalClient\HalResource;
 
 class Tagging extends AbstractRemoteObject implements RemoteObjectInterface {
@@ -81,7 +82,17 @@ class Tagging extends AbstractRemoteObject implements RemoteObjectInterface {
   public function getTag(): Tag {
     if (empty($this->tag)) {
       $tagResource = $this->_resource->getFirstLink('osdi:tag')->get();
-      $this->tag = new Tag($this->_system, $tagResource);
+      $this->tag = OsdiClient::container()->make(
+        'OsdiObject', 'osdi:tags', $tagResource);
+    }
+    return $this->tag;
+  }
+
+  public function getTagUsingCache() {
+    if (empty($this->tag) || !$this->tag->isLoaded()) {
+      $tagUrl = $this->_resource->getFirstLink('osdi:tag')->getHref();
+      $this->tag = OsdiClient::container()->callStatic(
+        'OsdiObject','osdi:tags', 'getOrCreateCached', url: $tagUrl);
     }
     return $this->tag;
   }

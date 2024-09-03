@@ -36,6 +36,20 @@ class TaggingBasic extends AbstractLocalObject implements LocalObjectInterface {
     return $this->tag;
   }
 
+  /**
+   * Get a loaded version of this Tagging's Tag, from the cache if needed. If we
+   * already have a loaded Tag, it replaces whatever might be in the cache.
+   */
+  public function getTagUsingCache() {
+    if ($this->tag->isLoaded()) {
+      $this->tag->cache();
+    }
+    else {
+      $this->tag = $this->tag->getOrLoadCached();
+    }
+    return $this->tag;
+  }
+
   public function isAltered(): bool {
     if (!$this->isTouched()) {
       return FALSE;
