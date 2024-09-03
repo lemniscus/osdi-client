@@ -14,4 +14,6 @@ interface LocalObjectInterface extends CrudObjectInterface {
 
   public function loadFromArray(array $array): self;
 
+  public function loadFromObject(LocalObjectInterface $otherObject);
+
 }

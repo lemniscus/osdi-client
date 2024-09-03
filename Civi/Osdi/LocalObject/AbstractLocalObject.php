@@ -254,6 +254,16 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     return $this;
   }
 
+  public function loadFromObject(LocalObjectInterface $otherObject): self {
+    $this->initializeFields();
+    foreach ($this->getFieldMetadata() as $fieldName => $x) {
+      $this->{$fieldName}->load($otherObject->{$fieldName}->get());
+    }
+    $this->isTouched = FALSE;
+    $this->isLoaded = TRUE;
+    return $this;
+  }
+
   public function loadOnce(): self {
     if (!$this->isLoaded()) {
       return $this->load();

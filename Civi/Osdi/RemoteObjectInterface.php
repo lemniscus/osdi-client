@@ -35,4 +35,6 @@ interface RemoteObjectInterface extends CrudObjectInterface {
 
   public function loadFromArray(array $flatFields): RemoteObjectInterface;
 
+  public function loadFromObject(RemoteObjectInterface $otherObject): self;
+
 }

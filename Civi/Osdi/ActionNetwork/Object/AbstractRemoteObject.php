@@ -184,6 +184,11 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
     return $this->load($resource);
   }
 
+  public function loadFromObject(RemoteObjectInterface $otherObject): RemoteObjectInterface {
+    $this->initializeFields();
+    return $this->load($otherObject->getResource());
+  }
+
   public function loadOnce(): self {
     if (!$this->isLoaded()) {
       return $this->load();
