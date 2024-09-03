@@ -14,7 +14,7 @@ class TagBasic extends AbstractLocalObject implements LocalObjectInterface {
     return 'Tag';
   }
 
-  protected static function getFieldMetadata() {
+  protected static function getFieldMetadata(): array {
     return [
       'id' => ['select' => 'id'],
       'createdDate' => ['select' => 'created_date', 'readOnly' => TRUE],

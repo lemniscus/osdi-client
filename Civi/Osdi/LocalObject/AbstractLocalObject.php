@@ -41,6 +41,11 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     }
   }
 
+  /**
+   * @return array [camelName => [fieldMetaData], ...]
+   */
+  abstract protected static function getFieldMetadata(): array;
+
   public static function getJoins(): array {
     return [];
   }
