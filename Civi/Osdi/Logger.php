@@ -6,11 +6,20 @@ use Symfony\Component\VarDumper\Cloner\VarCloner;
 use Symfony\Component\VarDumper\Dumper\AbstractDumper;
 use Symfony\Component\VarDumper\Dumper\CliDumper;
 
-class Logger {
+class Logger extends \CRM_Core_Error_Log {
 
-  public static function logError(?string $message, $context = NULL) {
-    $priority = self::mapPriority(\Psr\Log\LogLevel::ERROR);
+  public function log($level, $message, array $context = []): void {
+    if (!empty($context)) {
+      $message = self::addContextToMessage($context, $message);
+    }
 
+    $pearPriority = $this->map[$level];
+
+    $file_log = \CRM_Core_Error::createDebugLogger('osdi');
+    $file_log->log("$message\n", $pearPriority);
+    $file_log->close();
+  }
+  protected static function addContextToMessage(mixed $context, ?string $message): ?string {
     if (!empty($context)) {
       if (is_array($context) && isset($context['exception'])) {
         $context['exception'] = \CRM_Core_Error::formatTextException($context['exception']);
@@ -46,23 +55,23 @@ class Logger {
       $output = $dumper->dump($cloner->cloneVar($context), TRUE);
       $message = "$message\n$output";
     }
-    \CRM_Core_Error::debug_log_message($message, FALSE, 'osdi', $priority);
+    return $message;
   }
 
-  public static function logDebug(?string $message) {
-    $priority = self::mapPriority(\Psr\Log\LogLevel::DEBUG);
-    \CRM_Core_Error::debug_log_message($message, FALSE, 'osdi', $priority);
+  public static function logError(?string $message, $context = NULL) {
+    self::getSingleton()->error($message);
   }
 
-  private static function mapPriority(string $psrLogLevel) {
-    static $levelMap;
+  public static function logDebug(?string $message, $context = NULL) {
+    self::getSingleton()->debug($message);
+  }
 
-    if (!isset($levelMap)) {
-      $levelMap = \Civi::log()->getMap();
+  private static function getSingleton(): mixed {
+    $singleton =& \Civi::$statics[static::class]['singleton'];
+    if (empty($singleton)) {
+      $singleton = \Civi::log('osdi');
     }
-
-    $priority = $levelMap[$psrLogLevel];
-    return $priority;
+    return $singleton;
   }
 
 }

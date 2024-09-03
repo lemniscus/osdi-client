@@ -4,11 +4,18 @@ require_once 'osdi_client.civix.php';
 // phpcs:disable
 use Civi\Osdi\Logger;
 use CRM_OSDI_ExtensionUtil as E;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Definition;
 // phpcs:enable
 
 require_once __DIR__ . DIRECTORY_SEPARATOR
     . 'vendor' . DIRECTORY_SEPARATOR
     . 'autoload.php';
+
+function osdi_client_civicrm_container(ContainerBuilder $container) {
+  $container->setDefinition('log.osdi', new Definition(Logger::class, []))
+    ->setPublic(TRUE);
+}
 
 function osdi_client_civicrm_config(&$config) {
   if (isset(Civi::$statics[__FUNCTION__])) {
