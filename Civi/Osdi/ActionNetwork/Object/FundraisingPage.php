@@ -26,7 +26,7 @@ class FundraisingPage extends AbstractRemoteObject implements \Civi\Osdi\RemoteO
     ];
   }
 
-  public function getType(): string {
+  public static function getType(): string {
     return 'osdi:fundraising_pages';
   }
 

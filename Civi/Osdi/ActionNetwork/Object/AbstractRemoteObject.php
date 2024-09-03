@@ -128,7 +128,7 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
 
   public function delete() {
     throw new InvalidOperationException('Objects of type %s cannot be '
-      . 'deleted via the Action Network API', $this->getType());
+      . 'deleted via the Action Network API', static::getType());
   }
 
   /**

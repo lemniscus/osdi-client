@@ -21,7 +21,7 @@ interface RemoteObjectInterface extends CrudObjectInterface {
 
   public function getResource(): ?HalResource;
 
-  public function getType(): string;
+  public static function getType(): string;
 
   public function getUrlForCreate(): string;
 

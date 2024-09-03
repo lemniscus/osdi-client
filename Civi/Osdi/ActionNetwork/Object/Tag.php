@@ -20,7 +20,7 @@ class Tag extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInterfa
     ];
   }
 
-  public function getType(): string {
+  public static function getType(): string {
     return 'osdi:tags';
   }
 

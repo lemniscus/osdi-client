@@ -106,7 +106,7 @@ class Tagging extends AbstractRemoteObject implements RemoteObjectInterface {
     return $newTagUrl;
   }
 
-  public function getType(): string {
+  public static function getType(): string {
     return 'osdi:taggings';
   }
 

@@ -46,7 +46,7 @@ class Donation extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectIn
     ];
   }
 
-  public function getType(): string {
+  public static function getType(): string {
     return 'osdi:donations';
   }
 

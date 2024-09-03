@@ -63,7 +63,7 @@ class Person extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInte
     ];
   }
 
-  public function getType(): string {
+  public static function getType(): string {
     return 'osdi:people';
   }
 
@@ -116,7 +116,7 @@ class Person extends AbstractRemoteObject implements \Civi\Osdi\RemoteObjectInte
     }
 
     $criteria = [['email_address', 'eq', $this->emailAddress->get()]];
-    $peopleWithTheEmail = $this->_system->find($this->getType(), $criteria);
+    $peopleWithTheEmail = $this->_system->find(static::getType(), $criteria);
 
     if (0 == $peopleWithTheEmail->rawCurrentCount()) {
       return [NULL, NULL, NULL];
