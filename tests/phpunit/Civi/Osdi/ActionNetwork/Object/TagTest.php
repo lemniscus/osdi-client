@@ -106,4 +106,30 @@ class TagTest extends \PHPUnit\Framework\TestCase implements
     $savedTag->delete();
   }
 
+  public function testCacheAndLoadFromCache() {
+    $originalTag = new Tag($this->system);
+    $originalTag->name->set('hello world');
+    $originalTag->save();
+    $tagId = $originalTag->getId();
+    $tagUrl = $originalTag->getUrlForRead();
+    $originalTag->cache();
+
+    $startTime = microtime(true);
+    $tagFromInternet = Tag::loadFromId($tagId);
+    $endTime = microtime(true);
+    $timeToFetchFromInternet = $endTime - $startTime;
+
+    $startTime = microtime(true);
+    $tagFromCacheById = Tag::getOrCreateCached(id: $tagId);
+    $endTime = microtime(true);
+    $timeToFetchFromCache = $endTime - $startTime;
+
+    $tagFromCacheByUrl = Tag::getOrCreateCached(url: $tagUrl);
+
+    self::assertEquals($originalTag, $tagFromCacheById);
+    self::assertEquals($originalTag, $tagFromCacheByUrl);
+    self::assertFalse($originalTag === $tagFromInternet);
+    self::assertLessThan($timeToFetchFromInternet, $timeToFetchFromCache);
+  }
+
 }

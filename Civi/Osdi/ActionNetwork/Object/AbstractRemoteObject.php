@@ -2,6 +2,7 @@
 
 namespace Civi\Osdi\ActionNetwork\Object;
 
+use Civi;
 use Civi\Osdi\Exception\EmptyResultException;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\Exception\InvalidOperationException;
@@ -126,6 +127,13 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
     return $allValues;
   }
 
+   public function getOrLoadCached(): static {
+    if ($this->isLoaded()) {
+      return $this->cache();
+    }
+    return static::getOrCreateCached(id: $this->getId());
+  }
+
   public function delete() {
     throw new InvalidOperationException('Objects of type %s cannot be '
       . 'deleted via the Action Network API', static::getType());
@@ -164,6 +172,58 @@ abstract class AbstractRemoteObject implements RemoteObjectInterface {
     }
 
     return $this;
+  }
+
+  public function cache(): static {
+    $cache =& Civi::$statics['osdiClient.an.objectCache'][static::class];
+    if ($this->getId()) {
+      $cache['id'][$this->getId()] = $this;
+    }
+    if ($this->getUrlForRead()) {
+      $cache['url'][$this->getUrlForRead()] = $this;
+    }
+    return $this;
+  }
+
+  public static function getOrCreateCached(
+    ?string $id = NULL,
+    ?string $url = NULL/*,
+    ?RemoteObjectInterface $objectToCache = NULL*/
+  ): static
+  {
+    if (
+      empty($id) && empty($url)
+    ) {
+      throw new InvalidArgumentException('id or url must be provided');
+    }
+
+    // Try to retrieve from cache
+    $cache =& Civi::$statics['osdiClient.an.objectCache'][static::class];
+    if ($id) {
+      $cacheItem = $cache['id'][$id] ?? NULL;
+    }
+    if (!isset($cacheItem) && $url) {
+      $cacheItem = $cache['url'][$url] ?? NULL;
+    }
+
+    if ($cacheItem) {
+      return $cacheItem;
+    }
+
+    // Item not found in cache. Create item, cache it, return it
+    if ($id) {
+      $createdItem = static::loadFromId($id);
+    }
+    else {
+      $container = OsdiClient::container();
+      $system = $container
+        ->getSingle('RemoteSystem', 'ActionNetwork');
+      $resource = $system->linkify($url)->get();
+      $createdItem = $container->make(
+        'OsdiObject', static::getType(), $system, $resource);
+    }
+    $createdItem->cache();
+    return $createdItem;
   }
 
   public static function loadFromId(string $id, ?RemoteSystemInterface $system = NULL): self {

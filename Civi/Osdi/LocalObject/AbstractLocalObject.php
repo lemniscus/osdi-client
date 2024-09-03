@@ -187,6 +187,13 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     return $return;
   }
 
+  public function getOrLoadCached(): static {
+    if ($this->isLoaded()) {
+      return $this->cache();
+    }
+    return static::getOrCreateCached(id: $this->getId());
+  }
+
   protected function getWhereClauseForLoad(): array {
     return [['id', '=', $this->getId()]];
   }
@@ -261,6 +268,29 @@ abstract class AbstractLocalObject implements LocalObjectInterface {
     }
     $this->isTouched = FALSE;
     $this->isLoaded = TRUE;
+    return $this;
+  }
+
+  public static function getOrCreateCached(
+    ?int $id = NULL/*,
+    ?LocalObjectInterface $objectToCache = NULL*/
+  ): static {
+    if (empty($id)) {
+      throw new InvalidArgumentException('id must be provided');
+    }
+
+    $cache =& \Civi::$statics['osdiClient.local.objectCache'][static::class];
+    $cacheItem =& $cache['id'][$id];
+
+    if (empty($cacheItem)) {
+      $cacheItem = new static($id);
+    }
+    return $cacheItem->loadOnce();
+  }
+
+  public function cache(): static {
+    $cache =& \Civi::$statics['osdiClient.local.objectCache'][static::class];
+    $cache['id'][$this->getId()] = $this;
     return $this;
   }
 
