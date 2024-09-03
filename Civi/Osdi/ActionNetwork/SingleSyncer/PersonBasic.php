@@ -67,7 +67,9 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
       return $this->pushResult($pair, $result, $result::FETCHED_SAVED_MATCH);
     }
 
-    $pair->getOriginObject()->loadOnce();
+    $this->isCaching() ?
+      $pair->setOriginObject($pair->getOriginObject()->getOrLoadCached()) :
+      $pair->getOriginObject()->loadOnce();
     $matchResult = $this->getMatcher()->tryToFindMatchFor($pair);
 
     if ($matchResult->isError()) {
@@ -81,7 +83,14 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     }
 
     else {
-      $pair->setTargetObject($matchResult->getMatch()->loadOnce());
+      if ($this->isCaching()) {
+        $match = $matchResult->getMatch()->getOrLoadCached();
+        $matchResult->setMatch($match);
+      }
+      else {
+        $match = $matchResult->getMatch()->loadOnce();
+      }
+      $pair->setTargetObject($match);
       $result->setStatusCode($result::FOUND_NEW_MATCH);
     }
 

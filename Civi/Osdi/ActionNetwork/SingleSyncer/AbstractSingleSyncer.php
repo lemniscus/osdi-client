@@ -32,6 +32,17 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
 
   protected ?string $registryKey = NULL;
 
+  protected bool $caching = FALSE;
+
+  public function isCaching(): bool {
+    return $this->caching;
+  }
+
+  public function setCaching(bool $objectCaching): AbstractSingleSyncer {
+    $this->caching = $objectCaching;
+    return $this;
+  }
+
   public function getMapper(): MapperInterface {
     if (empty($this->mapper)) {
       $this->mapper = OsdiClient::container()->getSingle('Mapper', $this->registryKey);

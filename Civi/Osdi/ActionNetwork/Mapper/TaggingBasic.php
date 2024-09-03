@@ -50,7 +50,7 @@ class TaggingBasic implements \Civi\Osdi\MapperInterface {
     $tagPair = $tagSyncer
       ->toLocalRemotePair()
       ->setOrigin($taggingPair->getOrigin())
-      ->setOriginObject($originTagging->getTag());
+      ->setOriginObject($originTagging->getTagUsingCache());
     $tagMatchResult = $tagSyncer->fetchOldOrFindNewMatch($tagPair);
 
     switch ($tagMatchResult->getStatusCode()) {

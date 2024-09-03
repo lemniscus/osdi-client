@@ -11,6 +11,9 @@ use Civi\OsdiClient;
 
 class TaggingBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterface {
 
+  protected ?SingleSyncerInterface $personSyncer = NULL;
+  protected ?SingleSyncerInterface $tagSyncer = NULL;
+
   public function tryToFindMatchForLocalObject(LocalRemotePair $taggingPair): MatchResult {
     $result = new MatchResult(MatchResult::ORIGIN_LOCAL);
 
@@ -29,7 +32,7 @@ class TaggingBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterfac
 
     $targetTaggings = $targetPerson->getTaggings();
     foreach ($targetTaggings as $targetTagging) {
-      if ($targetTagging->getTag()->getId() === $targetTag->getId()) {
+      if ($targetTagging->getTagUsingCache()->getId() === $targetTag->getId()) {
         $result->setMatch($targetTagging);
         $taggingPair->setTargetObject($targetTagging);
         $result->setStatusCode($result::FOUND_MATCH);
@@ -85,7 +88,7 @@ class TaggingBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterfac
     string $origin,
     CrudObjectInterface $originTagging
   ): ?CrudObjectInterface {
-    $personSyncer = OsdiClient::container()->getSingle('SingleSyncer', 'Person');
+    $personSyncer = $this->getPersonSyncer();
     $personPair = $personSyncer
       ->toLocalRemotePair()
       ->setOrigin($origin)
@@ -104,11 +107,11 @@ class TaggingBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterfac
     string $origin,
     CrudObjectInterface $originTagging
   ): ?CrudObjectInterface {
-    $tagSyncer = OsdiClient::container()->getSingle('SingleSyncer', 'Tag');
+    $tagSyncer = $this->getTagSyncer();
     $tagPair = $tagSyncer
       ->toLocalRemotePair()
       ->setOrigin($origin)
-      ->setOriginObject($originTagging->getTag());
+      ->setOriginObject($originTagging->getTagUsingCache());
     $tagMatchResult = $tagSyncer->fetchOldOrFindNewMatch($tagPair);
 
     $c = $tagMatchResult->getStatusCode();
@@ -117,6 +120,32 @@ class TaggingBasic extends AbstractMatcher implements \Civi\Osdi\MatcherInterfac
       return $tagPair->getTargetObject();
     }
     return NULL;
+  }
+
+  protected function getPersonSyncer(): SingleSyncerInterface {
+    if (empty($this->personSyncer)) {
+      $this->personSyncer = OsdiClient::container()->getSingle(
+        'SingleSyncer', 'Person');
+    }
+    return $this->personSyncer;
+  }
+
+  protected function setPersonSyncer(SingleSyncerInterface $syncer): self {
+    $this->personSyncer = $syncer;
+    return $this;
+  }
+
+  protected function getTagSyncer(): SingleSyncerInterface {
+    if (empty($this->tagSyncer)) {
+      $this->tagSyncer = OsdiClient::container()->getSingle(
+        'SingleSyncer', 'Tag');
+    }
+    return $this->tagSyncer;
+  }
+
+  protected function setTagSyncer(SingleSyncerInterface $syncer): self {
+    $this->tagSyncer = $syncer;
+    return $this;
   }
 
 }

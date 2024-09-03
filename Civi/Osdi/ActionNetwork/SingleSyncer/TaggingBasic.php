@@ -29,6 +29,13 @@ class TaggingBasic extends AbstractSingleSyncer {
     $this->registryKey = 'Tagging';
   }
 
+  public function getPersonSyncer(): SingleSyncerInterface {
+    if (empty($this->personSyncer)) {
+      $this->personSyncer = OsdiClient::container()->getSingle('SingleSyncer', 'Person', $this->getRemoteSystem());
+    }
+    return $this->personSyncer;
+  }
+
   public function setPersonSyncer(SingleSyncerInterface $personSyncer): self {
     $this->personSyncer = $personSyncer;
     return $this;
@@ -39,16 +46,9 @@ class TaggingBasic extends AbstractSingleSyncer {
     return $this;
   }
 
-  public function getPersonSyncer(): SingleSyncerInterface {
-    if (empty($this->personSyncer)) {
-      $this->personSyncer = OsdiClient::container()->make('SingleSyncer', 'Person', $this->getRemoteSystem());
-    }
-    return $this->personSyncer;
-  }
-
   public function getTagSyncer(): SingleSyncerInterface {
     if (empty($this->tagSyncer)) {
-      $this->tagSyncer = OsdiClient::container()->make('SingleSyncer', 'Tag', $this->getRemoteSystem());
+      $this->tagSyncer = OsdiClient::container()->getSingle('SingleSyncer', 'Tag', $this->getRemoteSystem());
     }
     return $this->tagSyncer;
   }
