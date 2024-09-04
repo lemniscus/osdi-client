@@ -385,7 +385,8 @@ class TaggingBasic implements BatchSyncerInterface {
   }
 
   private function syncTaggingsFromLocalTags(array $tagsToSyncWithEntityTagsToSkip): array {
-    $newFromLocalCount = $successFromLocalCount = $errorFromLocalCount = 0;
+    $alreadySyncedCount = $newFromLocalCount =
+    $successFromLocalCount = $errorFromLocalCount = 0;
 
     foreach ($tagsToSyncWithEntityTagsToSkip as $tagId => $entityTagIdsToSkip) {
       $tagName = Tag::get(FALSE)->addWhere('id', '=', $tagId)
@@ -399,19 +400,21 @@ class TaggingBasic implements BatchSyncerInterface {
       $currentTagTotal = $entityTagArrays->count();
       $currentTagDone = 0;
       $lastLogTime = time();
-      Logger::logDebug("Processing $currentTagTotal local taggings for tag: $tagName");
+      Logger::logDebug("Starting to sync local taggings for '$tagName'; $currentTagTotal to process");
 
       foreach ($entityTagArrays as $entityTagArray) {
         if (time() - $lastLogTime > 14) {
-          Logger::logDebug("still syncing taggings for current local tag: of "
+          Logger::logDebug("...still syncing taggings for local tag '$tagName': of "
             . "$currentTagTotal, $currentTagDone done");
           $lastLogTime = time();
         }
         $currentTagDone++;
 
         if (in_array($entityTagArray['id'], $entityTagIdsToSkip)) {
+          $alreadySyncedCount++;
           continue;
         }
+        $newFromLocalCount++;
 
         try {
           $localTagging = \Civi\OsdiClient::container()
@@ -420,8 +423,13 @@ class TaggingBasic implements BatchSyncerInterface {
           $taggingPair = $this->singleSyncer->toLocalRemotePair($localTagging);
           $taggingPair->setOrigin($taggingPair::ORIGIN_LOCAL);
           $result = $this->singleSyncer->oneWayMapAndWrite($taggingPair);
-          $newFromLocalCount++;
           $result->isError() ? $errorFromLocalCount++ : $successFromLocalCount++;
+          if ($result->isError()) {
+            $m = $result->getMessage();
+            $errorCodeAndMessage = $result->getStatusCode() . ($m ? "- $m": '');
+            \Civi::log()->error(
+              "Error syncing EntityTag id {$entityTagArray['id']}: $errorCodeAndMessage");
+          }
         } catch (\Throwable $e) {
           \Civi::log()
             ->error('OSDI client: Error during batch Tagging sync from Civi',
@@ -433,6 +441,7 @@ class TaggingBasic implements BatchSyncerInterface {
           $errorFromLocalCount++;
         }
       }
+      Logger::logDebug("Finished syncing local taggings for '$tagName': $newFromLocalCount new to Action Network ($errorFromLocalCount errors), $alreadySyncedCount already in sync");
     }
     return [$newFromLocalCount, $successFromLocalCount, $errorFromLocalCount];
   }
