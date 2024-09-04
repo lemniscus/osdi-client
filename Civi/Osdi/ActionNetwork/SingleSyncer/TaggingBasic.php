@@ -90,14 +90,6 @@ class TaggingBasic extends AbstractSingleSyncer {
     return self::$savedMatches[$profileId][$pair->getOrigin()][$objectId] ?? NULL;
   }
 
-  protected function getLocalObjectClass(): string {
-    return LocalTaggingObject::class;
-  }
-
-  protected function getRemoteObjectClass(): string {
-    return OsdiTaggingObject::class;
-  }
-
   public function oneWayMapAndWrite(LocalRemotePair $pair): MapAndWriteResult {
     if (!empty($t = $pair->getTargetObject())) {
       if (!empty($t->getId())) {

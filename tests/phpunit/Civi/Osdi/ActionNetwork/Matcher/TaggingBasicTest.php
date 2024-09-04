@@ -69,8 +69,6 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
 
   private static function makePair($input): \Civi\Osdi\LocalRemotePair {
     $pair = new \Civi\Osdi\LocalRemotePair();
-    $pair->setLocalClass(\Civi\Osdi\LocalObject\TaggingBasic::class);
-    $pair->setRemoteClass(\Civi\Osdi\ActionNetwork\Object\Tagging::class);
     if (is_a($input, RemoteObjectInterface::class)) {
       $pair->setRemoteObject($input)->setOrigin($pair::ORIGIN_REMOTE);
     }

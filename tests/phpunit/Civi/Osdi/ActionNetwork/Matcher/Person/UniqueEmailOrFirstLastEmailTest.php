@@ -54,8 +54,6 @@ class UniqueEmailOrFirstLastEmailTest extends \PHPUnit\Framework\TestCase implem
    */
   private static function makePair($input): \Civi\Osdi\LocalRemotePair {
     $pair = new \Civi\Osdi\LocalRemotePair();
-    $pair->setLocalClass(LocalPerson::class);
-    $pair->setRemoteClass(\Civi\Osdi\ActionNetwork\Object\Person::class);
     if (is_object($input)) {
       $pair->setRemoteObject($input)->setOrigin($pair::ORIGIN_REMOTE);
     }

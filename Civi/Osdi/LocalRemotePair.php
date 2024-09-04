@@ -15,8 +15,6 @@ class LocalRemotePair {
 
   private ?LocalObjectInterface $localObject;
   private ?RemoteObjectInterface $remoteObject;
-  private ?string $localClass = NULL;
-  private ?string $remoteClass = NULL;
   private ResultStack $resultStack;
   private ?string $origin = NULL;
   private array $vars = [];
@@ -153,24 +151,6 @@ class LocalRemotePair {
   public function isError(): bool {
     $lastResult = $this->getLastResult();
     return $lastResult ? $lastResult->isError() : FALSE;
-  }
-
-  /**
-   * @deprecated
-   * @todo remove
-   */
-  public function getLocalClass(): ?string {
-    return $this->localClass;
-  }
-
-  public function setLocalClass(?string $localPersonClass): self {
-    $this->localClass = $localPersonClass;
-    return $this;
-  }
-
-  public function setRemoteClass(?string $className) {
-    $this->remoteClass = $className;
-    return $this;
   }
 
   public function __serialize(): array {

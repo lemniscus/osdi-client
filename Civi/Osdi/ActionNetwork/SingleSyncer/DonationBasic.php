@@ -27,15 +27,6 @@ class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterfac
     $this->registryKey = 'Donation';
   }
 
-  protected function getLocalObjectClass(): string {
-    return LocalDonation::class;
-  }
-
-  protected function getRemoteObjectClass(): string {
-    return RemoteDonation::class;
-
-  }
-
   protected function saveSyncStateIfNeeded(LocalRemotePair $pair) {
     $remoteObject = $pair->getRemoteObject();
     $localObject = $pair->getLocalObject();

@@ -212,8 +212,6 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
     RemoteObjectInterface $remoteObject = NULL
   ): LocalRemotePair {
     $pair = new LocalRemotePair($localObject, $remoteObject);
-    $pair->setLocalClass($this->getLocalObjectClass());
-    $pair->setRemoteClass($this->getRemoteObjectClass());
     return $pair;
   }
 
@@ -294,10 +292,6 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
         ? MapAndWriteResult::SAVE_ERROR
         : MapAndWriteResult::WROTE_CHANGES);
   }
-
-  abstract protected function getLocalObjectClass(): string;
-
-  abstract protected function getRemoteObjectClass(): string;
 
   protected function logSyncResult(LocalRemotePair $pair, SyncResult $syncResult): void {
     try {

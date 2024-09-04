@@ -330,14 +330,6 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     return $flags->count();
   }
 
-  protected function getLocalObjectClass(): string {
-    return \Civi\Osdi\LocalObject\PersonBasic::class;
-  }
-
-  protected function getRemoteObjectClass(): string {
-    return \Civi\Osdi\ActionNetwork\Object\Person::class;
-  }
-
   private function wasDeletedByUs(LocalRemotePair $pair): int {
     $remoteId = $pair->getRemoteObject()->getId();
     if (empty($remoteId)) {
@@ -397,16 +389,6 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
     }
 
     return FALSE;
-  }
-
-  public function toLocalRemotePair(
-    LocalObjectInterface $localObject = NULL,
-    RemoteObjectInterface $remoteObject = NULL
-  ): LocalRemotePair {
-    $pair = new LocalRemotePair($localObject, $remoteObject);
-    $pair->setLocalClass($this->getLocalObjectClass());
-    $pair->setRemoteClass($this->getRemoteObjectClass());
-    return $pair;
   }
 
 }

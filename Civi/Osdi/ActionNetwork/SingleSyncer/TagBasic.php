@@ -36,14 +36,6 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
     return $savedMatches[$side][$objectId] ?? NULL;
   }
 
-  protected function getLocalObjectClass(): string {
-    return \Civi\Osdi\LocalObject\TagBasic::class;
-  }
-
-  protected function getRemoteObjectClass(): string {
-    return \Civi\Osdi\ActionNetwork\Object\Tag::class;
-  }
-
   /**
    * Memorize the association between the Tags given in the LocalRemotePair.
    * Will persist until Civi's caches are flushed.
@@ -109,18 +101,6 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
     }
 
     return $this->saveMatch($pair);
-  }
-
-  protected function typeCheckLocalObject(LocalObjectInterface $object): \Civi\Osdi\LocalObject\TagBasic {
-    Util::assertClass($object, \Civi\Osdi\LocalObject\TagBasic::class);
-    /** @var \Civi\Osdi\LocalObject\TagBasic $object */
-    return $object;
-  }
-
-  protected function typeCheckRemoteObject(RemoteObjectInterface $object): \Civi\Osdi\ActionNetwork\Object\Tag {
-    Util::assertClass($object, \Civi\Osdi\ActionNetwork\Object\Tag::class);
-    /** @var \Civi\Osdi\ActionNetwork\Object\Tag $object */
-    return $object;
   }
 
   /**

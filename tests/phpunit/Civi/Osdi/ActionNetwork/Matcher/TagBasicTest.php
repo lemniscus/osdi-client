@@ -45,8 +45,6 @@ class TagBasicTest extends PHPUnit\Framework\TestCase implements
     $remoteTag->save();
 
     $pair = (new LocalRemotePair())
-      ->setLocalClass(get_class($localTag))
-      ->setRemoteClass(get_class($remoteTag))
       ->setOrigin(LocalRemotePair::ORIGIN_LOCAL)
       ->setLocalObject($localTag);
 
