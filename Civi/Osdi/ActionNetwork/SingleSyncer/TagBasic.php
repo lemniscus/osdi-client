@@ -15,6 +15,8 @@ use Civi\OsdiClient;
 
 class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
 
+  protected static string $localType = 'Tag';
+  protected static string $remoteType = 'osdi:tags';
   protected ?array $matchArray = NULL;
 
   public function __construct(?RemoteSystemInterface $remoteSystem = NULL) {
@@ -40,18 +42,6 @@ class TagBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
 
   protected function getRemoteObjectClass(): string {
     return \Civi\Osdi\ActionNetwork\Object\Tag::class;
-  }
-
-  public function makeLocalObject($id = NULL): LocalObjectInterface {
-    return new \Civi\Osdi\LocalObject\TagBasic($id);
-  }
-
-  public function makeRemoteObject($id = NULL): RemoteObjectInterface {
-    $tag = new \Civi\Osdi\ActionNetwork\Object\Tag($this->getRemoteSystem());
-    if ($id) {
-      $tag->setId($id);
-    }
-    return $tag;
   }
 
   /**

@@ -34,6 +34,10 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
 
   protected bool $caching = FALSE;
 
+  protected static string $remoteType;
+
+  protected static string $localType;
+
   public function isCaching(): bool {
     return $this->caching;
   }
@@ -316,6 +320,21 @@ abstract class AbstractSingleSyncer implements \Civi\Osdi\SingleSyncerInterface 
       $context = ['exception' => $e, 'LocalRemotePair' => $pair];
       Logger::logError('Error writing to OsdiLog table', $context);
     }
+  }
+
+  public function makeRemoteObject($id = NULL): RemoteObjectInterface {
+    $system = $this->getRemoteSystem();
+    $object = \Civi\OsdiClient::container()
+      ->make('OsdiObject', static::$remoteType, $system);
+    if (!is_null($id)) {
+      $object->setId($id);
+    }
+    return $object;
+  }
+
+  public function makeLocalObject($id = NULL): LocalObjectInterface {
+    return \Civi\OsdiClient::container()
+      ->make('LocalObject', static::$localType, $id);
   }
 
 }

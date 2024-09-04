@@ -3,12 +3,9 @@
 namespace Civi\Osdi\ActionNetwork\SingleSyncer;
 
 use Civi\Osdi\ActionNetwork\Object\Tagging as OsdiTaggingObject;
-use Civi\Osdi\ActionNetwork\RemoteSystem;
 use Civi\Osdi\Exception\InvalidOperationException;
 use Civi\Osdi\LocalObject\TaggingBasic as LocalTaggingObject;
 use Civi\Osdi\LocalRemotePair;
-use Civi\Osdi\MapperInterface;
-use Civi\Osdi\MatcherInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\DeletionSync as DeletionSyncResult;
 use Civi\Osdi\Result\MapAndWrite as MapAndWriteResult;
@@ -17,10 +14,10 @@ use Civi\OsdiClient;
 
 class TaggingBasic extends AbstractSingleSyncer {
 
+  protected static string $localType = 'Tagging';
+  protected static string $remoteType = 'osdi:taggings';
   protected static array $savedMatches = [];
-
   protected ?SingleSyncerInterface $personSyncer = NULL;
-
   protected ?SingleSyncerInterface $tagSyncer = NULL;
 
   public function __construct(?RemoteSystemInterface $remoteSystem = NULL) {
@@ -99,18 +96,6 @@ class TaggingBasic extends AbstractSingleSyncer {
 
   protected function getRemoteObjectClass(): string {
     return OsdiTaggingObject::class;
-  }
-
-  public function makeLocalObject($id = NULL): LocalTaggingObject {
-    return new LocalTaggingObject($id);
-  }
-
-  public function makeRemoteObject($id = NULL): OsdiTaggingObject {
-    $tagging = new OsdiTaggingObject($this->getRemoteSystem());
-    if ($id) {
-      $tagging->setId($id);
-    }
-    return $tagging;
   }
 
   public function oneWayMapAndWrite(LocalRemotePair $pair): MapAndWriteResult {

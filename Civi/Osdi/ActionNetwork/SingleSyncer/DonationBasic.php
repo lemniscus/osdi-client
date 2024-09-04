@@ -7,9 +7,7 @@ use Civi\Osdi\ActionNetwork\Object\Donation as RemoteDonation;
 use Civi\Osdi\DonationSyncState;
 use Civi\Osdi\Exception\InvalidArgumentException;
 use Civi\Osdi\LocalObject\DonationBasic as LocalDonation;
-use Civi\Osdi\LocalObjectInterface;
 use Civi\Osdi\LocalRemotePair;
-use Civi\Osdi\RemoteObjectInterface;
 use Civi\Osdi\RemoteSystemInterface;
 use Civi\Osdi\Result\FetchOldOrFindNewMatch as OldOrNewMatchResult;
 use Civi\Osdi\Result\Sync;
@@ -19,6 +17,8 @@ use Civi\OsdiClient;
 
 class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
 
+  protected static string $localType = 'Donation';
+  protected static string $remoteType = 'osdi:donations';
   protected RemoteSystemInterface $remoteSystem;
 
   public function __construct(?RemoteSystemInterface $remoteSystem = NULL) {
@@ -34,19 +34,6 @@ class DonationBasic extends AbstractSingleSyncer implements SingleSyncerInterfac
   protected function getRemoteObjectClass(): string {
     return RemoteDonation::class;
 
-  }
-
-  public function makeLocalObject($id = NULL): LocalObjectInterface {
-    return OsdiClient::container()->make('LocalObject', 'Donation', $id);
-  }
-
-  public function makeRemoteObject($id = NULL): RemoteObjectInterface {
-    $system = $this->getRemoteSystem();
-    $donation = OsdiClient::container()->make('OsdiObject', 'osdi:donations', $system);
-    if (!is_null($id)) {
-      $donation->setId($id);
-    }
-    return $donation;
   }
 
   protected function saveSyncStateIfNeeded(LocalRemotePair $pair) {

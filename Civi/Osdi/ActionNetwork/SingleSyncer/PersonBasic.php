@@ -24,6 +24,8 @@ use Civi\OsdiClient;
 
 class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface {
 
+  protected static string $localType = 'Person';
+  protected static string $remoteType = 'osdi:people';
   protected ?MapperInterface $mapper = NULL;
   protected ?MatcherInterface $matcher = NULL;
   protected RemoteSystemInterface $remoteSystem;
@@ -137,19 +139,6 @@ class PersonBasic extends AbstractSingleSyncer implements SingleSyncerInterface 
 
     $result->setMessage('Sync is already up to date');
     return $this->pushResult($pair, $result, $result::NOT_NEEDED);
-  }
-
-  public function makeLocalObject($id = NULL): LocalObjectInterface {
-    return \Civi\OsdiClient::container()->make('LocalObject', 'Person', $id);
-  }
-
-  public function makeRemoteObject($id = NULL): RemoteObjectInterface {
-    $system = $this->getRemoteSystem();
-    $person = \Civi\OsdiClient::container()->make('OsdiObject', 'osdi:people', $system);
-    if (!is_null($id)) {
-      $person->setId($id);
-    }
-    return $person;
   }
 
   public function oneWayMapAndWrite(LocalRemotePair $pair): MapAndWriteResult {

@@ -4,7 +4,6 @@ namespace Civi\Osdi\ActionNetwork;
 use Civi\Api4\FinancialType;
 use Civi\Osdi\ActionNetwork\Mapper\DonationBasic as DonationBasicMapper;
 use Civi\Osdi\ActionNetwork\Object\FundraisingPage;
-use Civi\Osdi\ActionNetwork\Object\Person;
 use Civi\Osdi\LocalRemotePair;
 use Civi\Osdi\Logger;
 use Civi\OsdiClient;
@@ -28,7 +27,7 @@ trait DonationHelperTrait {
     /** @var \Civi\Osdi\ActionNetwork\SingleSyncer\PersonBasic $personSyncer */
     $personSyncer = OsdiClient::container()->getSingle('SingleSyncer', 'Person');
     $pair = $personSyncer->matchAndSyncIfEligible($remotePerson);
-    self::assertFalse($pair->isError());
+    self::assertFalse($pair->isError(), print_r($pair->getResultStack()->toArray(), TRUE));
 
     return $pair;
   }
