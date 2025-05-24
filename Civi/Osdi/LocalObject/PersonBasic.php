@@ -212,11 +212,7 @@ class PersonBasic extends AbstractLocalObject implements LocalObjectInterface {
       'is_primary' => TRUE,
     ];
 
-    /**
-     * ADDRESSPATCHED CAN BE CHANGED TO ADDRESS ONCE https://github.com/civicrm/civicrm-core/pull/24971
-     * IS RELEASED -- UPDATE THE REQUIRED CIVI VERSION OF THIS EXTENSION
-     */
-    \Civi\Api4\Patch\Address::save(FALSE)
+    \Civi\Api4\Address::save(FALSE)
       ->setRecords([$createValues])
       ->setMatch([
         'street_address',
