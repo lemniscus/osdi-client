@@ -228,7 +228,7 @@ class TaggingBasicTest extends PHPUnit\Framework\TestCase implements
   }
 
   private function makeSamePersonOnBothSides(string $index): array {
-    $email = "taggingtest$index@test.net";
+    $email = "test_tagging_sync_$index@test.net";
     $givenName = "Test Tagging Sync $index";
 
     $remotePerson = new Civi\Osdi\ActionNetwork\Object\Person(self::$remoteSystem);

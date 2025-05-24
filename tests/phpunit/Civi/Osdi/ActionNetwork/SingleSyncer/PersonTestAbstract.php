@@ -30,7 +30,7 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
     $syncer = self::$syncer;
     $localPerson = \Civi\OsdiClient::container()->make('LocalObject', 'Person');
     $localPerson->firstName->set('testMatchAndSyncIfEligible_FromLocal');
-    $emailAddress = 'testMatchAndSyncIfEligible_FromLocal_' . time() . '@civicrm.org';
+    $emailAddress = 'testMatchSyncIfEl_FromLocal_' . time() . '@civicrm.org';
     $localPerson->emailEmail->set($emailAddress);
     $localPerson->save();
 
@@ -59,7 +59,8 @@ abstract class PersonTestAbstract extends \PHPUnit\Framework\TestCase {
 
     self::assertEquals(FetchOldOrFindNewMatch::NO_MATCH_FOUND, $fetchFindMatchResult->getStatusCode());
     self::assertEquals('No match by email, first name and last name', $matchResult->getMessage());
-    self::assertEquals(MapAndWrite::WROTE_NEW, $mapAndWriteResult->getStatusCode());
+    self::assertEquals(MapAndWrite::WROTE_NEW, $mapAndWriteResult->getStatusCode(),
+      \Civi::log()->error('Map and Write result not as expected. See Civi log file.', $resultStack->toArray()) ?? 'Map and Write result not as expected');
     self::assertEquals(SyncEligibility::ELIGIBLE, $syncEligibleResult->getStatusCode());
     self::assertEquals(Sync::SUCCESS, $syncResult->getStatusCode());
     self::assertEquals(\Civi\Osdi\PersonSyncState::class, get_class($savedMatch));
