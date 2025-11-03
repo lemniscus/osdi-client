@@ -15,9 +15,7 @@ class PersonBasicTest extends \PHPUnit\Framework\TestCase implements
     \Civi\Test\HeadlessInterface,
     \Civi\Test\HookInterface {
 
-  private static array $objectsToDelete = [];
-
-  private static array $tableMaxIds = [];
+  use Civi\Osdi\NonTransactionalTestTrait;
 
   private static \Civi\Osdi\ActionNetwork\RemoteSystem $system;
 
@@ -28,21 +26,7 @@ class PersonBasicTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public static function setUpBeforeClass(): void {
-    parent::setUpBeforeClass();
-    $cleanupTables = [
-      'civicrm_cache',
-      'civicrm_contact',
-      'civicrm_osdi_deletion',
-      'civicrm_osdi_person_sync_state',
-      'civicrm_osdi_sync_profile',
-      'civicrm_queue',
-      'civicrm_queue_item',
-      'civicrm_tag',
-    ];
-    foreach ($cleanupTables as $cleanupTable) {
-      $max = \CRM_Core_DAO::singleValueQuery("SELECT MAX(id) FROM $cleanupTable");
-      self::$tableMaxIds[$cleanupTable] = $max;
-    };
+    self::nonTransactionalSetUpBeforeClass();
   }
 
   protected function setUp(): void {
@@ -53,29 +37,7 @@ class PersonBasicTest extends \PHPUnit\Framework\TestCase implements
   }
 
   protected function tearDown(): void {
-    foreach (self::$tableMaxIds as $table => $maxId) {
-      $where = $maxId ? "WHERE id > $maxId" : "";
-      \CRM_Core_DAO::singleValueQuery("DELETE FROM $table $where");
-    }
-
-    foreach (self::$objectsToDelete as $object) {
-      try {
-        if ('Contact' === $object::getCiviEntityName()) {
-          \CRM_Core_DAO::singleValueQuery('DELETE FROM civicrm_contact '
-            . 'WHERE id = ' . $object->getId());
-          continue;
-        }
-        $object->delete();
-      }
-      catch (\Throwable $e) {
-        $class = get_class($object);
-        print "Could not delete $class\n";
-      }
-    }
-
-    Civi\Osdi\Queue::getQueue(TRUE);
-
-    parent::tearDown();
+    $this->nonTransactionaltearDown();
   }
 
   public static function tearDownAfterClass(): void {
@@ -184,6 +146,9 @@ class PersonBasicTest extends \PHPUnit\Framework\TestCase implements
     self::assertEquals("Sync creation of EntityTag with tag id $tagBId, contact id $contactId", $task->title);
   }
 
+  /**
+   * see \Civi\Osdi\ActionNetwork\CrmEventResponder\PersonBasic::pre
+   */
   public function testSoftDeletionIsAddedToQueue() {
     [$localPerson1, $remotePerson1] = $this->makeSamePersonOnBothSides(1);
 
@@ -195,6 +160,13 @@ class PersonBasicTest extends \PHPUnit\Framework\TestCase implements
       ->addWhere('id', '=', $localPerson1->getId())
       ->setUseTrash(TRUE)
       ->execute();
+
+    $trashedContact = Civi\Api4\Contact::get(FALSE)
+      ->addWhere('id', '=', $localPerson1->getId())
+      ->addSelect('is_deleted')
+      ->execute()->single();
+
+    self::assertTrue($trashedContact['is_deleted']);
 
     /** @var \CRM_Queue_Task $task */
     self::assertGreaterThan(0, $queue->getStatistic('ready'));

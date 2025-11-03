@@ -61,6 +61,7 @@ function osdi_client_add_syncprofile_dependent_listeners(): void {
     }
   }
 
+  // the dummy listener helps us only add the other listeners once
   Civi::dispatcher()->addListener(__FUNCTION__, 'dummy');
   Civi::dispatcher()->addListener('civi.dao.preDelete', ['\Civi\Osdi\CrmEventDispatch', 'daoPreDelete']);
   Civi::dispatcher()->addListener('civi.dao.preUpdate', ['\Civi\Osdi\CrmEventDispatch', 'daoPreUpdate']);

@@ -4,8 +4,10 @@ namespace Civi\Osdi\ActionNetwork;
 
 use Civi\Osdi\ActionNetwork\Object\Person as RemotePerson;
 use Civi\Osdi\LocalObject\PersonBasic as LocalPerson;
+use Civi\Osdi\NonTransactionalTestTrait;
 use Civi\Osdi\RemoteObjectInterface;
 use Civi\OsdiClient;
+use CRM_Core_DAO;
 
 /**
  * This class does NOT implement TransactionalInterface, because it tests
@@ -37,7 +39,7 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
     \Civi\Test\HeadlessInterface,
     \Civi\Test\HookInterface {
 
-  private static array $tableMaxIds = [];
+  use NonTransactionalTestTrait;
 
   private static \Civi\Osdi\ActionNetwork\RemoteSystem $system;
 
@@ -67,22 +69,7 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
   }
 
   public static function setUpBeforeClass(): void {
-    parent::setUpBeforeClass();
-    $cleanupTables = [
-      'civicrm_cache',
-      'civicrm_contact',
-      'civicrm_osdi_deletion',
-      'civicrm_osdi_flag',
-      'civicrm_osdi_person_sync_state',
-      'civicrm_osdi_sync_profile',
-      'civicrm_queue',
-      'civicrm_queue_item',
-      'civicrm_tag',
-    ];
-    foreach ($cleanupTables as $cleanupTable) {
-      $max = \CRM_Core_DAO::singleValueQuery("SELECT MAX(id) FROM $cleanupTable");
-      self::$tableMaxIds[$cleanupTable] = $max;
-    };
+    self::nonTransactionalSetUpBeforeClass();
   }
 
   protected function setUp(): void {
@@ -94,13 +81,7 @@ class ContactMergeTest extends \PHPUnit\Framework\TestCase implements
   }
 
   protected function tearDown(): void {
-    foreach (self::$tableMaxIds as $table => $maxId) {
-      $where = $maxId ? "WHERE id > $maxId" : "";
-      \CRM_Core_DAO::singleValueQuery("DELETE FROM $table $where");
-    }
-
-    \Civi\Osdi\Queue::getQueue(TRUE);
-    parent::tearDown();
+    $this->nonTransactionaltearDown();
   }
 
   /**

@@ -55,6 +55,7 @@ class Container {
     'CrmEventResponder' => [
       'Contact' => ActionNetwork\CrmEventResponder\PersonBasic::class,
       'EntityTag' => ActionNetwork\CrmEventResponder\TaggingBasic::class,
+      'Individual' => ActionNetwork\CrmEventResponder\PersonBasic::class,
     ],
   ];
 

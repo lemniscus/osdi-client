@@ -76,7 +76,7 @@ class PersonBasic {
       return;
     }
 
-    $localPersonArray = $this->makeLocalObjectArrayFromDao($dao);
+    $localPersonArray = $this->makeLocalObjectArrayFromCid($dao->id);
 
     $task = new \CRM_Queue_Task(
       [static::class, 'syncDeletionFromQueue'],
@@ -89,11 +89,10 @@ class PersonBasic {
     $queue->createItem($task, ['weight' => -10]);
   }
 
-  public function daoPreUpdate(PreUpdate $event) {
-    /** @var \CRM_Contact_DAO_Contact $dao */
-    $dao = $event->object;
-
-    $this->respondToDaoPreUpdateSoftDelete($dao);
+  public function pre($op, $objectName, $id, $params) {
+    if ('edit' === $op) {
+      $this->respondToPreSoftDelete($id, $params);
+    }
   }
 
   public function merge($type, &$data, $idBeingKept = NULL, $idBeingDeleted = NULL, $tables = NULL) {
@@ -274,35 +273,32 @@ class PersonBasic {
     return FALSE;
   }
 
-  protected function makeLocalObjectArrayFromDao(\CRM_Contact_DAO_Contact $dao): array {
-    $localPerson = OsdiClient::container()->make('LocalObject', 'Person', $dao->id);
+  protected function makeLocalObjectArrayFromCid($id): array {
+    $localPerson = OsdiClient::container()->make('LocalObject', 'Person', $id);
     return $localPerson->loadOnce()->getAll();
   }
 
-  protected function respondToDaoPreUpdateSoftDelete(\CRM_Contact_DAO_Contact $dao) {
-    if ($this->responseIsSuppressed('delete', ['id' => $dao->id])) {
+  protected function respondToPreSoftDelete($id, array $params): void {
+    if ($this->responseIsSuppressed('delete', ['id' => $id])) {
       return;
     }
 
-    if (!$dao->is_deleted) {
+    if (empty($params['is_deleted'])) {
       return;
     }
 
-    $preUpdateDaoArray = $this->getContactAsArray($dao->id);
+    $localPersonArray = self::makeLocalObjectArrayFromCid($id);
 
-    if ($preUpdateDaoArray['is_deleted']) {
+    if ($localPersonArray['isDeleted']) {
       return;
     }
 
     // In this update, contact is being soft-deleted
 
-    $localPersonArray = $this->makeLocalObjectArrayFromDao($dao);
-
     $task = new \CRM_Queue_Task(
       [static::class, 'syncDeletionFromQueue'],
       ['serializedPerson' => $localPersonArray],
-      E::ts('Sync soft deletion of Contact id %1',
-        [1 => $localPersonArray['id']])
+      E::ts('Sync soft deletion of Contact id %1', [1 => $id])
     );
 
     $queue = \Civi\Osdi\Queue::getQueue();
